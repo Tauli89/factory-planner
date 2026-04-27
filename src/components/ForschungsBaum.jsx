@@ -1,6 +1,31 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { Component, useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { TECH, TECH_MAP, PACK_META, PRESETS } from '../data/research';
 import { useForschung } from '../context/ForschungContext';
+
+class BaumFehlerGrenze extends Component {
+  state = { fehler: null };
+  static getDerivedStateFromError(e) { return { fehler: e }; }
+  render() {
+    if (this.state.fehler) {
+      return (
+        <div className="flex-1 flex items-center justify-center text-red-400 text-sm p-8">
+          <div className="text-center">
+            <div className="text-3xl mb-3">⚠️</div>
+            <div className="font-semibold mb-1">Fehler im Forschungsbaum</div>
+            <div className="text-gray-500 text-xs mb-4">{this.state.fehler.message}</div>
+            <button
+              onClick={() => this.setState({ fehler: null })}
+              className="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-white text-xs"
+            >
+              Neu laden
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Breite/Höhe einer Tech-Karte im Baum
 const KARTE_B = 180;
@@ -191,6 +216,7 @@ export default function ForschungsBaum() {
   const containerRef = useRef(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const dragging = useRef(null);
+  const hatGezogen = useRef(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -209,10 +235,12 @@ export default function ForschungsBaum() {
 
   const onMouseDown = (e) => {
     if (e.button !== 0) return;
+    hatGezogen.current = false;
     dragging.current = { startX: e.clientX - transform.x, startY: e.clientY - transform.y };
   };
   const onMouseMove = (e) => {
     if (!dragging.current) return;
+    hatGezogen.current = true;
     setTransform(t => ({
       ...t,
       x: e.clientX - dragging.current.startX,
@@ -220,6 +248,11 @@ export default function ForschungsBaum() {
     }));
   };
   const onMouseUp = () => { dragging.current = null; };
+
+  const handleToggle = useCallback((id) => {
+    if (hatGezogen.current) return;
+    toggle(id);
+  }, [toggle]);
 
   const gefilterteTech = useMemo(() => {
     if (!suchbegriff) return null;
@@ -297,46 +330,48 @@ export default function ForschungsBaum() {
       </div>
 
       {/* Canvas */}
-      <div
-        ref={containerRef}
-        className="flex-1 rounded-xl border border-gray-700 bg-gray-950 overflow-hidden cursor-grab active:cursor-grabbing"
-        style={{ userSelect: 'none' }}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
-      >
-        <svg
-          width="100%"
-          height="100%"
-          style={{ display: 'block' }}
+      <BaumFehlerGrenze>
+        <div
+          ref={containerRef}
+          className="flex-1 rounded-xl border border-gray-700 bg-gray-950 overflow-hidden cursor-grab active:cursor-grabbing"
+          style={{ userSelect: 'none' }}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
         >
-          <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
-            <Verbindungslinien pos={pos} />
-            {TECH.map(tech => {
-              const p = pos[tech.id];
-              if (!p) return null;
-              const istHervorgehoben = gefilterteTech?.has(tech.id);
-              const istAusgeblendet = gefilterteTech && !istHervorgehoben;
-              return (
-                <g
-                  key={tech.id}
-                  opacity={istAusgeblendet ? 0.2 : 1}
-                  style={{ transition: 'opacity 0.2s' }}
-                >
-                  <TechKarte
-                    tech={tech}
-                    pos={p}
-                    istErforscht={erforscht.has(tech.id)}
-                    onToggle={toggle}
-                    scale={transform.scale}
-                  />
-                </g>
-              );
-            })}
-          </g>
-        </svg>
-      </div>
+          <svg
+            width="100%"
+            height="100%"
+            style={{ display: 'block' }}
+          >
+            <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
+              <Verbindungslinien pos={pos} />
+              {TECH.map(tech => {
+                const p = pos[tech.id];
+                if (!p) return null;
+                const istHervorgehoben = gefilterteTech?.has(tech.id);
+                const istAusgeblendet = gefilterteTech && !istHervorgehoben;
+                return (
+                  <g
+                    key={tech.id}
+                    opacity={istAusgeblendet ? 0.2 : 1}
+                    style={{ transition: 'opacity 0.2s' }}
+                  >
+                    <TechKarte
+                      tech={tech}
+                      pos={p}
+                      istErforscht={erforscht.has(tech.id)}
+                      onToggle={handleToggle}
+                      scale={transform.scale}
+                    />
+                  </g>
+                );
+              })}
+            </g>
+          </svg>
+        </div>
+      </BaumFehlerGrenze>
 
       {/* Legende */}
       <div className="flex flex-wrap gap-3 text-xs text-gray-500">
