@@ -1,5 +1,6 @@
 import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
 import { maschinenAnzahl, MASCHINEN_LABEL } from '../utils/berechnung';
+import { useForschung } from '../context/ForschungContext';
 
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
@@ -16,12 +17,14 @@ const MASCHINEN_FARBE = {
 };
 
 export default function ErgebnisTabelle({ produktion }) {
+  const { boni } = useForschung();
+
   if (!produktion || Object.keys(produktion).length === 0) return null;
 
   const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
     const rezept = REZEPTE_MAP[id];
     const istRohstoff = !rezept || rezept.zeit === 0;
-    const anzahl = istRohstoff ? null : maschinenAnzahl(id, rateProSek);
+    const anzahl = istRohstoff ? null : maschinenAnzahl(id, rateProSek, boni);
     return {
       id,
       name:      rezept?.name   ?? id,
@@ -37,8 +40,21 @@ export default function ErgebnisTabelle({ produktion }) {
   const herstellung = eintraege.filter(e => !e.istRohstoff);
   const rohstoffe   = eintraege.filter(e =>  e.istRohstoff);
 
+  const bonusHinweis = boni.miningBonus > 0 || boni.assemblerBonus > 0;
+
   return (
     <div className="flex flex-col gap-6 mt-6">
+      {bonusHinweis && (
+        <div className="flex gap-4 text-xs text-gray-500 bg-gray-800/50 rounded-lg px-3 py-2">
+          <span className="text-amber-400 font-semibold">Forschungsboni aktiv:</span>
+          {boni.miningBonus > 0 && (
+            <span>⛏ Bergbau-Produktivität +{(boni.miningBonus * 100).toFixed(0)}%</span>
+          )}
+          {boni.assemblerBonus > 0 && (
+            <span>⚙ Assembler-Geschwindigkeit +{(boni.assemblerBonus * 100).toFixed(0)}%</span>
+          )}
+        </div>
+      )}
       <Abschnitt titel="Herstellung" eintraege={herstellung} zeigeMaschine />
       <Abschnitt titel="Rohstoffe / Fluide" eintraege={rohstoffe} />
     </div>

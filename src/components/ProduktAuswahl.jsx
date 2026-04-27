@@ -1,4 +1,6 @@
 import { REZEPTE, KATEGORIEN } from '../data/recipes';
+import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/research';
+import { useForschung } from '../context/ForschungContext';
 
 const KATEGORIE_REIHENFOLGE = [
   KATEGORIEN.SCIENCE,
@@ -15,7 +17,15 @@ const KATEGORIE_REIHENFOLGE = [
 ];
 
 export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
-  const herstellbar = REZEPTE.filter(r => r.zeit > 0);
+  const { freigeschalteteRezepte } = useForschung();
+
+  const herstellbar = REZEPTE.filter(r => {
+    if (r.zeit === 0) return false;
+    // Rezepte ohne Tech-Anforderung immer verfügbar
+    if (!DURCH_TECH_GESPERRTE_REZEPTE.has(r.id)) return true;
+    // Technologie-gesperrte Rezepte nur wenn erforscht
+    return freigeschalteteRezepte.has(r.id);
+  });
 
   const nachKategorie = KATEGORIE_REIHENFOLGE.map(kat => ({
     kat,

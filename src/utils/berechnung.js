@@ -55,12 +55,26 @@ export function berechneProduktion(id, mengeProSekunde, akkumulator = {}) {
 
 /**
  * Berechnet die benötigte Maschinenanzahl für eine geforderte Rate.
- * Berücksichtigt automatisch den korrekten Maschinentyp aus dem Rezept.
+ * boni = { miningBonus: 0.3, assemblerBonus: 0 } aus ForschungContext
  */
-export function maschinenAnzahl(id, mengeProSekunde) {
+export function maschinenAnzahl(id, mengeProSekunde, boni = {}) {
   const rezept = REZEPTE_MAP[id];
   if (!rezept || rezept.zeit === 0) return null;
-  const geschwindigkeit = MASCHINENGESCHWINDIGKEIT[rezept.maschine] ?? 1.0;
-  const rate = (rezept.ergibt / rezept.zeit) * geschwindigkeit;
-  return Math.ceil(mengeProSekunde / rate);
+
+  let geschwindigkeit = MASCHINENGESCHWINDIGKEIT[rezept.maschine] ?? 1.0;
+
+  // Assembler-Speed-Bonus auf alle nicht-Bergbau-Maschinen
+  if (rezept.maschine !== MASCHINEN.BERGBAU && boni.assemblerBonus > 0) {
+    geschwindigkeit *= (1 + boni.assemblerBonus);
+  }
+
+  const basisRate = (rezept.ergibt / rezept.zeit) * geschwindigkeit;
+
+  // Mining Productivity erhöht den Output pro Miner → weniger Miner nötig
+  if (rezept.maschine === MASCHINEN.BERGBAU && boni.miningBonus > 0) {
+    const effektiveRate = basisRate * (1 + boni.miningBonus);
+    return Math.ceil(mengeProSekunde / effektiveRate);
+  }
+
+  return Math.ceil(mengeProSekunde / basisRate);
 }
