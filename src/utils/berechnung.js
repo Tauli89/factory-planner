@@ -1,25 +1,40 @@
 import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
 
-// Fertigungsgeschwindigkeit pro Maschinentyp (Standard-Ausbaustufe)
+// Crafting-Speed pro Maschinentyp (Standard-Ausbaustufe)
 const MASCHINENGESCHWINDIGKEIT = {
-  [MASCHINEN.ASSEMBLER]:    0.75,  // Assembler Mk2
-  [MASCHINEN.SCHMELZOFEN]:  2.0,   // Elektrischer Schmelzofen
-  [MASCHINEN.CHEMIEANLAGE]: 1.0,   // Chemieanlage
+  [MASCHINEN.ASSEMBLER]:    0.75,  // Montageautomat 2
+  [MASCHINEN.SCHMELZOFEN]:  2.0,   // Elektrischer Ofen
+  [MASCHINEN.CHEMIEANLAGE]: 1.0,
+  [MASCHINEN.OELRAFFINERIE]:1.0,
+  [MASCHINEN.ZENTRIFUGE]:   1.0,
+  [MASCHINEN.HOCHOFEN]:     2.0,   // Foundry
+  [MASCHINEN.EM_ANLAGE]:    2.0,   // Electromagnetic Plant
+  [MASCHINEN.BIOKAMMER]:    1.0,
+  [MASCHINEN.KRYOGENANLAGE]:1.0,
+  [MASCHINEN.RECYCLER]:     0.5,
+  [MASCHINEN.RAUMPLATTFORM]:1.0,
+  [MASCHINEN.CRUSHER]:      1.0,
 };
 
 export const MASCHINEN_LABEL = {
-  [MASCHINEN.ASSEMBLER]:    'Assembler',
+  [MASCHINEN.BERGBAU]:      'Bergbau',
   [MASCHINEN.SCHMELZOFEN]:  'Schmelzofen',
+  [MASCHINEN.ASSEMBLER]:    'Assembler',
   [MASCHINEN.CHEMIEANLAGE]: 'Chemieanlage',
-  [MASCHINEN.BERGBAU]:      'Bergbaubohrer',
+  [MASCHINEN.OELRAFFINERIE]:'Ölraffinerie',
+  [MASCHINEN.ZENTRIFUGE]:   'Zentrifuge',
+  [MASCHINEN.HOCHOFEN]:     'Hochofen',
+  [MASCHINEN.EM_ANLAGE]:    'Elektromagnetische Anlage',
+  [MASCHINEN.BIOKAMMER]:    'Biokammer',
+  [MASCHINEN.KRYOGENANLAGE]:'Kryogenanlage',
+  [MASCHINEN.RECYCLER]:     'Recycler',
+  [MASCHINEN.RAUMPLATTFORM]:'Raumplattform',
+  [MASCHINEN.CRUSHER]:      'Asteroid-Zerkleinerer',
 };
 
 /**
- * Berechnet rekursiv alle benötigten Produktionsraten für ein Zielprodukt.
- * @param {string} id - Rezept-ID des Zielprodukts
- * @param {number} mengeProSekunde - Gewünschte Ausbringung in Stück/Sekunde
- * @param {Record<string, number>} akkumulator - Gesammelte Anforderungen (wird befüllt)
- * @returns {Record<string, number>} Karte von id → benötigte Menge/Sekunde
+ * Berechnet rekursiv alle benötigten Produktionsraten.
+ * Rohstoffe (zeit === 0) werden im Akkumulator als Basis-Inputs gesammelt.
  */
 export function berechneProduktion(id, mengeProSekunde, akkumulator = {}) {
   const rezept = REZEPTE_MAP[id];
@@ -39,7 +54,7 @@ export function berechneProduktion(id, mengeProSekunde, akkumulator = {}) {
 }
 
 /**
- * Berechnet die Anzahl benötigter Maschinen für eine geforderte Rate.
+ * Berechnet die benötigte Maschinenanzahl für eine geforderte Rate.
  * Berücksichtigt automatisch den korrekten Maschinentyp aus dem Rezept.
  */
 export function maschinenAnzahl(id, mengeProSekunde) {
