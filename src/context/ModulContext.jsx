@@ -14,7 +14,7 @@ export function ModulProvider({ children }) {
     }));
   };
 
-  // Computed effective bonuses per machine type
+  // Computed speed/productivity bonuses per machine type
   const modulBoni = useMemo(() => {
     const result = {};
     for (const [maschinenType, config] of Object.entries(modulConfig)) {
@@ -29,8 +29,19 @@ export function ModulProvider({ children }) {
     return result;
   }, [modulConfig]);
 
+  // Raw quality bonus per machine type (before machine-quality multiplier is applied)
+  const qualityBoniPerMaschine = useMemo(() => {
+    const result = {};
+    for (const [maschinenType, config] of Object.entries(modulConfig)) {
+      const modul = MODULE_MAP[config.modulId];
+      if (!modul || modul.id === 'keins' || config.anzahl <= 0 || !modul.qualityBonus) continue;
+      result[maschinenType] = modul.qualityBonus * config.anzahl;
+    }
+    return result;
+  }, [modulConfig]);
+
   return (
-    <ModulContext.Provider value={{ modulConfig, setMaschinenModul, modulBoni }}>
+    <ModulContext.Provider value={{ modulConfig, setMaschinenModul, modulBoni, qualityBoniPerMaschine }}>
       {children}
     </ModulContext.Provider>
   );

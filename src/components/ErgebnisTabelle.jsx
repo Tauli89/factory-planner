@@ -4,7 +4,9 @@ import { maschinenAnzahl, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/b
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 import { useModul } from '../context/ModulContext';
+import { useQuality } from '../context/QualityContext';
 import { BELT_FARBE } from '../data/belts';
+import { formatQualityFaktor } from '../data/quality';
 
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
@@ -42,6 +44,12 @@ const T = {
     boniAktiv:      'Forschungsboni aktiv:',
     bergbauBonus:   (v) => `⛏ Bergbau-Produktivität +${v}%`,
     assemblerBonus: (v) => `⚙ Assembler-Geschwindigkeit +${v}%`,
+    qualitaetAktiv: 'Quality-Crafting:',
+    zielQualitaet:  'Ziel',
+    maschinenQ:     'Maschinen',
+    craftingFaktor: 'Crafting-Faktor',
+    craftingRate:   'Crafting-Rate',
+    qualNormal:     'Normal',
   },
   en: {
     herstellung:    'Production',
@@ -55,16 +63,39 @@ const T = {
     boniAktiv:      'Research bonuses active:',
     bergbauBonus:   (v) => `⛏ Mining Productivity +${v}%`,
     assemblerBonus: (v) => `⚙ Assembler Speed +${v}%`,
+    qualitaetAktiv: 'Quality Crafting:',
+    zielQualitaet:  'Target',
+    maschinenQ:     'Machines',
+    craftingFaktor: 'Crafting factor',
+    craftingRate:   'Crafting rate',
+    qualNormal:     'Normal',
   },
 };
 
 export default function ErgebnisTabelle({ produktion, perItem = [], foerderband = null }) {
-  const { boni }      = useForschung();
-  const { sprache }   = useSprache();
-  const { modulBoni } = useModul();
+  const { boni }           = useForschung();
+  const { sprache }        = useSprache();
+  const { modulBoni }      = useModul();
+  const { zielQualitaet, maschinenQualitaet, gesamtQualityChance, qualityFaktorPerMaschine } = useQuality();
   const tx = T[sprache];
 
   const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
+
+  const istQualityAktiv = zielQualitaet.tierIndex > 0;
+
+  // Map: ZielproduktId → { gewuenschteRateSek, qualitaet, craftingFaktor }
+  const zielProduktMap = useMemo(() => {
+    const map = {};
+    for (const p of perItem) {
+      if (!p.id) continue;
+      map[p.id] = {
+        gewuenschteRateSek: p.mengeProMin / 60,
+        qualitaet:          p.qualitaet ?? zielQualitaet,
+        craftingFaktor:     p.qualityFaktor ?? 1,
+      };
+    }
+    return map;
+  }, [perItem, zielQualitaet]);
 
   const beitraegeMap = useMemo(() => {
     if (perItem.length <= 1) return {};
@@ -89,16 +120,33 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
   const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
     const rezept      = REZEPTE_MAP[id];
     const istRohstoff = !rezept || rezept.zeit === 0;
-    const anzahl      = istRohstoff ? null : maschinenAnzahl(id, rateProSek, boni, modulBoni);
-    const baender     = foerderband?.durchsatz ? Math.ceil(rateProSek / foerderband.durchsatz) : null;
+
+    // Zielprodukte: Wunsch-Rate anzeigen, Crafting-Rate für Maschinenberechnung nutzen
+    const zielInfo   = zielProduktMap[id];
+    const istZiel    = !!zielInfo;
+    const displayRate = istZiel ? zielInfo.gewuenschteRateSek : rateProSek;
+    const craftingRate = rateProSek; // immer Akkumulator-Rate (= Crafting-Rate)
+
+    // Maschinenqualitäts-Multiplikator für Geschwindigkeit
+    const mQMulti = maschinenQualitaet.maschinenMulti;
+    const anzahl  = istRohstoff ? null : maschinenAnzahl(id, craftingRate, boni, modulBoni, mQMulti);
+
+    const baender = foerderband?.durchsatz ? Math.ceil(displayRate / foerderband.durchsatz) : null;
+
+    // Quality-Badge: Zielprodukte bekommen die Ziel-Qualität, andere Normal
+    const qualitaet = istZiel ? (zielInfo.qualitaet ?? zielQualitaet) : null;
+
     return {
       id,
-      name:       sprache === 'de' ? (rezept?.name ?? id) : (rezept?.nameEn ?? id),
-      rateProSek,
-      rateProMin: rateProSek * 60,
+      name:         sprache === 'de' ? (rezept?.name ?? id) : (rezept?.nameEn ?? id),
+      rateProSek:   displayRate,
+      rateProMin:   displayRate * 60,
+      craftingRate,
       istRohstoff,
+      istZiel,
+      qualitaet,
       anzahl,
-      maschine:   rezept?.maschine ?? null,
+      maschine:     rezept?.maschine ?? null,
       baender,
     };
   });
@@ -108,15 +156,19 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
 
   const bonusHinweis = boni.miningBonus > 0 || boni.assemblerBonus > 0;
 
-  // Collect active module bonuses for display
   const aktiveModulBoni = Object.entries(modulBoni).filter(
     ([, b]) => b.speedBonus !== 0 || b.produktivitaet > 0
   );
 
   const beltFarbe = foerderband ? (BELT_FARBE[foerderband.id] ?? 'text-gray-300') : 'text-gray-300';
 
+  // Besten Crafting-Faktor ermitteln (für Info-Zeile)
+  const maxCraftingFaktor = Math.max(...Object.values(qualityFaktorPerMaschine), 1);
+
   return (
     <div className="flex flex-col gap-6 mt-6">
+
+      {/* Forschungsboni */}
       {bonusHinweis && (
         <div className="flex gap-4 text-xs text-gray-500 bg-gray-800/50 rounded-lg px-3 py-2">
           <span className="text-amber-400 font-semibold">{tx.boniAktiv}</span>
@@ -129,6 +181,7 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
         </div>
       )}
 
+      {/* Aktive Modulboni */}
       {aktiveModulBoni.length > 0 && (
         <div className="flex flex-wrap gap-2 text-xs bg-gray-800/50 rounded-lg px-3 py-2">
           <span className="text-green-400 font-semibold shrink-0">
@@ -144,6 +197,43 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
         </div>
       )}
 
+      {/* Quality-Crafting-Info */}
+      {istQualityAktiv && (
+        <div className="flex flex-wrap items-center gap-3 text-xs bg-gray-800/50 rounded-lg px-3 py-2">
+          <span className="font-semibold" style={{ color: 'inherit' }}>
+            <span className={zielQualitaet.farbe}>★ {tx.qualitaetAktiv}</span>
+          </span>
+
+          <span className={`px-2 py-0.5 rounded border font-medium ${zielQualitaet.badge}`}>
+            {tx.zielQualitaet}: {zielQualitaet.icon} {sprache === 'de' ? zielQualitaet.name : zielQualitaet.nameEn}
+          </span>
+
+          <span className={`px-2 py-0.5 rounded border font-medium ${maschinenQualitaet.badge}`}>
+            {tx.maschinenQ}: {maschinenQualitaet.icon} {sprache === 'de' ? maschinenQualitaet.name : maschinenQualitaet.nameEn}
+            {maschinenQualitaet.maschinenMulti !== 1 && ` (⚡×${maschinenQualitaet.maschinenMulti})`}
+          </span>
+
+          {gesamtQualityChance > 0 && (
+            <>
+              <span className="text-gray-400">
+                {tx.craftingFaktor}: <span className="text-amber-300 font-bold">{formatQualityFaktor(maxCraftingFaktor)}</span>
+              </span>
+              <span className="text-gray-500">
+                ({(gesamtQualityChance * 100).toFixed(1)}% {sprache === 'de' ? 'Chance' : 'chance'})
+              </span>
+            </>
+          )}
+
+          {gesamtQualityChance === 0 && (
+            <span className="text-amber-300">
+              {sprache === 'de'
+                ? '⚠ Keine Qualitätsmodule → Zutaten werden nicht angepasst'
+                : '⚠ No quality modules → ingredients not adjusted'}
+            </span>
+          )}
+        </div>
+      )}
+
       <Abschnitt
         titel={tx.herstellung}
         eintraege={herstellung}
@@ -153,6 +243,8 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
         beitraegeMap={beitraegeMap}
         zeigeBeitraege={zeigeBeitraege}
         beltFarbe={beltFarbe}
+        istQualityAktiv={istQualityAktiv}
+        sprache={sprache}
       />
       <Abschnitt
         titel={tx.rohstoffe}
@@ -162,12 +254,27 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
         beitraegeMap={beitraegeMap}
         zeigeBeitraege={zeigeBeitraege}
         beltFarbe={beltFarbe}
+        istQualityAktiv={istQualityAktiv}
+        sprache={sprache}
       />
     </div>
   );
 }
 
-function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabels, beitraegeMap = {}, zeigeBeitraege = false, beltFarbe }) {
+function QualityBadge({ qualitaet }) {
+  if (!qualitaet) return null;
+  return (
+    <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded border font-medium align-middle ${qualitaet.badge}`}>
+      {qualitaet.icon} {qualitaet.name}
+    </span>
+  );
+}
+
+function Abschnitt({
+  titel, eintraege, zeigeMaschine = false, tx, maschinenLabels,
+  beitraegeMap = {}, zeigeBeitraege = false, beltFarbe,
+  istQualityAktiv, sprache,
+}) {
   if (eintraege.length === 0) return null;
   const zeigeBaender = eintraege.some(e => e.baender !== null);
 
@@ -184,8 +291,12 @@ function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabel
               {zeigeBaender && (
                 <th className={`px-4 py-3 text-right ${beltFarbe}`}>{tx.baender}</th>
               )}
-              {zeigeMaschine && <th className="px-4 py-3 text-right hidden md:table-cell">{tx.maschine}</th>}
-              {zeigeMaschine && <th className="px-4 py-3 text-right">{tx.anzahl}</th>}
+              {zeigeMaschine && (
+                <th className="px-4 py-3 text-right hidden md:table-cell">{tx.maschine}</th>
+              )}
+              {zeigeMaschine && (
+                <th className="px-4 py-3 text-right">{tx.anzahl}</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -198,7 +309,12 @@ function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabel
               return (
                 <Fragment key={e.id}>
                   <tr className={rowBg}>
-                    <td className="px-4 py-2 text-white font-medium">{e.name}</td>
+                    <td className="px-4 py-2 text-white font-medium">
+                      <span>{e.name}</span>
+                      {istQualityAktiv && e.qualitaet && (
+                        <QualityBadge qualitaet={e.qualitaet} />
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-right text-green-400">{e.rateProMin.toFixed(2)}</td>
                     <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
                     {zeigeBaender && (

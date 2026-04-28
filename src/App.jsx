@@ -5,9 +5,11 @@ import ErgebnisTabelle from './components/ErgebnisTabelle';
 import ForschungsBaum from './components/ForschungsBaum';
 import ModulAuswahl from './components/ModulAuswahl';
 import ModulOptimierung from './components/ModulOptimierung';
+import QualityAuswahl from './components/QualityAuswahl';
 import { ForschungProvider, useForschung } from './context/ForschungContext';
 import { SprachProvider, useSprache } from './context/SprachContext';
 import { ModulProvider, useModul } from './context/ModulContext';
+import { QualityProvider, useQuality } from './context/QualityContext';
 import { berechneProduktion } from './utils/berechnung';
 import { REZEPTE_MAP } from './data/recipes';
 import { FOERDERBAENDER, FOERDERBAENDER_MAP } from './data/belts';
@@ -52,7 +54,8 @@ function RechnerTab({ sprache }) {
   const [zeigeModule, setZeigeModule]   = useState(false);
   const keyRef = useRef(2);
 
-  const { modulBoni } = useModul();
+  const { modulBoni }                          = useModul();
+  const { zielQualitaet, getQualityFaktorFuerMaschine } = useQuality();
 
   const addItem    = () => setItems(prev => [...prev, { key: keyRef.current++, id: '', mengeProMin: 60 }]);
   const removeItem = key => setItems(prev => prev.length > 1 ? prev.filter(i => i.key !== key) : prev);
@@ -64,23 +67,36 @@ function RechnerTab({ sprache }) {
     const active = items.filter(i => i.id && i.mengeProMin > 0);
     if (!active.length) return { combined: {}, perItem: [] };
 
-    const perItem = active.map(item => ({
-      key:         item.key,
-      id:          item.id,
-      mengeProMin: item.mengeProMin,
-      produktion:  berechneProduktion(item.id, item.mengeProMin / 60, {}, modulBoni),
-    }));
+    const perItemList = active.map(item => {
+      // Quality factor: wie viele Crafting-Vorgänge pro gewünschtem Output-Item
+      const rezept        = REZEPTE_MAP[item.id];
+      const maschinenType = rezept?.maschine;
+      const qualityFaktor = getQualityFaktorFuerMaschine(maschinenType);
+
+      // Produktionsberechnung mit Quality-skalierter Crafting-Rate
+      // (qualityFaktor > 1: mehr Crafting-Vorgänge nötig, Zutaten werden skaliert)
+      const craftingRateSek = (item.mengeProMin / 60) * qualityFaktor;
+      const produktion = berechneProduktion(item.id, craftingRateSek, {}, modulBoni);
+
+      return {
+        key:          item.key,
+        id:           item.id,
+        mengeProMin:  item.mengeProMin,
+        qualityFaktor,
+        qualitaet:    zielQualitaet,
+        produktion,
+      };
+    });
 
     const combined = {};
-    for (const p of perItem) {
+    for (const p of perItemList) {
       for (const [id, rate] of Object.entries(p.produktion)) {
         combined[id] = (combined[id] ?? 0) + rate;
       }
     }
-    return { combined, perItem };
-  }, [items, modulBoni]);
+    return { combined, perItem: perItemList };
+  }, [items, modulBoni, zielQualitaet, getQualityFaktorFuerMaschine]);
 
-  // Machine types used in the current production chain (for module selector)
   const aktiveMaschinen = useMemo(() => {
     const maschinen = new Set();
     for (const id of Object.keys(combined)) {
@@ -149,7 +165,7 @@ function RechnerTab({ sprache }) {
           ))}
         </div>
 
-        {/* Belt selector + Module toggle */}
+        {/* Belt selector + Quality selector + Module toggle */}
         <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-700/50">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">{tx.foerderband}:</span>
@@ -165,6 +181,9 @@ function RechnerTab({ sprache }) {
               ))}
             </select>
           </div>
+
+          {/* Quality-Auswahl */}
+          <QualityAuswahl />
 
           {hasResult && aktiveMaschinen.size > 0 && (
             <button
@@ -293,7 +312,9 @@ export default function App() {
     <SprachProvider>
       <ForschungProvider>
         <ModulProvider>
-          <AppInner />
+          <QualityProvider>
+            <AppInner />
+          </QualityProvider>
         </ModulProvider>
       </ForschungProvider>
     </SprachProvider>

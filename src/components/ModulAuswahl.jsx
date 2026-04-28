@@ -1,18 +1,27 @@
 import { useModul } from '../context/ModulContext';
+import { useQuality } from '../context/QualityContext';
 import { MODULE_TYPEN, MODUL_SLOTS } from '../data/modules';
 import { MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
 import { useSprache } from '../context/SprachContext';
 
 const T = {
   de: {
-    titel:   'Modulkonfiguration',
-    modul:   'Modul',
-    anzahl:  'Slots',
+    titel:       'Modulkonfiguration',
+    modul:       'Modul',
+    anzahl:      'Slots',
+    geschw:      'Geschwindigkeit',
+    prod:        'Produktivität',
+    qualitaet:   'Qualität',
+    effQuality:  'Effektive Qualitätschance',
   },
   en: {
-    titel:   'Module Configuration',
-    modul:   'Module',
-    anzahl:  'Slots',
+    titel:       'Module Configuration',
+    modul:       'Module',
+    anzahl:      'Slots',
+    geschw:      'Speed',
+    prod:        'Productivity',
+    qualitaet:   'Quality',
+    effQuality:  'Effective quality chance',
   },
 };
 
@@ -24,14 +33,8 @@ export default function ModulAuswahl({ aktiveMaschinen }) {
 
   if (!aktiveMaschinen || aktiveMaschinen.size === 0) return null;
 
-  // Only show machine types that have module slots
   const maschinen = [...aktiveMaschinen].filter(m => (MODUL_SLOTS[m] ?? 0) > 0);
   if (maschinen.length === 0) return null;
-
-  const moduleOptions = MODULE_TYPEN.filter(m => {
-    if (sprache === 'de') return true;
-    return true;
-  });
 
   return (
     <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
@@ -55,7 +58,7 @@ export default function ModulAuswahl({ aktiveMaschinen }) {
                 onChange={e => setMaschinenModul(maschinenType, e.target.value, config.anzahl || 0)}
                 className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
               >
-                {moduleOptions.map(m => (
+                {MODULE_TYPEN.map(m => (
                   <option key={m.id} value={m.id}>{m[modulName]}</option>
                 ))}
               </select>
@@ -78,7 +81,7 @@ export default function ModulAuswahl({ aktiveMaschinen }) {
                 </div>
               )}
 
-              <ModulHinweis maschinenType={maschinenType} config={config} sprache={sprache} />
+              <ModulHinweis maschinenType={maschinenType} config={config} sprache={sprache} tx={tx} />
             </div>
           );
         })}
@@ -87,25 +90,39 @@ export default function ModulAuswahl({ aktiveMaschinen }) {
   );
 }
 
-function ModulHinweis({ maschinenType, config, sprache }) {
+function ModulHinweis({ maschinenType, config, sprache, tx }) {
   const { modulBoni } = useModul();
-  const bonus = modulBoni[maschinenType];
-  if (!bonus) return null;
+  const { qualityChancePerMaschine, maschinenQualitaet } = useQuality();
+
+  const bonus        = modulBoni[maschinenType];
+  const qualityChance = qualityChancePerMaschine[maschinenType] ?? 0;
 
   const parts = [];
-  if (bonus.speedBonus !== 0) {
-    const sign  = bonus.speedBonus > 0 ? '+' : '';
-    const label = sprache === 'de' ? 'Geschwindigkeit' : 'Speed';
-    parts.push(`${label}: ${sign}${(bonus.speedBonus * 100).toFixed(0)}%`);
+
+  if (bonus?.speedBonus !== 0 && bonus?.speedBonus !== undefined) {
+    const sign = bonus.speedBonus > 0 ? '+' : '';
+    parts.push(`${tx.geschw}: ${sign}${(bonus.speedBonus * 100).toFixed(0)}%`);
   }
-  if (bonus.produktivitaet > 0) {
-    const label = sprache === 'de' ? 'Produktivität' : 'Productivity';
-    parts.push(`${label}: +${(bonus.produktivitaet * 100).toFixed(0)}%`);
+  if (bonus?.produktivitaet > 0) {
+    parts.push(`${tx.prod}: +${(bonus.produktivitaet * 100).toFixed(0)}%`);
   }
+  if (qualityChance > 0) {
+    parts.push(`${tx.qualitaet}: ${(qualityChance * 100).toFixed(1)}%`);
+    if (maschinenQualitaet.qualityModulMulti !== 1) {
+      parts.push(`(×${maschinenQualitaet.qualityModulMulti} ${sprache === 'de' ? 'Maschinenbonus' : 'machine bonus'})`);
+    }
+  }
+
   if (parts.length === 0) return null;
 
+  const istQuality = qualityChance > 0;
+
   return (
-    <span className="text-xs text-green-400 bg-green-900/20 border border-green-700/30 rounded px-1.5 py-0.5">
+    <span className={`text-xs rounded px-1.5 py-0.5 border ${
+      istQuality
+        ? 'text-amber-300 bg-amber-900/20 border-amber-700/30'
+        : 'text-green-400 bg-green-900/20 border-green-700/30'
+    }`}>
       {parts.join(' · ')}
     </span>
   );

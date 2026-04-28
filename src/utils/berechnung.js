@@ -48,9 +48,9 @@ export const MASCHINEN_LABEL_EN = {
 };
 
 /**
- * Recursively calculates all required production rates.
+ * Berechnet rekursiv alle benötigten Produktionsraten.
  * modulBoni: { [maschinenType]: { speedBonus, produktivitaet } }
- * Productivity modules reduce ingredient consumption per output item.
+ * Produktivitätsmodule reduzieren den Zutatenverbrauch pro Output-Item.
  */
 export function berechneProduktion(id, mengeProSekunde, akkumulator = {}, modulBoni = {}) {
   const rezept = REZEPTE_MAP[id];
@@ -61,7 +61,6 @@ export function berechneProduktion(id, mengeProSekunde, akkumulator = {}, modulB
 
   akkumulator[id] = (akkumulator[id] ?? 0) + mengeProSekunde;
 
-  // Productivity modules reduce ingredient consumption per output item
   const modulBonus     = modulBoni[rezept.maschine];
   const produktivitaet = modulBonus?.produktivitaet ?? 0;
   const ingredientFaktor = 1 / (1 + produktivitaet);
@@ -75,28 +74,35 @@ export function berechneProduktion(id, mengeProSekunde, akkumulator = {}, modulB
 }
 
 /**
- * Calculates the number of machines needed for a given rate.
- * boni:     { miningBonus, assemblerBonus } from ForschungContext
- * modulBoni: { [maschinenType]: { speedBonus, produktivitaet } }
+ * Berechnet die Anzahl benötigter Maschinen für eine gegebene Rate.
+ * boni:                   { miningBonus, assemblerBonus } aus ForschungContext
+ * modulBoni:              { [maschinenType]: { speedBonus, produktivitaet } }
+ * maschinenQualitaetMulti: Geschwindigkeitsmultiplikator durch Maschinenqualität (Standard: 1.0)
+ *                          Höhere Qualität = schnellere Maschine = weniger Maschinen benötigt
  */
-export function maschinenAnzahl(id, mengeProSekunde, boni = {}, modulBoni = {}) {
+export function maschinenAnzahl(id, mengeProSekunde, boni = {}, modulBoni = {}, maschinenQualitaetMulti = 1) {
   const rezept = REZEPTE_MAP[id];
   if (!rezept || rezept.zeit === 0) return null;
 
   let geschwindigkeit = MASCHINENGESCHWINDIGKEIT[rezept.maschine] ?? 1.0;
 
-  // Research assembler speed bonus (non-mining)
+  // Maschinenqualität steigert die Basisgeschwindigkeit
+  if (maschinenQualitaetMulti !== 1) {
+    geschwindigkeit *= maschinenQualitaetMulti;
+  }
+
+  // Forschungs-Assembler-Geschwindigkeitsbonus (nicht für Bergbau)
   if (rezept.maschine !== MASCHINEN.BERGBAU && boni.assemblerBonus > 0) {
     geschwindigkeit *= (1 + boni.assemblerBonus);
   }
 
-  // Module speed bonus (speed modules: positive, productivity modules: negative)
+  // Modulgeschwindigkeitsbonus (Geschwindigkeitsmodule: positiv, Produktivitätsmodule: negativ)
   const modulBonus = modulBoni[rezept.maschine];
   if (modulBonus?.speedBonus) {
     geschwindigkeit *= (1 + modulBonus.speedBonus);
   }
 
-  // Productivity modules increase effective output per cycle
+  // Produktivitätsmodule erhöhen den effektiven Output pro Zyklus
   const produktivitaet = modulBonus?.produktivitaet ?? 0;
   const effektiverOutput = rezept.ergibt * (1 + produktivitaet);
 
