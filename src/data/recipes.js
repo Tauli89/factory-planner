@@ -78,6 +78,7 @@ export const REZEPTE = [
   { id:'stein',       name:'Stein',       nameEn:'Stone',       zeit:0, ergibt:1, zutaten:[], kategorie:KATEGORIEN.ROHSTOFFE, maschine:MASCHINEN.BERGBAU },
   { id:'uranerz',     name:'Uranerz',     nameEn:'Uranium Ore', zeit:0, ergibt:1, zutaten:[], kategorie:KATEGORIEN.ROHSTOFFE, maschine:MASCHINEN.BERGBAU },
   { id:'roher-fisch', name:'Roher Fisch', nameEn:'Raw Fish',    zeit:0, ergibt:1, zutaten:[], kategorie:KATEGORIEN.ROHSTOFFE, maschine:MASCHINEN.BERGBAU },
+  { id:'holz',        name:'Holz',        nameEn:'Wood',        zeit:0, ergibt:1, zutaten:[], kategorie:KATEGORIEN.ROHSTOFFE, maschine:MASCHINEN.BERGBAU },
   // Fluide – werden gepumpt / kommen aus Raffinerie; im Rechner als Basis-Input behandelt
   { id:'rohoel',      name:'Rohöl',         nameEn:'Crude Oil',     zeit:0, ergibt:1, zutaten:[], kategorie:KATEGORIEN.ROHSTOFFE, maschine:MASCHINEN.BERGBAU },
   { id:'wasser',      name:'Wasser',         nameEn:'Water',         zeit:0, ergibt:1, zutaten:[], kategorie:KATEGORIEN.ROHSTOFFE, maschine:MASCHINEN.BERGBAU },
@@ -324,7 +325,7 @@ export const REZEPTE = [
     kategorie:KATEGORIEN.LOGISTIK, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'turbo-aufteiler',   name:'Turbo-Aufteiler',    nameEn:'Turbo Splitter',  // [SA]
-    zeit:2, ergibt:1, zutaten:[z('express-aufteiler',1), z('schmiermittel',20), z('wolframplatte',20)],
+    zeit:2, ergibt:1, zutaten:[z('express-aufteiler',1), z('wolframplatte',15), z('verarbeitungseinheit',2), z('schmiermittel',80)],
     kategorie:KATEGORIEN.SPACE_AGE, maschine:MASCHINEN.HOCHOFEN },
 
   // =========================================================================
@@ -373,23 +374,23 @@ export const REZEPTE = [
   // ASSEMBLER – Strompole & Energie
   // =========================================================================
   { id:'kleiner-strommast',  name:'Kleiner Strommast',  nameEn:'Small Electric Pole',
-    zeit:0.5, ergibt:2, zutaten:[z('kupferkabel',2), z('eisenstange',1)],
+    zeit:0.5, ergibt:2, zutaten:[z('holz',1), z('kupferkabel',2)],
     kategorie:KATEGORIEN.ENERGIE, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'mittlerer-strommast',name:'Mittlerer Strommast', nameEn:'Medium Electric Pole',
-    zeit:0.5, ergibt:1, zutaten:[z('kupferplatte',2), z('eisenstange',4), z('stahlplatte',2)],
+    zeit:0.5, ergibt:1, zutaten:[z('kupferkabel',2), z('eisenstange',4), z('stahlplatte',2)],
     kategorie:KATEGORIEN.ENERGIE, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'grosser-strommast',  name:'Großer Strommast',   nameEn:'Big Electric Pole',
-    zeit:0.5, ergibt:1, zutaten:[z('kupferplatte',5), z('eisenstange',5), z('stahlplatte',5)],
+    zeit:0.5, ergibt:1, zutaten:[z('kupferkabel',4), z('eisenstange',8), z('stahlplatte',5)],
     kategorie:KATEGORIEN.ENERGIE, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'unterstation',       name:'Unterstation',        nameEn:'Substation',
-    zeit:0.5, ergibt:1, zutaten:[z('roter-schaltkreis',5), z('kupferplatte',10), z('stahlplatte',5)],
+    zeit:0.5, ergibt:1, zutaten:[z('roter-schaltkreis',5), z('kupferkabel',6), z('stahlplatte',10)],
     kategorie:KATEGORIEN.ENERGIE, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'heizkessel',         name:'Heizkessel',          nameEn:'Boiler',
-    zeit:0.5, ergibt:1, zutaten:[z('eisenzahnrad',4), z('rohr',4), z('eisenplatte',4)],
+    zeit:0.5, ergibt:1, zutaten:[z('steinofen',1), z('rohr',4)],
     kategorie:KATEGORIEN.ENERGIE, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'dampfmaschine',      name:'Dampfmaschine',       nameEn:'Steam Engine',
@@ -424,7 +425,7 @@ export const REZEPTE = [
     kategorie:KATEGORIEN.MASCHINEN_BAU, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'stahlofen',          name:'Stahlofen',           nameEn:'Steel Furnace',
-    zeit:3, ergibt:1, zutaten:[z('eisenzahnrad',6), z('stahlplatte',10), z('steinziegel',10)],
+    zeit:3, ergibt:1, zutaten:[z('stahlplatte',6), z('steinziegel',10)],
     kategorie:KATEGORIEN.MASCHINEN_BAU, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'elektrischer-ofen',  name:'Elektrischer Ofen',   nameEn:'Electric Furnace',
@@ -483,7 +484,7 @@ export const REZEPTE = [
     kategorie:KATEGORIEN.MILITAER, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'sprengstoff',        name:'Sprengstoff',         nameEn:'Explosives',
-    zeit:5, ergibt:2, zutaten:[z('kohle',1), z('schwefel',1), z('wasser',10)],
+    zeit:4, ergibt:2, zutaten:[z('kohle',1), z('schwefel',1), z('wasser',10)],
     kategorie:KATEGORIEN.MILITAER, maschine:MASCHINEN.CHEMIEANLAGE },
 
   { id:'mauer',              name:'Mauer',               nameEn:'Wall',
@@ -491,7 +492,7 @@ export const REZEPTE = [
     kategorie:KATEGORIEN.MILITAER, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'landmine',           name:'Landmine',            nameEn:'Land Mine',
-    zeit:5, ergibt:4, zutaten:[z('stahlplatte',2), z('sprengstoff',2)],
+    zeit:5, ergibt:4, zutaten:[z('stahlplatte',1), z('sprengstoff',2)],
     kategorie:KATEGORIEN.MILITAER, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'geschuetzturm',      name:'Geschützturm',        nameEn:'Gun Turret',
@@ -499,7 +500,7 @@ export const REZEPTE = [
     kategorie:KATEGORIEN.MILITAER, maschine:MASCHINEN.ASSEMBLER },
 
   { id:'laserturm',          name:'Laserturm',           nameEn:'Laser Turret',
-    zeit:20, ergibt:1, zutaten:[z('roter-schaltkreis',12), z('batterie',6), z('gruener-schaltkreis',20), z('stahlplatte',20)],
+    zeit:20, ergibt:1, zutaten:[z('stahlplatte',20), z('gruener-schaltkreis',20), z('batterie',12)],
     kategorie:KATEGORIEN.MILITAER, maschine:MASCHINEN.ASSEMBLER },
 
   // =========================================================================

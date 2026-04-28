@@ -21,9 +21,9 @@ export const MODULE_TYPEN = [
   { id: 'effizienz-3',        name: 'Effizienzmodul 3',       nameEn: 'Efficiency Module 3',    speedBonus:  0,     produktivitaet: 0,    qualityBonus: 0,     energyBonus: -0.50  },
 
   // [SA] Qualitätsmodule – Space Age
-  { id: 'qualitaet-1',        name: 'Qualitätsmodul',         nameEn: 'Quality Module',         speedBonus: -0.05,  produktivitaet: 0,    qualityBonus: 0.010, energyBonus:  0.25  },
-  { id: 'qualitaet-2',        name: 'Qualitätsmodul 2',       nameEn: 'Quality Module 2',       speedBonus: -0.05,  produktivitaet: 0,    qualityBonus: 0.020, energyBonus:  0.35  },
-  { id: 'qualitaet-3',        name: 'Qualitätsmodul 3',       nameEn: 'Quality Module 3',       speedBonus: -0.05,  produktivitaet: 0,    qualityBonus: 0.025, energyBonus:  0.45  },
+  { id: 'qualitaet-1',        name: 'Qualitätsmodul',         nameEn: 'Quality Module',         speedBonus: -0.05,  produktivitaet: 0,    qualityBonus: 0.10,  energyBonus:  0.25  },
+  { id: 'qualitaet-2',        name: 'Qualitätsmodul 2',       nameEn: 'Quality Module 2',       speedBonus: -0.05,  produktivitaet: 0,    qualityBonus: 0.20,  energyBonus:  0.35  },
+  { id: 'qualitaet-3',        name: 'Qualitätsmodul 3',       nameEn: 'Quality Module 3',       speedBonus: -0.05,  produktivitaet: 0,    qualityBonus: 0.25,  energyBonus:  0.45  },
 ];
 
 export const MODULE_MAP = Object.fromEntries(MODULE_TYPEN.map(m => [m.id, m]));
@@ -37,10 +37,10 @@ export const MODUL_SLOTS = {
   [MASCHINEN.ZENTRIFUGE]:   2,
   [MASCHINEN.HOCHOFEN]:     4,
   [MASCHINEN.EM_ANLAGE]:    5,
-  [MASCHINEN.BIOKAMMER]:    5,
+  [MASCHINEN.BIOKAMMER]:    4,
   [MASCHINEN.KRYOGENANLAGE]:8,
   [MASCHINEN.RECYCLER]:     4,
   [MASCHINEN.BERGBAU]:      3,
   [MASCHINEN.RAUMPLATTFORM]:0,
-  [MASCHINEN.CRUSHER]:      0,
+  [MASCHINEN.CRUSHER]:      2,
 };

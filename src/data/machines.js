@@ -19,13 +19,13 @@ export const MASCHINEN_STROMVERBRAUCH = {
   [MASCHINEN.OELRAFFINERIE]: 420,  // Ölraffinerie
   [MASCHINEN.ZENTRIFUGE]:    350,  // Zentrifuge
   [MASCHINEN.BERGBAU]:        90,  // Elektrischer Bergbaubohrer
-  [MASCHINEN.HOCHOFEN]:      400,  // Hochofen [SA]
-  [MASCHINEN.EM_ANLAGE]:     160,  // Elektromagnetische Anlage [SA]
-  [MASCHINEN.BIOKAMMER]:     420,  // Biokammer [SA]
-  [MASCHINEN.KRYOGENANLAGE]: 400,  // Kryogenanlage [SA]
-  [MASCHINEN.RECYCLER]:      360,  // Recycler [SA]
+  [MASCHINEN.HOCHOFEN]:     2500,  // Hochofen [SA]
+  [MASCHINEN.EM_ANLAGE]:    2000,  // Elektromagnetische Anlage [SA]
+  [MASCHINEN.BIOKAMMER]:     500,  // Biokammer [SA]
+  [MASCHINEN.KRYOGENANLAGE]:1500,  // Kryogenanlage [SA]
+  [MASCHINEN.RECYCLER]:      180,  // Recycler [SA]
   [MASCHINEN.RAUMPLATTFORM]:   0,  // Raumplattform-Hub (kein Stromverbrauch)
-  [MASCHINEN.CRUSHER]:       800,  // Asteroid-Zerkleinerer [SA]
+  [MASCHINEN.CRUSHER]:       540,  // Asteroid-Zerkleinerer [SA]
 };
 
 // Welcher konkrete Maschinenname steckt hinter dem generischen Typ
