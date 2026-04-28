@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import ProduktAuswahl from './components/ProduktAuswahl';
 import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
@@ -6,24 +6,28 @@ import ForschungsBaum from './components/ForschungsBaum';
 import ModulAuswahl from './components/ModulAuswahl';
 import ModulOptimierung from './components/ModulOptimierung';
 import QualityAuswahl from './components/QualityAuswahl';
+import FabrikPlaner from './components/FabrikPlaner';
 import { ForschungProvider, useForschung } from './context/ForschungContext';
 import { SprachProvider, useSprache } from './context/SprachContext';
 import { ModulProvider, useModul } from './context/ModulContext';
 import { QualityProvider, useQuality } from './context/QualityContext';
-import { berechneProduktion } from './utils/berechnung';
+import { BerechnungProvider, useBerechnung } from './context/BerechnungContext';
+import { berechneProduktion, maschinenAnzahl } from './utils/berechnung';
 import { REZEPTE_MAP } from './data/recipes';
 import { FOERDERBAENDER, FOERDERBAENDER_MAP } from './data/belts';
 
 const TABS = {
   de: [
-    { id: 'rechner',    label: '⚙️ Rechner' },
-    { id: 'optimierung',label: '🎯 Modul-Optimierung' },
-    { id: 'forschung',  label: '🔬 Forschung' },
+    { id: 'rechner',      label: '⚙️ Rechner' },
+    { id: 'optimierung',  label: '🎯 Modul-Optimierung' },
+    { id: 'forschung',    label: '🔬 Forschung' },
+    { id: 'fabrikplaner', label: '🏗️ Fabrikplaner' },
   ],
   en: [
-    { id: 'rechner',    label: '⚙️ Calculator' },
-    { id: 'optimierung',label: '🎯 Module Optimizer' },
-    { id: 'forschung',  label: '🔬 Research' },
+    { id: 'rechner',      label: '⚙️ Calculator' },
+    { id: 'optimierung',  label: '🎯 Module Optimizer' },
+    { id: 'forschung',    label: '🔬 Research' },
+    { id: 'fabrikplaner', label: '🏗️ Factory Planner' },
   ],
 };
 
@@ -48,18 +52,23 @@ const TX = {
   },
 };
 
+// Full-height tabs that need no scroll wrapper
+const FULLSCREEN_TABS = new Set(['forschung', 'fabrikplaner']);
+
 function RechnerTab({ sprache }) {
-  const [items, setItems]               = useState([{ key: 1, id: '', mengeProMin: 60 }]);
-  const [bandId, setBandId]             = useState('keins');
-  const [zeigeModule, setZeigeModule]   = useState(false);
+  const [items, setItems]             = useState([{ key: 1, id: '', mengeProMin: 60 }]);
+  const [bandId, setBandId]           = useState('keins');
+  const [zeigeModule, setZeigeModule] = useState(false);
   const keyRef = useRef(2);
 
-  const { modulBoni }                          = useModul();
-  const { zielQualitaet, getQualityFaktorFuerMaschine } = useQuality();
+  const { boni }                                          = useForschung();
+  const { modulBoni }                                     = useModul();
+  const { zielQualitaet, maschinenQualitaet, getQualityFaktorFuerMaschine } = useQuality();
+  const { setMaschinenListe }                             = useBerechnung();
 
   const addItem    = () => setItems(prev => [...prev, { key: keyRef.current++, id: '', mengeProMin: 60 }]);
   const removeItem = key => setItems(prev => prev.length > 1 ? prev.filter(i => i.key !== key) : prev);
-  const updateId   = (key, id)    => setItems(prev => prev.map(i => i.key === key ? { ...i, id }           : i));
+  const updateId   = (key, id)    => setItems(prev => prev.map(i => i.key === key ? { ...i, id }            : i));
   const updateMenge= (key, menge) => setItems(prev => prev.map(i => i.key === key ? { ...i, mengeProMin: menge } : i));
   const resetAll   = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60 }]);
 
@@ -68,22 +77,17 @@ function RechnerTab({ sprache }) {
     if (!active.length) return { combined: {}, perItem: [] };
 
     const perItemList = active.map(item => {
-      // Quality factor: wie viele Crafting-Vorgänge pro gewünschtem Output-Item
       const rezept        = REZEPTE_MAP[item.id];
       const maschinenType = rezept?.maschine;
       const qualityFaktor = getQualityFaktorFuerMaschine(maschinenType);
-
-      // Produktionsberechnung mit Quality-skalierter Crafting-Rate
-      // (qualityFaktor > 1: mehr Crafting-Vorgänge nötig, Zutaten werden skaliert)
       const craftingRateSek = (item.mengeProMin / 60) * qualityFaktor;
       const produktion = berechneProduktion(item.id, craftingRateSek, {}, modulBoni);
-
       return {
-        key:          item.key,
-        id:           item.id,
-        mengeProMin:  item.mengeProMin,
+        key:         item.key,
+        id:          item.id,
+        mengeProMin: item.mengeProMin,
         qualityFaktor,
-        qualitaet:    zielQualitaet,
+        qualitaet:   zielQualitaet,
         produktion,
       };
     });
@@ -96,6 +100,33 @@ function RechnerTab({ sprache }) {
     }
     return { combined, perItem: perItemList };
   }, [items, modulBoni, zielQualitaet, getQualityFaktorFuerMaschine]);
+
+  // Publish calculated machine list to BerechnungContext for FabrikPlaner
+  const maschinenFuerPlaner = useMemo(() => {
+    if (!Object.keys(combined).length) return [];
+    const mQMulti = maschinenQualitaet?.maschinenMulti ?? 1;
+    return Object.entries(combined)
+      .filter(([id]) => {
+        const r = REZEPTE_MAP[id];
+        return r && r.zeit > 0;
+      })
+      .map(([id, rateProSek]) => {
+        const r = REZEPTE_MAP[id];
+        return {
+          id,
+          name:       r.name,
+          nameEn:     r.nameEn,
+          maschine:   r.maschine,
+          anzahl:     maschinenAnzahl(id, rateProSek, boni, modulBoni, mQMulti),
+          rateProMin: rateProSek * 60,
+          rateProSek,
+        };
+      });
+  }, [combined, boni, modulBoni, maschinenQualitaet]);
+
+  useEffect(() => {
+    setMaschinenListe(maschinenFuerPlaner);
+  }, [maschinenFuerPlaner, setMaschinenListe]);
 
   const aktiveMaschinen = useMemo(() => {
     const maschinen = new Set();
@@ -110,10 +141,6 @@ function RechnerTab({ sprache }) {
   const hasResult   = Object.keys(combined).length > 0;
   const hasSelected = items.some(i => i.id);
   const tx          = TX[sprache];
-
-  const bandLabel = sprache === 'de'
-    ? (foerderband?.id !== 'keins' ? foerderband?.name : 'Kein Band')
-    : (foerderband?.id !== 'keins' ? foerderband?.nameEn : 'No Belt');
 
   return (
     <div className="flex flex-col gap-8">
@@ -165,7 +192,6 @@ function RechnerTab({ sprache }) {
           ))}
         </div>
 
-        {/* Belt selector + Quality selector + Module toggle */}
         <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-700/50">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">{tx.foerderband}:</span>
@@ -182,7 +208,6 @@ function RechnerTab({ sprache }) {
             </select>
           </div>
 
-          {/* Quality-Auswahl */}
           <QualityAuswahl />
 
           {hasResult && aktiveMaschinen.size > 0 && (
@@ -233,6 +258,14 @@ function ForschungsTab({ sprache }) {
   );
 }
 
+function FabrikPlanerTab({ sprache }) {
+  return (
+    <section className="flex-1 min-h-0 bg-gray-900 rounded-xl border border-gray-800 overflow-hidden flex flex-col">
+      <FabrikPlaner sprache={sprache} />
+    </section>
+  );
+}
+
 function AppInner() {
   const [aktuellerTab, setAktuellerTab] = useState('rechner');
   const { erforscht } = useForschung();
@@ -241,6 +274,8 @@ function AppInner() {
   const tabs = TABS[sprache];
   const erforschtLabel = sprache === 'de' ? 'Technologien erforscht' : 'technologies researched';
   const subtitle = sprache === 'de' ? 'Factorio Produktionsrechner' : 'Factorio Production Calculator';
+
+  const isFullscreen = FULLSCREEN_TABS.has(aktuellerTab);
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white font-sans">
@@ -293,15 +328,17 @@ function AppInner() {
         </div>
       </header>
 
-      <main className={`flex-1 min-h-0 max-w-screen-xl mx-auto w-full px-4 ${
-        aktuellerTab === 'forschung'
-          ? 'overflow-hidden py-4 flex flex-col'
-          : 'overflow-auto py-8'
-      }`}
+      <main
+        className={`flex-1 min-h-0 max-w-screen-xl mx-auto w-full px-4 ${
+          isFullscreen
+            ? 'overflow-hidden py-4 flex flex-col'
+            : 'overflow-auto py-8'
+        }`}
       >
-        {aktuellerTab === 'rechner'    && <RechnerTab    sprache={sprache} />}
-        {aktuellerTab === 'optimierung'&& <ModulOptimierung />}
-        {aktuellerTab === 'forschung' && <ForschungsTab sprache={sprache} />}
+        {aktuellerTab === 'rechner'      && <RechnerTab      sprache={sprache} />}
+        {aktuellerTab === 'optimierung'  && <ModulOptimierung />}
+        {aktuellerTab === 'forschung'    && <ForschungsTab    sprache={sprache} />}
+        {aktuellerTab === 'fabrikplaner' && <FabrikPlanerTab  sprache={sprache} />}
       </main>
     </div>
   );
@@ -313,7 +350,9 @@ export default function App() {
       <ForschungProvider>
         <ModulProvider>
           <QualityProvider>
-            <AppInner />
+            <BerechnungProvider>
+              <AppInner />
+            </BerechnungProvider>
           </QualityProvider>
         </ModulProvider>
       </ForschungProvider>
