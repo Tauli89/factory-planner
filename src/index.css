@@ -1,1 +1,61 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+/* React Flow – Factorio dark theme overrides */
+.react-flow {
+  background: #030712;
+}
+
+.react-flow__controls {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  gap: 4px;
+}
+
+.react-flow__controls-button {
+  background: #1f2937;
+  border: 1px solid #374151;
+  fill: #9ca3af;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.react-flow__controls-button:hover {
+  background: #374151;
+  fill: #ffffff;
+}
+
+.react-flow__minimap {
+  background: #0f172a;
+  border: 1px solid #374151;
+  border-radius: 8px;
+}
+
+.react-flow__edge-path {
+  stroke-linecap: round;
+}
+
+/* Animated edges */
+.react-flow__edge.animated path {
+  stroke-dasharray: 5 3;
+}
+
+/* Node wrapper – remove default react-flow selection ring */
+.react-flow__node {
+  outline: none;
+  cursor: default;
+}
+
+.react-flow__node:focus {
+  outline: none;
+}
+
+/* Attribution */
+.react-flow__attribution {
+  background: transparent;
+  color: #374151;
+  font-size: 10px;
+}
