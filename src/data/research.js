@@ -797,6 +797,101 @@ export const LEVEL_GRUPPE_NICHT_ERSTE = new Set(
   LEVEL_GRUPPEN.flatMap(g => g.ids.slice(1))
 );
 
+// Kategorie-Zuordnung pro Tech-ID
+export const TECH_KATEGORIEN = {
+  // Produktion
+  'automation': 'produktion',
+  'automation-2': 'produktion',
+  'automation-3': 'produktion',
+  'steel-processing': 'produktion',
+  'oil-processing': 'produktion',
+  'advanced-oil-processing': 'produktion',
+  'coal-liquefaction': 'produktion',
+  'fluid-handling': 'produktion',
+  'plastics': 'produktion',
+  'sulfuric-acid': 'produktion',
+  'explosives': 'produktion',
+  'lubricant': 'produktion',
+  // Logistik
+  'logistics': 'logistik',
+  'logistics-2': 'logistik',
+  'logistics-3': 'logistik',
+  'inserters': 'logistik',
+  'fast-inserter': 'logistik',
+  'bulk-inserter': 'logistik',
+  'robotics': 'logistik',
+  'construction-robotics': 'logistik',
+  'logistic-robotics': 'logistik',
+  // Elektronik
+  'electronics': 'elektronik',
+  'advanced-electronics': 'elektronik',
+  'advanced-electronics-2': 'elektronik',
+  'speed-module': 'elektronik',
+  'speed-module-2': 'elektronik',
+  'speed-module-3': 'elektronik',
+  'efficiency-module': 'elektronik',
+  'efficiency-module-2': 'elektronik',
+  'efficiency-module-3': 'elektronik',
+  'productivity-module': 'elektronik',
+  'productivity-module-2': 'elektronik',
+  'productivity-module-3': 'elektronik',
+  // Energie
+  'electric-energy-distribution-1': 'energie',
+  'electric-energy-distribution-2': 'energie',
+  'solar-energy': 'energie',
+  'steam-power': 'energie',
+  'nuclear-power': 'energie',
+  'uranium-processing': 'energie',
+  'kovarex-enrichment': 'energie',
+  // Militär
+  'military': 'militaer',
+  'heavy-armor': 'militaer',
+  'military-science-pack': 'militaer',
+  // Bergbau
+  'mining-productivity-1': 'bergbau',
+  'mining-productivity-2': 'bergbau',
+  'mining-productivity-3': 'bergbau',
+  'mining-productivity-4': 'bergbau',
+  // Wissenschaft
+  'automation-science-pack': 'wissenschaft',
+  'logistic-science-pack': 'wissenschaft',
+  'chemical-science-pack': 'wissenschaft',
+  'production-science-pack': 'wissenschaft',
+  'utility-science-pack': 'wissenschaft',
+  'space-science-pack': 'wissenschaft',
+  // Rakete
+  'rocket-silo': 'rakete',
+  'space-platform': 'rakete',
+  // Space Age
+  'metallurgic-science-pack': 'space_age',
+  'foundry': 'space_age',
+  'tungsten-processing': 'space_age',
+  'electromagnetic-plant': 'space_age',
+  'superconductor': 'space_age',
+  'agricultural-science-pack': 'space_age',
+  'biochamber': 'space_age',
+  'bioflux': 'space_age',
+  'carbon-fiber': 'space_age',
+  'cryogenic-science-pack': 'space_age',
+  'cryogenic-plant': 'space_age',
+  'holmium-processing': 'space_age',
+  'quantum-processor': 'space_age',
+  'promethium-science-pack': 'space_age',
+};
+
+// Kategorie-Metadaten: Label, Farbe, Icon
+export const KATEGORIEN = {
+  produktion:   { label: { de: 'Produktion',   en: 'Production' },   color: '#f59e0b', icon: '⚙️' },
+  logistik:     { label: { de: 'Logistik',     en: 'Logistics' },    color: '#3b82f6', icon: '🚂' },
+  elektronik:   { label: { de: 'Elektronik',   en: 'Electronics' },  color: '#8b5cf6', icon: '💡' },
+  energie:      { label: { de: 'Energie',      en: 'Energy' },       color: '#eab308', icon: '⚡' },
+  militaer:     { label: { de: 'Militär',      en: 'Military' },     color: '#ef4444', icon: '⚔️' },
+  bergbau:      { label: { de: 'Bergbau',      en: 'Mining' },       color: '#78716c', icon: '⛏️' },
+  wissenschaft: { label: { de: 'Wissenschaft', en: 'Science' },      color: '#06b6d4', icon: '🔬' },
+  rakete:       { label: { de: 'Rakete',       en: 'Rocket' },       color: '#64748b', icon: '🚀' },
+  space_age:    { label: { de: 'Space Age',    en: 'Space Age' },    color: '#f97316', icon: '🌌' },
+};
+
 // Presets: Menge an Tech-IDs die als erforscht vorausgesetzt werden
 export const PRESETS = {
   fruehspiel: {

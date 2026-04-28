@@ -7,7 +7,16 @@ import {
   Position,
   BackgroundVariant,
 } from '@xyflow/react';
-import { TECH, PACK_META, PRESETS, LEVEL_GRUPPE_VON_TECH, LEVEL_GRUPPE_NICHT_ERSTE } from '../data/research';
+import {
+  TECH,
+  PACK_META,
+  PRESETS,
+  LEVEL_GRUPPE_VON_TECH,
+  LEVEL_GRUPPE_NICHT_ERSTE,
+  KATEGORIEN,
+  TECH_KATEGORIEN,
+} from '../data/research';
+import { TECH_ICON_URLS } from '../data/techIcons';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 
@@ -39,14 +48,12 @@ class BaumFehlerGrenze extends Component {
 // ── Layout constants ──────────────────────────────────────────────────────────
 const KARTE_B = 196;
 const KARTE_H = 92;
-const ABSTAND_X = 230; // horizontal: distance between tech tiers
-const ABSTAND_Y = 108; // vertical: distance between techs within a tier
+const ABSTAND_X = 230;
+const ABSTAND_Y = 108;
 
-// Only show one card per level-group (the "first" member)
 const TECH_LAYOUT = TECH.filter(t => !LEVEL_GRUPPE_NICHT_ERSTE.has(t.id));
 const TECH_LAYOUT_MAP = Object.fromEntries(TECH_LAYOUT.map(t => [t.id, t]));
 
-// Compute horizontal positions: tier → x axis, row within tier → y axis
 function berechnePositionen() {
   const nachfolger = {};
   for (const t of TECH_LAYOUT) nachfolger[t.id] = [];
@@ -87,14 +94,49 @@ function berechnePositionen() {
   const pos = {};
   for (const [e, ids] of Object.entries(ebenen)) {
     ids.forEach((id, i) => {
-      // Horizontal layout: tier → x, position in tier → y
       pos[id] = { x: parseInt(e) * ABSTAND_X, y: i * ABSTAND_Y };
     });
   }
   return pos;
 }
 
-// ── Shared sub-component ──────────────────────────────────────────────────────
+// ── Technologie-Icon mit Wiki-Bild und Fallback ───────────────────────────────
+function TechIcon({ id, istErforscht, depsFehlen, iconBg }) {
+  const [imgErr, setImgErr] = useState(false);
+  const url = TECH_ICON_URLS[id];
+  const fallback = istErforscht ? '✓' : depsFehlen ? '🔒' : '🔬';
+
+  return (
+    <div
+      className={`w-7 h-7 rounded flex-shrink-0 relative flex items-center justify-center overflow-visible ${iconBg}`}
+    >
+      {url && !imgErr ? (
+        <>
+          <img
+            src={url}
+            alt=""
+            className="w-5 h-5 object-contain"
+            style={{ imageRendering: 'pixelated' }}
+            onError={() => setImgErr(true)}
+          />
+          {istErforscht && (
+            <span className="absolute -top-1 -right-1 text-green-400 font-bold leading-none"
+              style={{ fontSize: 9, textShadow: '0 0 3px #000' }}>
+              ✓
+            </span>
+          )}
+          {!istErforscht && depsFehlen && (
+            <span className="absolute -top-1 -right-1 leading-none" style={{ fontSize: 9 }}>🔒</span>
+          )}
+        </>
+      ) : (
+        <span className="text-sm leading-none">{fallback}</span>
+      )}
+    </div>
+  );
+}
+
+// ── Wissenschaftspakete als farbige Punkte ────────────────────────────────────
 function PaketDots({ cost }) {
   const eintraege = Object.entries(cost).filter(([, v]) => v > 0);
   if (eintraege.length === 0) return <span className="text-gray-600" style={{ fontSize: 9 }}>—</span>;
@@ -116,23 +158,23 @@ function PaketDots({ cost }) {
   );
 }
 
-// ── Custom node: regular technology ──────────────────────────────────────────
+// ── Custom node: reguläre Technologie ────────────────────────────────────────
 const TechNode = memo(({ data }) => {
-  const { tech, istErforscht, depsFehlen, onToggle, sprache, dimmed } = data;
+  const { tech, istErforscht, depsFehlen, onToggle, sprache, dimmed, highlighted } = data;
 
   let cardClass = 'bg-gray-800 border-gray-600 hover:border-amber-500';
-  let iconClass = 'bg-gray-700';
+  let iconBg = 'bg-gray-700';
   let nameClass = 'text-white';
-  let glow = '';
+  let shadow = '';
 
   if (istErforscht) {
     cardClass = 'bg-green-950 border-green-500';
-    iconClass = 'bg-green-800';
+    iconBg = 'bg-green-800';
     nameClass = 'text-green-300';
-    glow = '0 0 14px rgba(34,197,94,0.35)';
+    shadow = '0 0 14px rgba(34,197,94,0.35)';
   } else if (depsFehlen) {
     cardClass = 'bg-gray-900 border-gray-700';
-    iconClass = 'bg-gray-800';
+    iconBg = 'bg-gray-800';
     nameClass = 'text-gray-500';
   }
 
@@ -144,16 +186,16 @@ const TechNode = memo(({ data }) => {
         height: KARTE_H,
         opacity: dimmed ? 0.15 : 1,
         transition: 'opacity 0.2s',
-        boxShadow: glow,
+        boxShadow: shadow || undefined,
+        outline: highlighted ? '2px solid #f59e0b' : 'none',
+        outlineOffset: '2px',
       }}
       className={`rounded-lg border-2 cursor-pointer select-none flex flex-col justify-between p-2 transition-colors ${cardClass}`}
       title={depsFehlen && !istErforscht ? 'Voraussetzungen fehlen – werden automatisch miterforscht' : ''}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <div className="flex items-start gap-1.5">
-        <div className={`w-7 h-7 rounded flex-shrink-0 flex items-center justify-center text-sm leading-none ${iconClass}`}>
-          {istErforscht ? '✓' : depsFehlen ? '🔒' : '🔬'}
-        </div>
+        <TechIcon id={tech.id} istErforscht={istErforscht} depsFehlen={depsFehlen} iconBg={iconBg} />
         <div className="flex-1 min-w-0">
           <div className={`font-semibold leading-tight ${nameClass}`} style={{ fontSize: 10.5 }}>
             {tech.name[sprache] ?? tech.name.de}
@@ -169,14 +211,15 @@ const TechNode = memo(({ data }) => {
   );
 });
 
-// ── Custom node: level group (e.g. Mining Productivity 1-4) ──────────────────
+// ── Custom node: Level-Gruppe (z. B. Bergbau-Produktivität 1–4) ──────────────
 const LevelNode = memo(({ data }) => {
-  const { gruppe, aktuellesLevel, onSetzeLevel, sprache, dimmed } = data;
+  const { gruppe, aktuellesLevel, onSetzeLevel, sprache, dimmed, highlighted, techId } = data;
   const maxLevel = gruppe.ids.length;
   const name = gruppe.label[sprache] ?? gruppe.label.de;
 
   const aktiv = aktuellesLevel > 0;
-  const glow = aktiv ? '0 0 14px rgba(34,197,94,0.35)' : '';
+  const shadow = aktiv ? '0 0 14px rgba(34,197,94,0.35)' : '';
+  const iconBg = aktiv ? 'bg-green-800' : 'bg-gray-700';
 
   return (
     <div
@@ -185,7 +228,9 @@ const LevelNode = memo(({ data }) => {
         height: KARTE_H,
         opacity: dimmed ? 0.15 : 1,
         transition: 'opacity 0.2s',
-        boxShadow: glow,
+        boxShadow: shadow || undefined,
+        outline: highlighted ? '2px solid #f59e0b' : 'none',
+        outlineOffset: '2px',
       }}
       className={`rounded-lg border-2 select-none flex flex-col justify-between p-2 transition-colors ${
         aktiv ? 'bg-green-950 border-green-500' : 'bg-gray-800 border-gray-600'
@@ -193,9 +238,7 @@ const LevelNode = memo(({ data }) => {
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <div className="flex items-start gap-1.5">
-        <div className={`w-7 h-7 rounded flex-shrink-0 flex items-center justify-center text-sm leading-none ${aktiv ? 'bg-green-800' : 'bg-gray-700'}`}>
-          ⚗️
-        </div>
+        <TechIcon id={techId} istErforscht={aktiv} depsFehlen={false} iconBg={iconBg} />
         <div className="flex-1 min-w-0">
           <div className={`font-semibold leading-tight ${aktiv ? 'text-green-300' : 'text-white'}`} style={{ fontSize: 10.5 }}>
             {name}
@@ -230,7 +273,6 @@ const LevelNode = memo(({ data }) => {
   );
 });
 
-// Invisible handles – react-flow needs them for edge routing but we don't show dots
 const HANDLE_STYLE = {
   background: 'transparent',
   border: 'none',
@@ -238,32 +280,42 @@ const HANDLE_STYLE = {
   height: 0,
 };
 
-// Must be defined outside the component so react-flow doesn't recreate node types
 const nodeTypes = { techNode: TechNode, levelNode: LevelNode };
 
-// Pre-compute static positions once (pure function, no state)
 const POSITIONEN = berechnePositionen();
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Hauptkomponente ───────────────────────────────────────────────────────────
 export default function ForschungsBaum() {
   const { erforscht, toggle, setzePreset, allesZuruecksetzen, setzeLevel, boni } = useForschung();
   const { sprache } = useSprache();
   const [suchbegriff, setSuchbegriff] = useState('');
+  const [aktivKategorie, setAktivKategorie] = useState(null);
 
   const handleToggle = useCallback((id) => toggle(id), [toggle]);
   const handleSetzeLevel = useCallback((ids, level) => setzeLevel(ids, level), [setzeLevel]);
 
+  const sucheAktiv = suchbegriff.trim() !== '';
+
+  // Gefilterte Techs: Schnittmenge aus Suche UND Kategoriefilter
   const gefilterteTech = useMemo(() => {
-    if (!suchbegriff.trim()) return null;
+    const hatSuche = suchbegriff.trim() !== '';
+    const hatKategorie = aktivKategorie !== null;
+    if (!hatSuche && !hatKategorie) return null;
+
     const s = suchbegriff.toLowerCase();
     return new Set(
       TECH_LAYOUT
-        .filter(t => t.name.de?.toLowerCase().includes(s) || t.name.en?.toLowerCase().includes(s))
+        .filter(t => {
+          const matchesSuche = !hatSuche ||
+            t.name.de?.toLowerCase().includes(s) ||
+            t.name.en?.toLowerCase().includes(s);
+          const matchesKat = !hatKategorie || TECH_KATEGORIEN[t.id] === aktivKategorie;
+          return matchesSuche && matchesKat;
+        })
         .map(t => t.id)
     );
-  }, [suchbegriff]);
+  }, [suchbegriff, aktivKategorie]);
 
-  // Build react-flow nodes + edges from current research state
   const { nodes, edges } = useMemo(() => {
     const nodes = [];
     const edges = [];
@@ -273,10 +325,10 @@ export default function ForschungsBaum() {
       if (!pos) continue;
 
       const dimmed = gefilterteTech !== null && !gefilterteTech.has(tech.id);
+      const highlighted = sucheAktiv && gefilterteTech !== null && gefilterteTech.has(tech.id);
       const gruppenInfo = LEVEL_GRUPPE_VON_TECH[tech.id];
 
       if (gruppenInfo && gruppenInfo.index === 0) {
-        // Level-counter card (e.g. Mining Productivity)
         const gruppe = gruppenInfo.gruppe;
         let aktuellesLevel = 0;
         for (const id of gruppe.ids) {
@@ -287,7 +339,7 @@ export default function ForschungsBaum() {
           id: tech.id,
           type: 'levelNode',
           position: pos,
-          data: { gruppe, aktuellesLevel, onSetzeLevel: handleSetzeLevel, sprache, dimmed },
+          data: { gruppe, aktuellesLevel, onSetzeLevel: handleSetzeLevel, sprache, dimmed, highlighted, techId: tech.id },
         });
       } else {
         const istErforscht = erforscht.has(tech.id);
@@ -296,11 +348,10 @@ export default function ForschungsBaum() {
           id: tech.id,
           type: 'techNode',
           position: pos,
-          data: { tech, istErforscht, depsFehlen, onToggle: handleToggle, sprache, dimmed },
+          data: { tech, istErforscht, depsFehlen, onToggle: handleToggle, sprache, dimmed, highlighted },
         });
       }
 
-      // Edges from prerequisites → this tech
       for (const preId of tech.prerequisites) {
         if (!TECH_LAYOUT_MAP[preId]) continue;
         const beideErforscht = erforscht.has(preId) && erforscht.has(tech.id);
@@ -326,7 +377,7 @@ export default function ForschungsBaum() {
     }
 
     return { nodes, edges };
-  }, [erforscht, sprache, gefilterteTech, handleToggle, handleSetzeLevel]);
+  }, [erforscht, sprache, gefilterteTech, sucheAktiv, handleToggle, handleSetzeLevel]);
 
   const anzahlErforscht = erforscht.size;
   const anzahlGesamt = TECH.length;
@@ -334,13 +385,15 @@ export default function ForschungsBaum() {
   const suchPlaceholder = sprache === 'de' ? 'Technologie suchen…' : 'Search technology…';
   const allesReset = sprache === 'de' ? 'Alles zurücksetzen' : 'Reset all';
   const erforschtLabel = sprache === 'de' ? 'erforscht' : 'researched';
+  const alleLabel = sprache === 'de' ? 'Alle' : 'All';
+
+  const treffer = gefilterteTech?.size ?? null;
 
   return (
-    <div className="flex flex-col gap-3 h-full">
+    <div className="flex flex-col gap-2 h-full">
 
-      {/* ── Toolbar ── */}
+      {/* ── Toolbar Zeile 1: Presets + Suche + Stats ── */}
       <div className="flex-shrink-0 flex flex-wrap gap-2 items-center">
-        {/* Preset buttons */}
         <div className="flex gap-1.5 flex-wrap">
           {Object.entries(PRESETS).map(([key, preset]) => (
             <button
@@ -359,14 +412,31 @@ export default function ForschungsBaum() {
           </button>
         </div>
 
-        {/* Search */}
-        <input
-          type="text"
-          placeholder={suchPlaceholder}
-          value={suchbegriff}
-          onChange={e => setSuchbegriff(e.target.value)}
-          className="bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 w-48"
-        />
+        {/* Suchfeld mit Löschen-Button */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder={suchPlaceholder}
+            value={suchbegriff}
+            onChange={e => setSuchbegriff(e.target.value)}
+            className="bg-gray-800 border border-gray-600 text-white rounded-lg pl-3 pr-7 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 w-48"
+          />
+          {suchbegriff && (
+            <button
+              onClick={() => setSuchbegriff('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs leading-none"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Treffer-Anzeige */}
+        {treffer !== null && (
+          <span className="text-xs text-amber-400">
+            {treffer} {sprache === 'de' ? 'Treffer' : 'matches'}
+          </span>
+        )}
 
         {/* Stats */}
         <div className="ml-auto flex items-center gap-3 text-xs text-gray-400">
@@ -387,7 +457,39 @@ export default function ForschungsBaum() {
         </div>
       </div>
 
-      {/* ── Flow canvas ── */}
+      {/* ── Toolbar Zeile 2: Kategorien-Filter ── */}
+      <div className="flex-shrink-0 flex flex-wrap gap-1.5 items-center">
+        <button
+          onClick={() => setAktivKategorie(null)}
+          className={`px-2.5 py-1 rounded text-xs font-medium transition-colors border ${
+            aktivKategorie === null
+              ? 'bg-gray-600 text-white border-gray-400'
+              : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-gray-200'
+          }`}
+        >
+          {alleLabel}
+        </button>
+        {Object.entries(KATEGORIEN).map(([key, kat]) => {
+          const aktiv = aktivKategorie === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setAktivKategorie(aktiv ? null : key)}
+              className="px-2.5 py-1 rounded text-xs font-medium transition-all border"
+              style={aktiv
+                ? { background: kat.color, borderColor: kat.color, color: '#fff' }
+                : { background: 'transparent', borderColor: '#374151', color: '#9ca3af' }
+              }
+              onMouseEnter={e => { if (!aktiv) e.currentTarget.style.borderColor = kat.color; }}
+              onMouseLeave={e => { if (!aktiv) e.currentTarget.style.borderColor = '#374151'; }}
+            >
+              {kat.icon} {kat.label[sprache]}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Flow-Canvas ── */}
       <BaumFehlerGrenze>
         <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden">
           <ReactFlow
@@ -414,7 +516,7 @@ export default function ForschungsBaum() {
         </div>
       </BaumFehlerGrenze>
 
-      {/* ── Legend ── */}
+      {/* ── Legende ── */}
       <div className="flex-shrink-0 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded border-2 border-green-500 bg-green-950 inline-block" />
@@ -427,6 +529,10 @@ export default function ForschungsBaum() {
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded border-2 border-gray-700 bg-gray-900 opacity-50 inline-block" />
           {sprache === 'de' ? 'Gesperrt' : 'Locked'}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5 bg-amber-400 inline-block rounded" style={{ outline: '1px solid #f59e0b' }} />
+          {sprache === 'de' ? 'Sucherfolgnis' : 'Search match'}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-6 h-0.5 bg-green-500 inline-block rounded" />
