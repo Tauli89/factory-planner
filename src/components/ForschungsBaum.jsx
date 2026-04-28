@@ -1,6 +1,7 @@
 import { Component, useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { TECH, TECH_MAP, PACK_META, PRESETS } from '../data/research';
+import { TECH, TECH_MAP, PACK_META, PRESETS, LEVEL_GRUPPEN, LEVEL_GRUPPE_VON_TECH, LEVEL_GRUPPE_NICHT_ERSTE } from '../data/research';
 import { useForschung } from '../context/ForschungContext';
+import { useSprache } from '../context/SprachContext';
 
 class BaumFehlerGrenze extends Component {
   state = { fehler: null };
@@ -27,29 +28,27 @@ class BaumFehlerGrenze extends Component {
   }
 }
 
-// Breite/Höhe einer Tech-Karte im Baum
 const KARTE_B = 180;
 const KARTE_H = 90;
-const ABSTAND_X = 210; // horizontaler Abstand zwischen Knoten derselben Tiefe
-const ABSTAND_Y = 140; // vertikaler Abstand zwischen Tiefen-Ebenen
+const ABSTAND_X = 210;
+const ABSTAND_Y = 140;
 
-// Berechnet x/y-Positionen vertikal: Tiefe auf der Y-Achse, Knoten nebeneinander auf der X-Achse
+// Techs die für das Layout verwendet werden (nicht-erste Gruppen-Mitglieder werden ausgeblendet)
+const TECH_LAYOUT = TECH.filter(t => !LEVEL_GRUPPE_NICHT_ERSTE.has(t.id));
+const TECH_LAYOUT_MAP = Object.fromEntries(TECH_LAYOUT.map(t => [t.id, t]));
+
 function berechnePositionen() {
   const nachfolger = {};
-  for (const t of TECH) {
-    nachfolger[t.id] = [];
-  }
-  for (const t of TECH) {
+  for (const t of TECH_LAYOUT) nachfolger[t.id] = [];
+
+  for (const t of TECH_LAYOUT) {
     for (const pre of t.prerequisites) {
-      if (TECH_MAP[pre]) {
-        nachfolger[pre].push(t.id);
-      }
+      if (TECH_LAYOUT_MAP[pre]) nachfolger[pre].push(t.id);
     }
   }
 
-  // Kahn-Algorithmus: Tiefe = maximale Voraussetzungs-Tiefe
   const tiefe = {};
-  const queue = TECH.filter(t => t.prerequisites.length === 0).map(t => t.id);
+  const queue = TECH_LAYOUT.filter(t => t.prerequisites.every(p => !TECH_LAYOUT_MAP[p])).map(t => t.id);
   for (const id of queue) tiefe[id] = 0;
 
   const verarbeitet = new Set();
@@ -67,32 +66,25 @@ function berechnePositionen() {
     q = next;
   }
 
-  // Gruppiere nach Tiefe (= Y-Ebene)
   const ebenenGruppen = {};
-  for (const t of TECH) {
+  for (const t of TECH_LAYOUT) {
     const e = tiefe[t.id] ?? 0;
     if (!ebenenGruppen[e]) ebenenGruppen[e] = [];
     ebenenGruppen[e].push(t.id);
   }
 
-  // Positionen: y = Tiefe * ABSTAND_Y, x = Position innerhalb der Ebene * ABSTAND_X
   const pos = {};
   for (const [e, ids] of Object.entries(ebenenGruppen)) {
     ids.forEach((id, i) => {
-      pos[id] = {
-        x: i * ABSTAND_X + 20,
-        y: parseInt(e) * ABSTAND_Y + 20,
-      };
+      pos[id] = { x: i * ABSTAND_X + 20, y: parseInt(e) * ABSTAND_Y + 20 };
     });
   }
 
   const maxX = Math.max(...Object.values(pos).map(p => p.x)) + KARTE_B + 40;
   const maxY = Math.max(...Object.values(pos).map(p => p.y)) + KARTE_H + 40;
-
   return { pos, breite: maxX, hoehe: maxY };
 }
 
-// Pakete als farbige Kreise
 function PaketDots({ cost }) {
   const eintraege = Object.entries(cost).filter(([, v]) => v > 0);
   if (eintraege.length === 0) return <span className="text-gray-600 text-xs">—</span>;
@@ -101,11 +93,7 @@ function PaketDots({ cost }) {
       {eintraege.map(([pack, count]) => {
         const meta = PACK_META[pack];
         return (
-          <span
-            key={pack}
-            title={`${meta?.label ?? pack}: ${count}`}
-            className="inline-flex items-center gap-0.5 text-xs"
-          >
+          <span key={pack} title={`${meta?.label ?? pack}: ${count}`} className="inline-flex items-center gap-0.5 text-xs">
             <span
               className="inline-block w-2.5 h-2.5 rounded-full border border-black/20 flex-shrink-0"
               style={{ background: meta?.color ?? '#888' }}
@@ -118,8 +106,8 @@ function PaketDots({ cost }) {
   );
 }
 
-function TechKarte({ tech, pos, istErforscht, onToggle, scale }) {
-  const { erforscht, alleVoraussetzungen } = useForschung();
+function TechKarte({ tech, pos, istErforscht, onToggle, sprache }) {
+  const { erforscht } = useForschung();
   const depsFehlen = tech.prerequisites.some(p => !erforscht.has(p));
 
   const hintergrund = istErforscht
@@ -129,44 +117,73 @@ function TechKarte({ tech, pos, istErforscht, onToggle, scale }) {
     : 'bg-gray-800 border-gray-600 hover:border-amber-500';
 
   return (
-    <foreignObject
-      x={pos.x}
-      y={pos.y}
-      width={KARTE_B}
-      height={KARTE_H}
-      style={{ overflow: 'visible' }}
-    >
+    <foreignObject x={pos.x} y={pos.y} width={KARTE_B} height={KARTE_H} style={{ overflow: 'visible' }}>
       <div
         xmlns="http://www.w3.org/1999/xhtml"
-        className={`
-          w-full h-full rounded-lg border-2 cursor-pointer select-none
-          flex flex-col justify-between p-2 transition-colors
-          ${hintergrund}
-        `}
+        className={`w-full h-full rounded-lg border-2 cursor-pointer select-none flex flex-col justify-between p-2 transition-colors ${hintergrund}`}
         onClick={() => onToggle(tech.id)}
-        title={depsFehlen && !istErforscht ? 'Voraussetzungen fehlen – werden automatisch miterforscht' : ''}
+        title={depsFehlen && !istErforscht ? (sprache === 'de' ? 'Voraussetzungen fehlen – werden automatisch miterforscht' : 'Prerequisites missing – will be researched automatically') : ''}
       >
         <div className="flex items-start gap-1.5">
-          {/* Icon-Platzhalter */}
-          <div className={`
-            w-8 h-8 rounded flex-shrink-0 flex items-center justify-center text-base
-            ${istErforscht ? 'bg-green-700' : 'bg-gray-700'}
-          `}>
+          <div className={`w-8 h-8 rounded flex-shrink-0 flex items-center justify-center text-base ${istErforscht ? 'bg-green-700' : 'bg-gray-700'}`}>
             🔬
           </div>
           <div className="flex-1 min-w-0">
             <div className={`text-xs font-semibold leading-tight truncate ${istErforscht ? 'text-green-300' : 'text-white'}`}>
-              {tech.name.de}
-            </div>
-            <div className="text-gray-500 leading-tight truncate" style={{ fontSize: '9px' }}>
-              {tech.name.en}
+              {tech.name[sprache] ?? tech.name.de}
             </div>
           </div>
-          {istErforscht && (
-            <span className="text-green-400 text-sm flex-shrink-0">✓</span>
-          )}
+          {istErforscht && <span className="text-green-400 text-sm flex-shrink-0">✓</span>}
         </div>
         <PaketDots cost={tech.cost} />
+      </div>
+    </foreignObject>
+  );
+}
+
+function LevelKarte({ gruppe, pos, aktuellesLevel, onSetzeLevel, sprache }) {
+  const maxLevel = gruppe.ids.length;
+  const name = gruppe.label[sprache] ?? gruppe.label.de;
+
+  const hintergrund = aktuellesLevel > 0
+    ? 'bg-green-900 border-green-500'
+    : 'bg-gray-800 border-gray-600';
+
+  return (
+    <foreignObject x={pos.x} y={pos.y} width={KARTE_B} height={KARTE_H} style={{ overflow: 'visible' }}>
+      <div
+        xmlns="http://www.w3.org/1999/xhtml"
+        className={`w-full h-full rounded-lg border-2 select-none flex flex-col justify-between p-2 transition-colors ${hintergrund}`}
+        onMouseDown={e => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-1.5">
+          <div className={`w-8 h-8 rounded flex-shrink-0 flex items-center justify-center text-base ${aktuellesLevel > 0 ? 'bg-green-700' : 'bg-gray-700'}`}>
+            🔬
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className={`text-xs font-semibold leading-tight truncate ${aktuellesLevel > 0 ? 'text-green-300' : 'text-white'}`}>
+              {name}
+            </div>
+            <div className="text-gray-500" style={{ fontSize: '9px' }}>
+              {sprache === 'de' ? `Stufe ${aktuellesLevel} / ${maxLevel}` : `Level ${aktuellesLevel} / ${maxLevel}`}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 justify-end">
+          <button
+            onClick={e => { e.stopPropagation(); onSetzeLevel(Math.max(0, aktuellesLevel - 1)); }}
+            disabled={aktuellesLevel === 0}
+            className="w-6 h-6 rounded bg-gray-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-bold leading-none"
+          >−</button>
+          <span className={`text-xs font-bold w-8 text-center ${aktuellesLevel > 0 ? 'text-green-300' : 'text-gray-400'}`}>
+            {aktuellesLevel}/{maxLevel}
+          </span>
+          <button
+            onClick={e => { e.stopPropagation(); onSetzeLevel(Math.min(maxLevel, aktuellesLevel + 1)); }}
+            disabled={aktuellesLevel === maxLevel}
+            className="w-6 h-6 rounded bg-gray-600 hover:bg-green-700 disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-bold leading-none"
+          >+</button>
+        </div>
       </div>
     </foreignObject>
   );
@@ -176,14 +193,13 @@ function Verbindungslinien({ pos }) {
   const { erforscht } = useForschung();
   const linien = [];
 
-  for (const tech of TECH) {
+  for (const tech of TECH_LAYOUT) {
     for (const preId of tech.prerequisites) {
       if (!pos[preId] || !pos[tech.id]) continue;
       const von = pos[preId];
       const zu = pos[tech.id];
       const istAktiv = erforscht.has(preId) && erforscht.has(tech.id);
 
-      // Vertikale Verbindung: Unterkante Quelle → Oberkante Ziel
       const x1 = von.x + KARTE_B / 2;
       const y1 = von.y + KARTE_H;
       const x2 = zu.x + KARTE_B / 2;
@@ -207,12 +223,12 @@ function Verbindungslinien({ pos }) {
 }
 
 export default function ForschungsBaum() {
-  const { erforscht, toggle, setzePreset, allesZuruecksetzen, boni } = useForschung();
+  const { erforscht, toggle, setzePreset, allesZuruecksetzen, setzeLevel, boni } = useForschung();
+  const { sprache } = useSprache();
   const [suchbegriff, setSuchbegriff] = useState('');
 
   const { pos, breite, hoehe } = useMemo(berechnePositionen, []);
 
-  // Pan & Zoom
   const containerRef = useRef(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const dragging = useRef(null);
@@ -224,10 +240,7 @@ export default function ForschungsBaum() {
     const onWheel = (e) => {
       e.preventDefault();
       const faktor = e.deltaY < 0 ? 1.1 : 0.9;
-      setTransform(t => ({
-        ...t,
-        scale: Math.min(2, Math.max(0.3, t.scale * faktor)),
-      }));
+      setTransform(t => ({ ...t, scale: Math.min(2, Math.max(0.3, t.scale * faktor)) }));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -257,20 +270,22 @@ export default function ForschungsBaum() {
   const gefilterteTech = useMemo(() => {
     if (!suchbegriff) return null;
     const s = suchbegriff.toLowerCase();
-    return new Set(TECH.filter(t =>
-      t.name.de.toLowerCase().includes(s) || t.name.en.toLowerCase().includes(s)
+    return new Set(TECH_LAYOUT.filter(t =>
+      (t.name.de?.toLowerCase().includes(s) || t.name.en?.toLowerCase().includes(s))
     ).map(t => t.id));
   }, [suchbegriff]);
 
   const anzahlErforscht = erforscht.size;
   const anzahlGesamt = TECH.length;
 
+  const suchPlaceholder = sprache === 'de' ? 'Technologie suchen…' : 'Search technology…';
+  const allesReset = sprache === 'de' ? 'Alles zurücksetzen' : 'Reset all';
+  const erforschtLabel = sprache === 'de' ? 'erforscht' : 'researched';
+
   return (
     <div className="flex flex-col gap-4 h-full">
-
       {/* Toolbar */}
       <div className="flex flex-wrap gap-3 items-center">
-        {/* Presets */}
         <div className="flex gap-2 flex-wrap">
           {Object.entries(PRESETS).map(([key, preset]) => (
             <button
@@ -285,47 +300,31 @@ export default function ForschungsBaum() {
             onClick={allesZuruecksetzen}
             className="px-3 py-1.5 rounded-lg bg-red-900/60 hover:bg-red-700 text-red-300 text-xs font-medium transition-colors"
           >
-            Alles zurücksetzen
+            {allesReset}
           </button>
         </div>
 
-        {/* Suche */}
         <input
           type="text"
-          placeholder="Technologie suchen…"
+          placeholder={suchPlaceholder}
           value={suchbegriff}
           onChange={e => setSuchbegriff(e.target.value)}
           className="bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 w-52"
         />
 
-        {/* Zoom */}
         <div className="flex gap-1">
-          <button
-            onClick={() => setTransform(t => ({ ...t, scale: Math.min(2, t.scale * 1.2) }))}
-            className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm"
-          >+</button>
-          <button
-            onClick={() => setTransform({ x: 0, y: 0, scale: 1 })}
-            className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-xs"
-          >Reset</button>
-          <button
-            onClick={() => setTransform(t => ({ ...t, scale: Math.max(0.3, t.scale * 0.8) }))}
-            className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm"
-          >−</button>
+          <button onClick={() => setTransform(t => ({ ...t, scale: Math.min(2, t.scale * 1.2) }))} className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm">+</button>
+          <button onClick={() => setTransform({ x: 0, y: 0, scale: 1 })} className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-xs">Reset</button>
+          <button onClick={() => setTransform(t => ({ ...t, scale: Math.max(0.3, t.scale * 0.8) }))} className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm">−</button>
         </div>
 
-        {/* Stats */}
         <div className="ml-auto text-sm text-gray-400 flex gap-4">
           <span>
             <span className="text-green-400 font-bold">{anzahlErforscht}</span>
-            <span className="text-gray-600"> / {anzahlGesamt} erforscht</span>
+            <span className="text-gray-600"> / {anzahlGesamt} {erforschtLabel}</span>
           </span>
-          {boni.miningBonus > 0 && (
-            <span className="text-amber-300">⛏ +{(boni.miningBonus * 100).toFixed(0)}%</span>
-          )}
-          {boni.assemblerBonus > 0 && (
-            <span className="text-blue-300">⚙ +{(boni.assemblerBonus * 100).toFixed(0)}%</span>
-          )}
+          {boni.miningBonus > 0 && <span className="text-amber-300">⛏ +{(boni.miningBonus * 100).toFixed(0)}%</span>}
+          {boni.assemblerBonus > 0 && <span className="text-blue-300">⚙ +{(boni.assemblerBonus * 100).toFixed(0)}%</span>}
         </div>
       </div>
 
@@ -340,30 +339,46 @@ export default function ForschungsBaum() {
           onMouseUp={onMouseUp}
           onMouseLeave={onMouseUp}
         >
-          <svg
-            width="100%"
-            height="100%"
-            style={{ display: 'block' }}
-          >
+          <svg width="100%" height="100%" style={{ display: 'block' }}>
             <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
               <Verbindungslinien pos={pos} />
-              {TECH.map(tech => {
+              {TECH_LAYOUT.map(tech => {
                 const p = pos[tech.id];
                 if (!p) return null;
                 const istHervorgehoben = gefilterteTech?.has(tech.id);
                 const istAusgeblendet = gefilterteTech && !istHervorgehoben;
+
+                const gruppenInfo = LEVEL_GRUPPE_VON_TECH[tech.id];
+
+                if (gruppenInfo && gruppenInfo.index === 0) {
+                  // Level-Counter-Karte für erste Gruppen-Mitglieder
+                  const gruppe = gruppenInfo.gruppe;
+                  let aktuellesLevel = 0;
+                  for (const id of gruppe.ids) {
+                    if (erforscht.has(id)) aktuellesLevel++;
+                    else break;
+                  }
+                  return (
+                    <g key={tech.id} opacity={istAusgeblendet ? 0.2 : 1} style={{ transition: 'opacity 0.2s' }}>
+                      <LevelKarte
+                        gruppe={gruppe}
+                        pos={p}
+                        aktuellesLevel={aktuellesLevel}
+                        onSetzeLevel={(level) => setzeLevel(gruppe.ids, level)}
+                        sprache={sprache}
+                      />
+                    </g>
+                  );
+                }
+
                 return (
-                  <g
-                    key={tech.id}
-                    opacity={istAusgeblendet ? 0.2 : 1}
-                    style={{ transition: 'opacity 0.2s' }}
-                  >
+                  <g key={tech.id} opacity={istAusgeblendet ? 0.2 : 1} style={{ transition: 'opacity 0.2s' }}>
                     <TechKarte
                       tech={tech}
                       pos={p}
                       istErforscht={erforscht.has(tech.id)}
                       onToggle={handleToggle}
-                      scale={transform.scale}
+                      sprache={sprache}
                     />
                   </g>
                 );
@@ -377,17 +392,19 @@ export default function ForschungsBaum() {
       <div className="flex flex-wrap gap-3 text-xs text-gray-500">
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded border-2 border-green-500 bg-green-900 inline-block" />
-          Erforscht
+          {sprache === 'de' ? 'Erforscht' : 'Researched'}
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded border-2 border-gray-600 bg-gray-800 inline-block" />
-          Verfügbar (klicken zum Erforschen)
+          {sprache === 'de' ? 'Verfügbar (klicken zum Erforschen)' : 'Available (click to research)'}
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded border-2 border-gray-700 bg-gray-900 opacity-60 inline-block" />
-          Gesperrt (Voraussetzungen fehlen)
+          {sprache === 'de' ? 'Gesperrt (Voraussetzungen fehlen)' : 'Locked (prerequisites missing)'}
         </span>
-        <span className="text-gray-600 ml-2">Scrollen = Zoom · Ziehen = Bewegen</span>
+        <span className="text-gray-600 ml-2">
+          {sprache === 'de' ? 'Scrollen = Zoom · Ziehen = Bewegen' : 'Scroll = Zoom · Drag = Pan'}
+        </span>
       </div>
     </div>
   );

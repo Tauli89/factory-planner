@@ -32,6 +32,22 @@ export const MASCHINEN_LABEL = {
   [MASCHINEN.CRUSHER]:      'Asteroid-Zerkleinerer',
 };
 
+export const MASCHINEN_LABEL_EN = {
+  [MASCHINEN.BERGBAU]:      'Mining',
+  [MASCHINEN.SCHMELZOFEN]:  'Furnace',
+  [MASCHINEN.ASSEMBLER]:    'Assembler',
+  [MASCHINEN.CHEMIEANLAGE]: 'Chemical Plant',
+  [MASCHINEN.OELRAFFINERIE]:'Oil Refinery',
+  [MASCHINEN.ZENTRIFUGE]:   'Centrifuge',
+  [MASCHINEN.HOCHOFEN]:     'Foundry',
+  [MASCHINEN.EM_ANLAGE]:    'EM Plant',
+  [MASCHINEN.BIOKAMMER]:    'Biochamber',
+  [MASCHINEN.KRYOGENANLAGE]:'Cryogenic Plant',
+  [MASCHINEN.RECYCLER]:     'Recycler',
+  [MASCHINEN.RAUMPLATTFORM]:'Space Platform',
+  [MASCHINEN.CRUSHER]:      'Crusher',
+};
+
 /**
  * Berechnet rekursiv alle benötigten Produktionsraten.
  * Rohstoffe (zeit === 0) werden im Akkumulator als Basis-Inputs gesammelt.

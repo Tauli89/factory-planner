@@ -1,8 +1,14 @@
+import { useSprache } from '../context/SprachContext';
+
 export default function MengenEingabe({ wert, onChange }) {
+  const { sprache } = useSprache();
+  const label = sprache === 'de' ? 'Ziel-Ausbringung' : 'Target output';
+  const unit  = sprache === 'de' ? '(Stück / Minute)' : '(items / minute)';
+
   return (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-semibold text-amber-300">
-        Ziel-Ausbringung <span className="font-normal text-gray-400">(Stück / Minute)</span>
+        {label} <span className="font-normal text-gray-400">{unit}</span>
       </label>
       <input
         type="number"

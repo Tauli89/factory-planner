@@ -25,6 +25,21 @@ export const KATEGORIEN = {
   SPACE_AGE:       'Space Age',
 };
 
+export const KATEGORIEN_EN_LABEL = {
+  'Rohstoffe':           'Resources',
+  'Zwischenprodukte':    'Intermediate Products',
+  'Logistik':            'Logistics',
+  'Energie':             'Energy',
+  'Militär':             'Military',
+  'Maschinen':           'Machines',
+  'Module':              'Modules',
+  'Wissenschaftspakete': 'Science Packs',
+  'Ölverarbeitung':      'Oil Processing',
+  'Nuklear':             'Nuclear',
+  'Rakete & Orbit':      'Rocket & Orbit',
+  'Space Age':           'Space Age',
+};
+
 // ---------------------------------------------------------------------------
 // Maschinentypen
 // ---------------------------------------------------------------------------

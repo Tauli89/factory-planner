@@ -1,6 +1,7 @@
 import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
-import { maschinenAnzahl, MASCHINEN_LABEL } from '../utils/berechnung';
+import { maschinenAnzahl, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
 import { useForschung } from '../context/ForschungContext';
+import { useSprache } from '../context/SprachContext';
 
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
@@ -16,10 +17,41 @@ const MASCHINEN_FARBE = {
   [MASCHINEN.BERGBAU]:      'text-gray-400',
 };
 
+const T = {
+  de: {
+    herstellung: 'Herstellung',
+    rohstoffe: 'Rohstoffe / Fluide',
+    produkt: 'Produkt',
+    proMin: '/ Min',
+    proSek: '/ Sek',
+    maschine: 'Maschine',
+    anzahl: 'Anz.',
+    boniAktiv: 'Forschungsboni aktiv:',
+    bergbauBonus: (v) => `⛏ Bergbau-Produktivität +${v}%`,
+    assemblerBonus: (v) => `⚙ Assembler-Geschwindigkeit +${v}%`,
+  },
+  en: {
+    herstellung: 'Production',
+    rohstoffe: 'Resources / Fluids',
+    produkt: 'Product',
+    proMin: '/ Min',
+    proSek: '/ Sec',
+    maschine: 'Machine',
+    anzahl: 'Qty.',
+    boniAktiv: 'Research bonuses active:',
+    bergbauBonus: (v) => `⛏ Mining Productivity +${v}%`,
+    assemblerBonus: (v) => `⚙ Assembler Speed +${v}%`,
+  },
+};
+
 export default function ErgebnisTabelle({ produktion }) {
   const { boni } = useForschung();
+  const { sprache } = useSprache();
+  const tx = T[sprache];
 
   if (!produktion || Object.keys(produktion).length === 0) return null;
+
+  const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
 
   const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
     const rezept = REZEPTE_MAP[id];
@@ -27,8 +59,7 @@ export default function ErgebnisTabelle({ produktion }) {
     const anzahl = istRohstoff ? null : maschinenAnzahl(id, rateProSek, boni);
     return {
       id,
-      name:      rezept?.name   ?? id,
-      nameEn:    rezept?.nameEn ?? id,
+      name:      sprache === 'de' ? (rezept?.name ?? id) : (rezept?.nameEn ?? id),
       rateProSek,
       rateProMin: rateProSek * 60,
       istRohstoff,
@@ -46,22 +77,22 @@ export default function ErgebnisTabelle({ produktion }) {
     <div className="flex flex-col gap-6 mt-6">
       {bonusHinweis && (
         <div className="flex gap-4 text-xs text-gray-500 bg-gray-800/50 rounded-lg px-3 py-2">
-          <span className="text-amber-400 font-semibold">Forschungsboni aktiv:</span>
+          <span className="text-amber-400 font-semibold">{tx.boniAktiv}</span>
           {boni.miningBonus > 0 && (
-            <span>⛏ Bergbau-Produktivität +{(boni.miningBonus * 100).toFixed(0)}%</span>
+            <span>{tx.bergbauBonus((boni.miningBonus * 100).toFixed(0))}</span>
           )}
           {boni.assemblerBonus > 0 && (
-            <span>⚙ Assembler-Geschwindigkeit +{(boni.assemblerBonus * 100).toFixed(0)}%</span>
+            <span>{tx.assemblerBonus((boni.assemblerBonus * 100).toFixed(0))}</span>
           )}
         </div>
       )}
-      <Abschnitt titel="Herstellung" eintraege={herstellung} zeigeMaschine />
-      <Abschnitt titel="Rohstoffe / Fluide" eintraege={rohstoffe} />
+      <Abschnitt titel={tx.herstellung} eintraege={herstellung} zeigeMaschine tx={tx} maschinenLabels={maschinenLabels} />
+      <Abschnitt titel={tx.rohstoffe} eintraege={rohstoffe} tx={tx} maschinenLabels={maschinenLabels} />
     </div>
   );
 }
 
-function Abschnitt({ titel, eintraege, zeigeMaschine = false }) {
+function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabels }) {
   if (eintraege.length === 0) return null;
   return (
     <div>
@@ -70,12 +101,11 @@ function Abschnitt({ titel, eintraege, zeigeMaschine = false }) {
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
             <tr>
-              <th className="px-4 py-3">Produkt</th>
-              <th className="px-4 py-3 text-gray-600 font-normal hidden sm:table-cell">EN</th>
-              <th className="px-4 py-3 text-right">/ Min</th>
-              <th className="px-4 py-3 text-right">/ Sek</th>
-              {zeigeMaschine && <th className="px-4 py-3 text-right hidden md:table-cell">Maschine</th>}
-              {zeigeMaschine && <th className="px-4 py-3 text-right">Anz.</th>}
+              <th className="px-4 py-3">{tx.produkt}</th>
+              <th className="px-4 py-3 text-right">{tx.proMin}</th>
+              <th className="px-4 py-3 text-right">{tx.proSek}</th>
+              {zeigeMaschine && <th className="px-4 py-3 text-right hidden md:table-cell">{tx.maschine}</th>}
+              {zeigeMaschine && <th className="px-4 py-3 text-right">{tx.anzahl}</th>}
             </tr>
           </thead>
           <tbody>
@@ -84,12 +114,11 @@ function Abschnitt({ titel, eintraege, zeigeMaschine = false }) {
               return (
                 <tr key={e.id} className={i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950'}>
                   <td className="px-4 py-2 text-white font-medium">{e.name}</td>
-                  <td className="px-4 py-2 text-gray-600 text-xs hidden sm:table-cell">{e.nameEn}</td>
                   <td className="px-4 py-2 text-right text-green-400">{e.rateProMin.toFixed(2)}</td>
                   <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
                   {zeigeMaschine && (
                     <td className={`px-4 py-2 text-right text-xs hidden md:table-cell ${farbe}`}>
-                      {MASCHINEN_LABEL[e.maschine] ?? '—'}
+                      {maschinenLabels[e.maschine] ?? '—'}
                     </td>
                   )}
                   {zeigeMaschine && (

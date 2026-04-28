@@ -763,6 +763,40 @@ export const PACK_META = {
   promethium: { label: 'Promethium',   color: '#ce93d8' },
 };
 
+// Technologien mit mehreren Leveln die als Gruppen (Level-Counter) dargestellt werden
+export const LEVEL_GRUPPEN = [
+  {
+    id: 'mining-productivity',
+    label: { de: 'Bergbau-Produktivität', en: 'Mining Productivity' },
+    ids: ['mining-productivity-1', 'mining-productivity-2', 'mining-productivity-3', 'mining-productivity-4'],
+  },
+  {
+    id: 'speed-module-g',
+    label: { de: 'Geschwindigkeitsmodul', en: 'Speed Module' },
+    ids: ['speed-module', 'speed-module-2', 'speed-module-3'],
+  },
+  {
+    id: 'efficiency-module-g',
+    label: { de: 'Effizienzmodul', en: 'Efficiency Module' },
+    ids: ['efficiency-module', 'efficiency-module-2', 'efficiency-module-3'],
+  },
+  {
+    id: 'productivity-module-g',
+    label: { de: 'Produktivitätsmodul', en: 'Productivity Module' },
+    ids: ['productivity-module', 'productivity-module-2', 'productivity-module-3'],
+  },
+];
+
+// Map: tech-ID → { gruppe, index }
+export const LEVEL_GRUPPE_VON_TECH = Object.fromEntries(
+  LEVEL_GRUPPEN.flatMap(g => g.ids.map((id, i) => [id, { gruppe: g, index: i }]))
+);
+
+// IDs aller nicht-ersten Gruppen-Mitglieder (werden aus dem Layout gefiltert)
+export const LEVEL_GRUPPE_NICHT_ERSTE = new Set(
+  LEVEL_GRUPPEN.flatMap(g => g.ids.slice(1))
+);
+
 // Presets: Menge an Tech-IDs die als erforscht vorausgesetzt werden
 export const PRESETS = {
   fruehspiel: {

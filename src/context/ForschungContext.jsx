@@ -62,6 +62,17 @@ export function ForschungProvider({ children }) {
 
   const allesZuruecksetzen = useCallback(() => speichern(new Set()), [speichern]);
 
+  const setzeLevel = useCallback((gruppeIds, level) => {
+    const neu = new Set(erforscht);
+    for (const id of gruppeIds) neu.delete(id);
+    if (level > 0) {
+      for (const dep of alleVoraussetzungen(gruppeIds[level - 1])) {
+        neu.add(dep);
+      }
+    }
+    speichern(neu);
+  }, [erforscht, speichern, alleVoraussetzungen]);
+
   // Kumulierte Boni aus allen erforschten Technologien
   const boni = useMemo(() => {
     let miningBonus = 0;
@@ -98,6 +109,7 @@ export function ForschungProvider({ children }) {
       toggle,
       setzePreset,
       allesZuruecksetzen,
+      setzeLevel,
       boni,
       freigeschalteteRezepte,
       alleVoraussetzungen,
