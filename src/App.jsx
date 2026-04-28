@@ -4,6 +4,7 @@ import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
 import ForschungsBaum from './components/ForschungsBaum';
 import ModulAuswahl from './components/ModulAuswahl';
+import ModulOptimierung from './components/ModulOptimierung';
 import { ForschungProvider, useForschung } from './context/ForschungContext';
 import { SprachProvider, useSprache } from './context/SprachContext';
 import { ModulProvider, useModul } from './context/ModulContext';
@@ -13,12 +14,14 @@ import { FOERDERBAENDER, FOERDERBAENDER_MAP } from './data/belts';
 
 const TABS = {
   de: [
-    { id: 'rechner',   label: '⚙️ Rechner' },
-    { id: 'forschung', label: '🔬 Forschung' },
+    { id: 'rechner',    label: '⚙️ Rechner' },
+    { id: 'optimierung',label: '🎯 Modul-Optimierung' },
+    { id: 'forschung',  label: '🔬 Forschung' },
   ],
   en: [
-    { id: 'rechner',   label: '⚙️ Calculator' },
-    { id: 'forschung', label: '🔬 Research' },
+    { id: 'rechner',    label: '⚙️ Calculator' },
+    { id: 'optimierung',label: '🎯 Module Optimizer' },
+    { id: 'forschung',  label: '🔬 Research' },
   ],
 };
 
@@ -275,8 +278,10 @@ function AppInner() {
         aktuellerTab === 'forschung'
           ? 'overflow-hidden py-4 flex flex-col'
           : 'overflow-auto py-8'
-      }`}>
-        {aktuellerTab === 'rechner'   && <RechnerTab   sprache={sprache} />}
+      }`}
+      >
+        {aktuellerTab === 'rechner'    && <RechnerTab    sprache={sprache} />}
+        {aktuellerTab === 'optimierung'&& <ModulOptimierung />}
         {aktuellerTab === 'forschung' && <ForschungsTab sprache={sprache} />}
       </main>
     </div>
