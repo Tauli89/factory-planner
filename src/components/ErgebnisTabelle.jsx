@@ -1,12 +1,13 @@
 import { useMemo, Fragment } from 'react';
 import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
-import { maschinenAnzahl, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
+import { maschinenAnzahl, berechneStromverbrauch, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 import { useModul } from '../context/ModulContext';
 import { useQuality } from '../context/QualityContext';
 import { BELT_FARBE } from '../data/belts';
 import { formatQualityFaktor } from '../data/quality';
+import { MASCHINEN_DETAIL_NAME } from '../data/machines';
 
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
@@ -33,42 +34,58 @@ const ITEM_FARBEN = [
 
 const T = {
   de: {
-    herstellung:    'Herstellung',
-    rohstoffe:      'Rohstoffe / Fluide',
-    produkt:        'Produkt',
-    proMin:         '/ Min',
-    proSek:         '/ Sek',
-    maschine:       'Maschine',
-    anzahl:         'Anz.',
-    baender:        'Bänder',
-    boniAktiv:      'Forschungsboni aktiv:',
-    bergbauBonus:   (v) => `⛏ Bergbau-Produktivität +${v}%`,
-    assemblerBonus: (v) => `⚙ Assembler-Geschwindigkeit +${v}%`,
-    qualitaetAktiv: 'Quality-Crafting:',
-    zielQualitaet:  'Ziel',
-    maschinenQ:     'Maschinen',
-    craftingFaktor: 'Crafting-Faktor',
-    craftingRate:   'Crafting-Rate',
-    qualNormal:     'Normal',
+    herstellung:       'Herstellung',
+    rohstoffe:         'Rohstoffe / Fluide',
+    produkt:           'Produkt',
+    proMin:            '/ Min',
+    proSek:            '/ Sek',
+    maschine:          'Maschine',
+    anzahl:            'Anz.',
+    baender:           'Bänder',
+    boniAktiv:         'Forschungsboni aktiv:',
+    bergbauBonus:      (v) => `⛏ Bergbau-Produktivität +${v}%`,
+    assemblerBonus:    (v) => `⚙ Assembler-Geschwindigkeit +${v}%`,
+    qualitaetAktiv:    'Quality-Crafting:',
+    zielQualitaet:     'Ziel',
+    maschinenQ:        'Maschinen',
+    craftingFaktor:    'Crafting-Faktor',
+    craftingRate:      'Crafting-Rate',
+    qualNormal:        'Normal',
+    stromverbrauch:    'Stromverbrauch',
+    maschinenTyp:      'Maschinen-Typ',
+    kwProMaschine:     'kW / Maschine',
+    gesamtKW:          'Gesamt',
+    gesamtverbrauch:   'Gesamtverbrauch Fabrik',
+    solarEmpfehlung:   'Solarpanels',
+    dampfEmpfehlung:   'Dampfmaschinen',
+    empfehlung:        'Energieempfehlung',
   },
   en: {
-    herstellung:    'Production',
-    rohstoffe:      'Resources / Fluids',
-    produkt:        'Product',
-    proMin:         '/ Min',
-    proSek:         '/ Sec',
-    maschine:       'Machine',
-    anzahl:         'Qty.',
-    baender:        'Belts',
-    boniAktiv:      'Research bonuses active:',
-    bergbauBonus:   (v) => `⛏ Mining Productivity +${v}%`,
-    assemblerBonus: (v) => `⚙ Assembler Speed +${v}%`,
-    qualitaetAktiv: 'Quality Crafting:',
-    zielQualitaet:  'Target',
-    maschinenQ:     'Machines',
-    craftingFaktor: 'Crafting factor',
-    craftingRate:   'Crafting rate',
-    qualNormal:     'Normal',
+    herstellung:       'Production',
+    rohstoffe:         'Resources / Fluids',
+    produkt:           'Product',
+    proMin:            '/ Min',
+    proSek:            '/ Sec',
+    maschine:          'Machine',
+    anzahl:            'Qty.',
+    baender:           'Belts',
+    boniAktiv:         'Research bonuses active:',
+    bergbauBonus:      (v) => `⛏ Mining Productivity +${v}%`,
+    assemblerBonus:    (v) => `⚙ Assembler Speed +${v}%`,
+    qualitaetAktiv:    'Quality Crafting:',
+    zielQualitaet:     'Target',
+    maschinenQ:        'Machines',
+    craftingFaktor:    'Crafting factor',
+    craftingRate:      'Crafting rate',
+    qualNormal:        'Normal',
+    stromverbrauch:    'Power Consumption',
+    maschinenTyp:      'Machine type',
+    kwProMaschine:     'kW / machine',
+    gesamtKW:          'Total',
+    gesamtverbrauch:   'Total factory power',
+    solarEmpfehlung:   'Solar Panels',
+    dampfEmpfehlung:   'Steam Engines',
+    empfehlung:        'Power recommendation',
   },
 };
 
@@ -78,6 +95,11 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
   const { modulBoni }      = useModul();
   const { zielQualitaet, maschinenQualitaet, gesamtQualityChance, qualityFaktorPerMaschine } = useQuality();
   const tx = T[sprache];
+
+  const stromDaten = useMemo(
+    () => berechneStromverbrauch(produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti),
+    [produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti]
+  );
 
   const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
 
@@ -257,6 +279,88 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
         istQualityAktiv={istQualityAktiv}
         sprache={sprache}
       />
+
+      {stromDaten.gesamtKW > 0 && (
+        <StromverbrauchAbschnitt
+          stromDaten={stromDaten}
+          tx={tx}
+          sprache={sprache}
+          maschinenLabels={maschinenLabels}
+        />
+      )}
+    </div>
+  );
+}
+
+function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
+  const { perTyp, gesamtMW, solarPanels, dampfmaschinen } = stromDaten;
+  const eintraege = Object.entries(perTyp);
+
+  return (
+    <div>
+      <h2 className="text-amber-400 font-bold text-lg mb-3 border-b border-gray-700 pb-1">
+        ⚡ {tx.stromverbrauch}
+      </h2>
+
+      <div className="overflow-x-auto rounded-lg border border-gray-700 mb-3">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
+            <tr>
+              <th className="px-4 py-3">{tx.maschinenTyp}</th>
+              <th className="px-4 py-3 text-right">{tx.anzahl}</th>
+              <th className="px-4 py-3 text-right">{tx.kwProMaschine}</th>
+              <th className="px-4 py-3 text-right">{tx.gesamtKW}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {eintraege.map(([maschinenType, { anzahl, kwProMaschine }], i) => {
+              const totalKW  = anzahl * kwProMaschine;
+              const farbe    = MASCHINEN_FARBE[maschinenType] ?? 'text-gray-400';
+              const detailName = MASCHINEN_DETAIL_NAME[maschinenType];
+              const name     = detailName
+                ? (sprache === 'de' ? detailName.de : detailName.en)
+                : (maschinenLabels[maschinenType] ?? maschinenType);
+              return (
+                <tr key={maschinenType} className={i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950'}>
+                  <td className={`px-4 py-2 font-medium ${farbe}`}>{name}</td>
+                  <td className="px-4 py-2 text-right text-gray-300">{anzahl}</td>
+                  <td className="px-4 py-2 text-right text-gray-400">{kwProMaschine} kW</td>
+                  <td className="px-4 py-2 text-right font-bold text-yellow-400">
+                    {totalKW >= 1000
+                      ? `${(totalKW / 1000).toFixed(2)} MW`
+                      : `${totalKW} kW`}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex flex-wrap gap-4 items-center bg-gray-800/50 rounded-lg px-4 py-3 text-sm">
+        <div>
+          <span className="text-gray-400">{tx.gesamtverbrauch}:</span>
+          <span className="text-yellow-300 font-bold ml-2">
+            {gesamtMW >= 1
+              ? `${gesamtMW.toFixed(2)} MW`
+              : `${(gesamtMW * 1000).toFixed(0)} kW`}
+          </span>
+        </div>
+
+        <div className="h-4 border-l border-gray-600 hidden sm:block" />
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-yellow-500">☀</span>
+          <span className="text-gray-400">{tx.solarEmpfehlung}:</span>
+          <span className="text-amber-300 font-bold">{solarPanels}</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-blue-400">💨</span>
+          <span className="text-gray-400">{tx.dampfEmpfehlung}:</span>
+          <span className="text-blue-300 font-bold">{dampfmaschinen}</span>
+        </div>
+      </div>
     </div>
   );
 }

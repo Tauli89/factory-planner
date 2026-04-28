@@ -1,4 +1,5 @@
 import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
+import { MASCHINEN_STROMVERBRAUCH, ENERGIEQUELLEN } from '../data/machines';
 
 const MASCHINENGESCHWINDIGKEIT = {
   [MASCHINEN.ASSEMBLER]:    0.75,
@@ -114,4 +115,40 @@ export function maschinenAnzahl(id, mengeProSekunde, boni = {}, modulBoni = {}, 
   }
 
   return Math.ceil(mengeProSekunde / basisRate);
+}
+
+/**
+ * Berechnet den Gesamtstromverbrauch der Produktionskette.
+ * Gibt pro Maschinen-Typ die Anzahl und kW-Werte zurück,
+ * sowie den Gesamtverbrauch und Energieempfehlungen.
+ */
+export function berechneStromverbrauch(produktion, boni = {}, modulBoni = {}, maschinenQualitaetMulti = 1) {
+  const perTyp = {}; // maschinenType → { anzahl, kwProMaschine }
+
+  for (const [id, rateProSek] of Object.entries(produktion)) {
+    const rezept = REZEPTE_MAP[id];
+    if (!rezept || rezept.zeit === 0) continue;
+
+    const anzahl = maschinenAnzahl(id, rateProSek, boni, modulBoni, maschinenQualitaetMulti);
+    if (!anzahl) continue;
+
+    const kwProMaschine = MASCHINEN_STROMVERBRAUCH[rezept.maschine] ?? 0;
+    if (kwProMaschine === 0) continue;
+
+    if (!perTyp[rezept.maschine]) {
+      perTyp[rezept.maschine] = { anzahl: 0, kwProMaschine };
+    }
+    perTyp[rezept.maschine].anzahl += anzahl;
+  }
+
+  const gesamtKW = Object.values(perTyp).reduce((s, v) => s + v.anzahl * v.kwProMaschine, 0);
+  const gesamtMW = gesamtKW / 1000;
+
+  return {
+    perTyp,
+    gesamtKW,
+    gesamtMW,
+    solarPanels:    Math.ceil(gesamtKW / ENERGIEQUELLEN.solarPanel.leistungKW),
+    dampfmaschinen: Math.ceil(gesamtKW / ENERGIEQUELLEN.dampfmaschine.leistungKW),
+  };
 }
