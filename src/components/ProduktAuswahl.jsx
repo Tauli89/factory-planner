@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { REZEPTE, KATEGORIEN, KATEGORIEN_EN_LABEL } from '../data/recipes';
+import { REZEPTE, REZEPTE_MAP, KATEGORIEN, KATEGORIEN_EN_LABEL } from '../data/recipes';
 import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/research';
 import { ITEM_ICONS } from '../data/icons';
 import { useForschung } from '../context/ForschungContext';
@@ -19,18 +19,48 @@ const KATEGORIE_REIHENFOLGE = [
   KATEGORIEN.SPACE_AGE,
 ];
 
-function ItemIcon({ id, className = 'w-4 h-4' }) {
+const KATEGORIE_FALLBACK_FARBE = {
+  [KATEGORIEN.ROHSTOFFE]:        '#6b7280',
+  [KATEGORIEN.ZWISCHENPRODUKTE]: '#f59e0b',
+  [KATEGORIEN.LOGISTIK]:         '#60a5fa',
+  [KATEGORIEN.ENERGIE]:          '#f97316',
+  [KATEGORIEN.MILITAER]:         '#ef4444',
+  [KATEGORIEN.MASCHINEN_BAU]:    '#8b5cf6',
+  [KATEGORIEN.MODULE]:           '#10b981',
+  [KATEGORIEN.SCIENCE]:          '#3b82f6',
+  [KATEGORIEN.OELVERARBEITUNG]:  '#78716c',
+  [KATEGORIEN.NUKLEAR]:          '#22d3ee',
+  [KATEGORIEN.RAKETE]:           '#e879f9',
+  [KATEGORIEN.SPACE_AGE]:        '#a78bfa',
+};
+
+function ItemIcon({ id, rezept, className = 'w-4 h-4' }) {
   const [err, setErr] = useState(false);
   const src = ITEM_ICONS[id];
-  if (!src || err) return null;
+
+  if (src && !err) {
+    return (
+      <img
+        src={src}
+        alt=""
+        className={`${className} object-contain flex-shrink-0`}
+        style={{ imageRendering: 'pixelated' }}
+        onError={() => setErr(true)}
+      />
+    );
+  }
+
+  const r = rezept ?? REZEPTE_MAP[id];
+  const letter = (r?.name ?? id ?? '?')[0].toUpperCase();
+  const bg = KATEGORIE_FALLBACK_FARBE[r?.kategorie] ?? '#6b7280';
+  const sizeStyle = className.includes('w-5') ? { width: '1.25rem', height: '1.25rem' } : { minWidth: '1rem', width: '1rem', height: '1rem' };
   return (
-    <img
-      src={src}
-      alt=""
-      className={`${className} object-contain flex-shrink-0`}
-      style={{ imageRendering: 'pixelated' }}
-      onError={() => setErr(true)}
-    />
+    <span
+      className="rounded flex-shrink-0 inline-flex items-center justify-center text-white font-bold"
+      style={{ background: bg, fontSize: '9px', lineHeight: 1, ...sizeStyle }}
+    >
+      {letter}
+    </span>
   );
 }
 
@@ -96,7 +126,7 @@ export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
     <div className="flex flex-col gap-2" ref={ref}>
       <label className="text-sm font-semibold text-amber-300">{label}</label>
 
-      <div className="relative max-w-xs">
+      <div className="relative" style={{ minWidth: '200px', maxWidth: '320px' }}>
         {/* Trigger */}
         <button
           type="button"
@@ -105,7 +135,7 @@ export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
         >
           {ausgewaehlt ? (
             <>
-              <ItemIcon id={ausgewaehlt.id} />
+              <ItemIcon id={ausgewaehlt.id} rezept={ausgewaehlt} />
               <span className="flex-1 truncate">{ausgewaehltName}</span>
             </>
           ) : (
@@ -119,7 +149,7 @@ export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
 
         {/* Dropdown panel */}
         {offen && (
-          <div className="absolute top-full mt-1 left-0 z-50 w-full bg-gray-900 border border-gray-600 rounded-lg shadow-2xl shadow-black/60 flex flex-col overflow-hidden">
+          <div className="absolute top-full mt-1 left-0 z-50 bg-gray-900 border border-gray-600 rounded-lg shadow-2xl shadow-black/60 flex flex-col overflow-hidden" style={{ minWidth: '280px', width: 'max-content', maxWidth: '400px' }}>
           {/* Search box */}
           <div className="p-2 border-b border-gray-700">
             <input
@@ -173,12 +203,13 @@ function DropdownOption({ r, sprache, onSelect, selected }) {
     <button
       type="button"
       onClick={() => onSelect(r.id)}
+      title={name}
       className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm text-left transition-colors
         ${selected
           ? 'bg-amber-500/20 text-amber-300'
           : 'text-gray-300 hover:bg-gray-700/60 hover:text-white'}`}
     >
-      <ItemIcon id={r.id} className="w-4 h-4 flex-shrink-0" />
+      <ItemIcon id={r.id} rezept={r} className="w-4 h-4 flex-shrink-0" />
       <span className="truncate">{name}</span>
     </button>
   );

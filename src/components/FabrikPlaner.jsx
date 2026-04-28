@@ -390,8 +390,17 @@ function FabrikPlanerInner({ sprache }) {
           {/* Hint when canvas is empty */}
           {nodes.length === 0 && (
             <Panel position="top-center">
-              <div className="mt-24 text-gray-600 text-sm text-center px-4 max-w-sm leading-relaxed">
-                {tx.hint}
+              <div className="mt-16 flex flex-col items-center gap-4 text-center px-4 max-w-sm select-none pointer-events-none">
+                <div className="text-5xl opacity-30">🏭</div>
+                <div className="text-gray-500 text-sm leading-relaxed">{tx.hint}</div>
+                {maschinenListe.length > 0 && (
+                  <div className="pointer-events-auto flex flex-col items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 text-amber-400 text-xs animate-bounce">
+                      <span>←</span>
+                      <span>{sprache === 'de' ? 'Maschinen aus der Seitenleiste' : 'Machines from the sidebar'}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </Panel>
           )}

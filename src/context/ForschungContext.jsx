@@ -5,12 +5,16 @@ const ForschungContext = createContext(null);
 
 const LS_KEY = 'factoryplanner_research_v1';
 
+// Techs die in Factorio immer verfügbar sind (keine Forschung nötig)
+// und deshalb immer als erforscht gelten
+const IMMER_ERFORSCHT = ['automation-science-pack', 'steam-power', 'military'];
+
 function ladeAusStorage() {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) return new Set(JSON.parse(raw));
+    if (raw) return new Set([...IMMER_ERFORSCHT, ...JSON.parse(raw)]);
   } catch { /* ignore */ }
-  return new Set();
+  return new Set(IMMER_ERFORSCHT);
 }
 
 export function ForschungProvider({ children }) {
@@ -60,7 +64,7 @@ export function ForschungProvider({ children }) {
     speichern(neu);
   }, [speichern, alleVoraussetzungen]);
 
-  const allesZuruecksetzen = useCallback(() => speichern(new Set()), [speichern]);
+  const allesZuruecksetzen = useCallback(() => speichern(new Set(IMMER_ERFORSCHT)), [speichern]);
 
   const setzeLevel = useCallback((gruppeIds, level) => {
     const neu = new Set(erforscht);

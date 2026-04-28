@@ -1,5 +1,5 @@
 import { useMemo, Fragment, useState } from 'react';
-import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
+import { REZEPTE_MAP, MASCHINEN, KATEGORIEN } from '../data/recipes';
 import { maschinenAnzahl, berechneStromverbrauch, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
@@ -10,18 +10,47 @@ import { formatQualityFaktor } from '../data/quality';
 import { MASCHINEN_DETAIL_NAME } from '../data/machines';
 import { ITEM_ICONS } from '../data/icons';
 
+const KATEGORIE_FALLBACK_FARBE = {
+  [KATEGORIEN.ROHSTOFFE]:        '#6b7280',
+  [KATEGORIEN.ZWISCHENPRODUKTE]: '#f59e0b',
+  [KATEGORIEN.LOGISTIK]:         '#60a5fa',
+  [KATEGORIEN.ENERGIE]:          '#f97316',
+  [KATEGORIEN.MILITAER]:         '#ef4444',
+  [KATEGORIEN.MASCHINEN_BAU]:    '#8b5cf6',
+  [KATEGORIEN.MODULE]:           '#10b981',
+  [KATEGORIEN.SCIENCE]:          '#3b82f6',
+  [KATEGORIEN.OELVERARBEITUNG]:  '#78716c',
+  [KATEGORIEN.NUKLEAR]:          '#22d3ee',
+  [KATEGORIEN.RAKETE]:           '#e879f9',
+  [KATEGORIEN.SPACE_AGE]:        '#a78bfa',
+};
+
 function ItemIcon({ id }) {
   const [err, setErr] = useState(false);
   const src = ITEM_ICONS[id];
-  if (!src || err) return null;
+
+  if (src && !err) {
+    return (
+      <img
+        src={src}
+        alt=""
+        className="w-4 h-4 object-contain flex-shrink-0 inline-block"
+        style={{ imageRendering: 'pixelated' }}
+        onError={() => setErr(true)}
+      />
+    );
+  }
+
+  const rezept = REZEPTE_MAP[id];
+  const letter = (rezept?.name ?? id ?? '?')[0].toUpperCase();
+  const bg = KATEGORIE_FALLBACK_FARBE[rezept?.kategorie] ?? '#6b7280';
   return (
-    <img
-      src={src}
-      alt=""
-      className="w-4 h-4 object-contain flex-shrink-0 inline-block"
-      style={{ imageRendering: 'pixelated' }}
-      onError={() => setErr(true)}
-    />
+    <span
+      className="w-4 h-4 rounded flex-shrink-0 inline-flex items-center justify-center text-white font-bold"
+      style={{ background: bg, fontSize: '9px', lineHeight: 1, minWidth: '1rem' }}
+    >
+      {letter}
+    </span>
   );
 }
 
@@ -446,7 +475,7 @@ function Abschnitt({
                       </td>
                     )}
                     {zeigeMaschine && (
-                      <td className={`px-4 py-2 text-right text-xs hidden md:table-cell ${farbe}`}>
+                      <td className="px-4 py-2 text-right text-xs hidden md:table-cell text-gray-400">
                         {maschinenLabels[e.maschine] ?? '—'}
                       </td>
                     )}

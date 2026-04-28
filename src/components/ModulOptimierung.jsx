@@ -208,59 +208,61 @@ export default function ModulOptimierung() {
         </h2>
         <p className="text-gray-400 text-sm mb-5">{tx.untertitel}</p>
 
-        <div className="flex flex-wrap gap-5 items-end">
-          {/* Product selector */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-amber-300">{tx.produkt}</label>
-            <select
-              value={produktId}
-              onChange={e => { setProduktId(e.target.value); setErgebnis(null); }}
-              className="bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 max-w-xs"
-            >
-              <option value="">{tx.produktPH}</option>
-              {nachKategorie.map(({ kat, rezepte }) => {
-                const katLabel = sprache === 'de' ? kat : (KATEGORIEN_EN_LABEL[kat] ?? kat);
-                return (
-                  <optgroup key={kat} label={katLabel}>
-                    {rezepte.map(r => (
-                      <option key={r.id} value={r.id}>
-                        {sprache === 'de' ? r.name : r.nameEn}
-                      </option>
-                    ))}
-                  </optgroup>
-                );
-              })}
-            </select>
-          </div>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-5">
+            {/* Product selector */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-amber-300">{tx.produkt}</label>
+              <select
+                value={produktId}
+                onChange={e => { setProduktId(e.target.value); setErgebnis(null); }}
+                className="bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 max-w-xs"
+              >
+                <option value="">{tx.produktPH}</option>
+                {nachKategorie.map(({ kat, rezepte }) => {
+                  const katLabel = sprache === 'de' ? kat : (KATEGORIEN_EN_LABEL[kat] ?? kat);
+                  return (
+                    <optgroup key={kat} label={katLabel}>
+                      {rezepte.map(r => (
+                        <option key={r.id} value={r.id}>
+                          {sprache === 'de' ? r.name : r.nameEn}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+              </select>
+            </div>
 
-          {/* Goal selector */}
-          <div className="flex flex-col gap-1.5 flex-1 min-w-56">
-            <label className="text-sm font-semibold text-amber-300">{tx.ziel}</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {Object.values(OPTIMIERUNGSZIELE).map(z => (
-                <button
-                  key={z}
-                  onClick={() => { setZiel(z); setErgebnis(null); }}
-                  className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-                    ziel === z
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold'
-                      : 'bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-500'
-                  }`}
-                >
-                  <div className="font-medium">{zielLabelMap[z]}</div>
-                  {ziel === z && (
-                    <div className="text-xs text-amber-200/70 mt-0.5">{zielBeschreibung[z]}</div>
-                  )}
-                </button>
-              ))}
+            {/* Goal selector */}
+            <div className="flex flex-col gap-1.5 flex-1 min-w-56">
+              <label className="text-sm font-semibold text-amber-300">{tx.ziel}</label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.values(OPTIMIERUNGSZIELE).map(z => (
+                  <button
+                    key={z}
+                    onClick={() => { setZiel(z); setErgebnis(null); }}
+                    className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                      ziel === z
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold'
+                        : 'bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-500'
+                    }`}
+                  >
+                    <div className="font-medium">{zielLabelMap[z]}</div>
+                    {ziel === z && (
+                      <div className="text-xs text-amber-200/70 mt-0.5">{zielBeschreibung[z]}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Calculate button */}
+          {/* Calculate button – full width, centered below */}
           <button
             onClick={berechnen}
             disabled={!produktId}
-            className="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-900 font-bold text-sm transition-colors"
+            className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-900 font-bold text-sm transition-colors"
           >
             {tx.berechnen}
           </button>

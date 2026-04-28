@@ -17,9 +17,9 @@ const MASCHINENGESCHWINDIGKEIT = {
 };
 
 export const MASCHINEN_LABEL = {
-  [MASCHINEN.BERGBAU]:      'Bergbau',
-  [MASCHINEN.SCHMELZOFEN]:  'Schmelzofen',
-  [MASCHINEN.ASSEMBLER]:    'Assembler',
+  [MASCHINEN.BERGBAU]:      'Elektr. Bergbaubohrer',
+  [MASCHINEN.SCHMELZOFEN]:  'Elektrischer Ofen',
+  [MASCHINEN.ASSEMBLER]:    'Montageautomat 2',
   [MASCHINEN.CHEMIEANLAGE]: 'Chemieanlage',
   [MASCHINEN.OELRAFFINERIE]:'Ölraffinerie',
   [MASCHINEN.ZENTRIFUGE]:   'Zentrifuge',
@@ -28,14 +28,14 @@ export const MASCHINEN_LABEL = {
   [MASCHINEN.BIOKAMMER]:    'Biokammer',
   [MASCHINEN.KRYOGENANLAGE]:'Kryogenanlage',
   [MASCHINEN.RECYCLER]:     'Recycler',
-  [MASCHINEN.RAUMPLATTFORM]:'Raumplattform',
+  [MASCHINEN.RAUMPLATTFORM]:'Raumplattform-Hub',
   [MASCHINEN.CRUSHER]:      'Asteroid-Zerkleinerer',
 };
 
 export const MASCHINEN_LABEL_EN = {
-  [MASCHINEN.BERGBAU]:      'Mining',
-  [MASCHINEN.SCHMELZOFEN]:  'Furnace',
-  [MASCHINEN.ASSEMBLER]:    'Assembler',
+  [MASCHINEN.BERGBAU]:      'Electric Mining Drill',
+  [MASCHINEN.SCHMELZOFEN]:  'Electric Furnace',
+  [MASCHINEN.ASSEMBLER]:    'Assembling Machine 2',
   [MASCHINEN.CHEMIEANLAGE]: 'Chemical Plant',
   [MASCHINEN.OELRAFFINERIE]:'Oil Refinery',
   [MASCHINEN.ZENTRIFUGE]:   'Centrifuge',
@@ -44,7 +44,7 @@ export const MASCHINEN_LABEL_EN = {
   [MASCHINEN.BIOKAMMER]:    'Biochamber',
   [MASCHINEN.KRYOGENANLAGE]:'Cryogenic Plant',
   [MASCHINEN.RECYCLER]:     'Recycler',
-  [MASCHINEN.RAUMPLATTFORM]:'Space Platform',
+  [MASCHINEN.RAUMPLATTFORM]:'Space Platform Hub',
   [MASCHINEN.CRUSHER]:      'Crusher',
 };
 

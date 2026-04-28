@@ -45,13 +45,26 @@ class BaumFehlerGrenze extends Component {
   }
 }
 
-// ── Layout constants ──────────────────────────────────────────────────────────
-const KARTE_B = 196;
-const KARTE_H = 92;
-const ABSTAND_X = 230;
-const ABSTAND_Y = 108;
+// Techs die immer als erforscht gelten und nicht im Zähler erscheinen sollen
+const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
-const TECH_LAYOUT = TECH.filter(t => !LEVEL_GRUPPE_NICHT_ERSTE.has(t.id));
+// ── Layout constants ──────────────────────────────────────────────────────────
+const KARTE_B = 210;
+const KARTE_H = 96;
+const ABSTAND_X = 250;
+const ABSTAND_Y = 128;
+
+// Alle Techs die als Vorgänger anderer Techs auftauchen
+const _TECH_MIT_NACHFOLGER = new Set(
+  TECH.flatMap(t => t.prerequisites)
+);
+
+// Orphan-Nodes (keine Voraussetzungen in der Karte UND keine Nachfolger) ausblenden,
+// da sie als leere Rechtecke ohne Verbindungen erscheinen.
+const TECH_LAYOUT = TECH.filter(t =>
+  !LEVEL_GRUPPE_NICHT_ERSTE.has(t.id) &&
+  (t.prerequisites.length > 0 || _TECH_MIT_NACHFOLGER.has(t.id))
+);
 const TECH_LAYOUT_MAP = Object.fromEntries(TECH_LAYOUT.map(t => [t.id, t]));
 
 function berechnePositionen() {
@@ -389,8 +402,8 @@ export default function ForschungsBaum() {
     return { nodes, edges };
   }, [erforscht, sprache, gefilterteTech, sucheAktiv, handleToggle, handleSetzeLevel]);
 
-  const anzahlErforscht = erforscht.size;
-  const anzahlGesamt = TECH.length;
+  const anzahlErforscht = [...erforscht].filter(id => !IMMER_SICHTBAR.has(id)).length;
+  const anzahlGesamt = TECH_LAYOUT.length;
 
   const suchPlaceholder = sprache === 'de' ? 'Technologie suchen…' : 'Search technology…';
   const allesReset = sprache === 'de' ? 'Alles zurücksetzen' : 'Reset all';
@@ -507,8 +520,8 @@ export default function ForschungsBaum() {
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.15, maxZoom: 0.9 }}
-            minZoom={0.1}
+            fitViewOptions={{ padding: 0.12, minZoom: 0.25, maxZoom: 0.7 }}
+            minZoom={0.08}
             maxZoom={2}
             nodesDraggable={false}
             nodesConnectable={false}

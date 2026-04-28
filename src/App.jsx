@@ -266,10 +266,13 @@ function FabrikPlanerTab({ sprache }) {
   );
 }
 
+const IMMER_ERFORSCHT_IDS = new Set(['automation-science-pack', 'steam-power', 'military']);
+
 function AppInner() {
   const [aktuellerTab, setAktuellerTab] = useState('rechner');
   const { erforscht } = useForschung();
   const { sprache, setSprache } = useSprache();
+  const anzahlErforscht = [...erforscht].filter(id => !IMMER_ERFORSCHT_IDS.has(id)).length;
 
   const tabs = TABS[sprache];
   const erforschtLabel = sprache === 'de' ? 'Technologien erforscht' : 'technologies researched';
@@ -321,9 +324,9 @@ function AppInner() {
             </button>
           </div>
 
-          <div className="text-xs text-gray-500">
-            <span className="text-green-400 font-bold">{erforscht.size}</span>
-            {' '}{erforschtLabel}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-900/30 border border-green-700/40 text-xs">
+            <span className="text-green-400 font-bold">{anzahlErforscht}</span>
+            <span className="text-green-600">{erforschtLabel}</span>
           </div>
         </div>
       </header>
