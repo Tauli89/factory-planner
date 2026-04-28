@@ -16,7 +16,7 @@ import {
   KATEGORIEN,
   TECH_KATEGORIEN,
 } from '../data/research';
-import { TECH_ICON_URLS } from '../data/techIcons';
+import { TECH_ICON_URLS, TECH_ICON_LOCAL } from '../data/techIcons';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 
@@ -100,24 +100,34 @@ function berechnePositionen() {
   return pos;
 }
 
-// ── Technologie-Icon mit Wiki-Bild und Fallback ───────────────────────────────
+// ── Technologie-Icon: lokal → wiki → Emoji-Fallback ──────────────────────────
 function TechIcon({ id, istErforscht, depsFehlen, iconBg }) {
-  const [imgErr, setImgErr] = useState(false);
-  const url = TECH_ICON_URLS[id];
+  const [localErr, setLocalErr] = useState(false);
+  const [wikiErr,  setWikiErr]  = useState(false);
+  const local    = TECH_ICON_LOCAL[id];
+  const wikiUrl  = TECH_ICON_URLS[id];
   const fallback = istErforscht ? '✓' : depsFehlen ? '🔒' : '🔬';
+
+  const src = (!local || localErr) ? (wikiErr ? null : wikiUrl) : local;
+  const showImg = !!src;
+
+  const handleErr = () => {
+    if (!localErr && local) { setLocalErr(true); }
+    else { setWikiErr(true); }
+  };
 
   return (
     <div
       className={`w-7 h-7 rounded flex-shrink-0 relative flex items-center justify-center overflow-visible ${iconBg}`}
     >
-      {url && !imgErr ? (
+      {showImg ? (
         <>
           <img
-            src={url}
+            src={src}
             alt=""
             className="w-5 h-5 object-contain"
             style={{ imageRendering: 'pixelated' }}
-            onError={() => setImgErr(true)}
+            onError={handleErr}
           />
           {istErforscht && (
             <span className="absolute -top-1 -right-1 text-green-400 font-bold leading-none"

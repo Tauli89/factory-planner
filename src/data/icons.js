@@ -1,0 +1,193 @@
+const I = '/images/icons/items';
+const M = '/images/icons/machines';
+
+export const ITEM_ICONS = {
+  // ── Rohstoffe ──────────────────────────────────────────────────────────────
+  'eisenerz':            `${I}/iron-ore.png`,
+  'kupfererz':           `${I}/copper-ore.png`,
+  'kohle':               `${I}/coal.png`,
+  'stein':               `${I}/stone.png`,
+  'uranerz':             `${I}/uranium-ore.png`,
+  'roher-fisch':         `${I}/fish.png`,
+  'holz':                `${I}/wood.png`,
+  'rohoel':              `${I}/crude-oil-resource.png`,
+  'wasser':              `${I}/water-wube.png`,
+  'wolframerz':          `${I}/tungsten-ore.png`,
+  'holmiumerz':          `${I}/holmium-ore.png`,
+  'kalzit':              `${I}/calcite.png`,
+  'eis':                 `${I}/ice.png`,
+  'lithium':             `${I}/lithium.png`,
+  'verderb':             `${I}/spoilage.png`,
+  'yumako':              `${I}/yumako.png`,
+  'jellynus':            `${I}/jellynut.png`,
+  'beisserei':           `${I}/biter-egg.png`,
+  'fuenfbeiner-ei':      `${I}/pentapod-egg.png`,
+  'promethium-brocken':  `${I}/promethium-asteroid-chunk.png`,
+
+  // ── Schmelzofen ───────────────────────────────────────────────────────────
+  'eisenplatte':         `${I}/iron-plate.png`,
+  'kupferplatte':        `${I}/copper-plate.png`,
+  'steinziegel':         `${I}/stone-brick.png`,
+  'stahlplatte':         `${I}/steel-plate.png`,
+  'lithiumplatte':       `${I}/lithium-plate.png`,
+
+  // ── Chemieanlage ──────────────────────────────────────────────────────────
+  'kunststoffstange':    `${I}/plastic-bar.png`,
+  'schwefel':            `${I}/sulfur.png`,
+  'batterie':            `${I}/battery.png`,
+  'festbrennstoff':      `${I}/solid-fuel.png`,
+  'festbrennstoff-schwerol': `${I}/solid-fuel-from-heavy-oil.png`,
+  'festbrennstoff-gas':  `${I}/solid-fuel-from-petroleum-gas.png`,
+  'kohlenstoff':         `${I}/carbon.png`,
+
+  // ── Zentrifuge ────────────────────────────────────────────────────────────
+  'uranverarbeitung':    `${I}/uranium-processing.png`,
+  'kovarex':             `${I}/kovarex-enrichment-process.png`,
+  'u235':                `${I}/uranium-235.png`,
+  'u238':                `${I}/uranium-238.png`,
+
+  // ── Assembler – Zwischenprodukte ──────────────────────────────────────────
+  'eisenzahnrad':        `${I}/iron-gear-wheel.png`,
+  'kupferkabel':         `${I}/copper-cable.png`,
+  'eisenstange':         `${I}/iron-stick.png`,
+  'gruener-schaltkreis': `${I}/electronic-circuit.png`,
+  'roter-schaltkreis':   `${I}/advanced-circuit.png`,
+  'verarbeitungseinheit': `${I}/processing-unit.png`,
+  'motoreinheit':        `${I}/engine-unit.png`,
+  'elektro-motoreinheit': `${I}/electric-engine-unit.png`,
+  'flugzeugrahmen':      `${I}/flying-robot-frame.png`,
+  'leichte-konstruktion': `${I}/low-density-structure.png`,
+  'raketentreibstoff':   `${I}/rocket-fuel.png`,
+  'uranbrennstab':       `${I}/uranium-fuel-cell.png`,
+  'beton':               `${I}/concrete.png`,
+  'schiene':             `${I}/rail.png`,
+  'rohr':                `${I}/pipe.png`,
+  'unterird-rohr':       `${I}/pipe-to-ground.png`,
+
+  // ── Transportbänder ───────────────────────────────────────────────────────
+  'transportband':           `${I}/transport-belt.png`,
+  'schnelles-transportband': `${I}/fast-transport-belt.png`,
+  'express-transportband':   `${I}/express-transport-belt.png`,
+  'turbo-transportband':     `${I}/turbo-transport-belt.png`,
+  'untird-band':             `${I}/underground-belt.png`,
+  'schnelles-untird-band':   `${I}/fast-underground-belt.png`,
+  'express-untird-band':     `${I}/express-underground-belt.png`,
+  'turbo-untird-band':       `${I}/turbo-underground-belt.png`,
+  'aufteiler':               `${I}/splitter.png`,
+  'schneller-aufteiler':     `${I}/fast-splitter.png`,
+  'express-aufteiler':       `${I}/express-splitter.png`,
+  'turbo-aufteiler':         `${I}/turbo-splitter.png`,
+
+  // ── Greifarme ────────────────────────────────────────────────────────────
+  'brennstoff-greifarm': `${I}/burner-inserter.png`,
+  'greifarm':            `${I}/inserter.png`,
+  'langer-greifarm':     `${I}/long-handed-inserter.png`,
+  'schneller-greifarm':  `${I}/fast-inserter.png`,
+  'filter-greifarm':     `${I}/fast-inserter.png`,
+  'massen-greifarm':     `${I}/bulk-inserter.png`,
+
+  // ── Roboter ───────────────────────────────────────────────────────────────
+  'logistikroboter':     `${I}/logistic-robot.png`,
+  'bauroboter':          `${I}/construction-robot.png`,
+  'roboport':            `${I}/roboport.png`,
+
+  // ── Strom & Energie ───────────────────────────────────────────────────────
+  'kleiner-strommast':   `${I}/small-electric-pole.png`,
+  'mittlerer-strommast': `${I}/medium-electric-pole.png`,
+  'grosser-strommast':   `${I}/big-electric-pole.png`,
+  'unterstation':        `${I}/substation.png`,
+  'heizkessel':          `${I}/boiler.png`,
+  'dampfmaschine':       `${I}/steam-engine.png`,
+  'dampfturbine':        `${I}/steam-turbine.png`,
+  'waermetauscher':      `${I}/heat-boiler.png`,
+  'waermeleitung':       `${I}/heat-pipe.png`,
+  'akkumulator':         `${I}/accumulator.png`,
+  'solarpanel':          `${I}/solar-panel.png`,
+
+  // ── Maschinen als Items ───────────────────────────────────────────────────
+  'steinofen':           `${I}/stone-furnace.png`,
+  'stahlofen':           `${I}/steel-furnace.png`,
+  'elektrischer-ofen':   `${I}/electric-furnace.png`,
+  'montageautomat-1':    `${I}/assembling-machine-1.png`,
+  'montageautomat-2':    `${I}/assembling-machine-2.png`,
+  'montageautomat-3':    `${I}/assembling-machine-3.png`,
+  'chemieanlage-maschine': `${I}/chemical-plant.png`,
+  'oelraffinerie-maschine': `${I}/oil-refinery.png`,
+  'elektrischer-bergbaubohrer': `${I}/electric-mining-drill.png`,
+  'radar':               `${I}/radar.png`,
+  'kernreaktor':         `${I}/nuclear-reactor.png`,
+  'zentrifuge-maschine': `${I}/centrifuge.png`,
+
+  // ── Militär ───────────────────────────────────────────────────────────────
+  'schussmagazin':       `${I}/firearm-magazine.png`,
+  'panzermunition':      `${I}/piercing-rounds-magazine.png`,
+  'granate':             `${I}/grenade.png`,
+  'sprengstoff':         `${I}/explosives.png`,
+  'mauer':               `${I}/wall.png`,
+  'landmine':            `${I}/land-mine.png`,
+  'geschuetzturm':       `${I}/gun-turret.png`,
+  'laserturm':           `${I}/laser-turret.png`,
+
+  // ── Module ────────────────────────────────────────────────────────────────
+  'geschwindigkeitsmodul':   `${I}/speed-module.png`,
+  'geschwindigkeitsmodul-2': `${I}/speed-module-2.png`,
+  'geschwindigkeitsmodul-3': `${I}/speed-module-3.png`,
+  'effizienzmodul':          `${I}/efficiency-module.png`,
+  'effizienzmodul-2':        `${I}/efficiency-module-2.png`,
+  'effizienzmodul-3':        `${I}/efficiency-module-3.png`,
+  'produktivitaetsmodul':    `${I}/productivity-module.png`,
+  'produktivitaetsmodul-2':  `${I}/productivity-module-2.png`,
+  'produktivitaetsmodul-3':  `${I}/productivity-module-3.png`,
+
+  // ── Wissenschaftspakete ───────────────────────────────────────────────────
+  'science-rot':             `${I}/automation-science-pack.png`,
+  'science-gruen':           `${I}/logistic-science-pack.png`,
+  'science-schwarz':         `${I}/military-science-pack.png`,
+  'science-blau':            `${I}/chemical-science-pack.png`,
+  'science-lila':            `${I}/production-science-pack.png`,
+  'science-gelb':            `${I}/utility-science-pack.png`,
+
+  // ── Rakete & Orbit ────────────────────────────────────────────────────────
+  'raketenabschussbasis':    `${I}/rocket-silo.png`,
+  'satellit':                `${I}/satellite.png`,
+  'raumplattform-fundament': `${I}/space-platform-foundation.png`,
+  'raumplattform-starterpaket': `${I}/space-platform-starter-pack.png`,
+
+  // ── Space Age ─────────────────────────────────────────────────────────────
+  'wolframplatte':       `${I}/tungsten-plate.png`,
+  'metallurgisches-science': `${I}/metallurgic-science-pack.png`,
+  'geschmolzenes-eisen': `${I}/casting-iron.png`,
+  'geschmolzenes-kupfer': `${I}/casting-copper.png`,
+  'wolframkarbid':       `${I}/tungsten-carbide.png`,
+  'holmiumplatte':       `${I}/holmium-plate.png`,
+  'yumako-brei':         `${I}/yumako-mash.png`,
+  'gelee':               `${I}/jelly.png`,
+  'naehrstoffe':         `${I}/nutrients.png`,
+  'biofluss':            `${I}/bioflux.png`,
+  'naehrstoffe-aus-biofluss': `${I}/nutrients-from-bioflux.png`,
+  'kohlenstofffaser':    `${I}/carbon-fiber.png`,
+  'landwirtschaftliches-science': `${I}/agricultural-science-pack.png`,
+  'supraleiter':         `${I}/superconductor.png`,
+  'superkondensator':    `${I}/supercapacitor.png`,
+  'quantenprozessor':    `${I}/quantum-processor.png`,
+  'elektromagnetisches-science': `${I}/electromagnetic-science-pack.png`,
+  'kryogenes-science':   `${I}/cryogenic-science-pack.png`,
+  'weltraum-science':    `${I}/space-science-pack.png`,
+  'promethium-science':  `${I}/promethium-science-pack.png`,
+};
+
+export const MACHINE_ICONS = {
+  'schmelzofen':    `${M}/electric-furnace.png`,
+  'assembler':      `${M}/assembling-machine-2.png`,
+  'chemieanlage':   `${M}/chemical-plant.png`,
+  'oelraffinerie':  `${M}/oil-refinery.png`,
+  'zentrifuge':     `${M}/centrifuge.png`,
+  'hochofen':       `${M}/foundry.png`,
+  'em-anlage':      `${M}/electromagnetic-plant.png`,
+  'biokammer':      `${M}/biochamber.png`,
+  'kryogenanlage':  `${M}/cryogenic-plant.png`,
+  'bergbau':        `${M}/electric-mining-drill.png`,
+  'raumplattform':  `${M}/space-platform-hub.png`,
+  'crusher':        `${M}/crusher.png`,
+  'recycler':       `${M}/crusher.png`,
+};

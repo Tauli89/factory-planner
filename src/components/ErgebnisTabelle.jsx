@@ -1,4 +1,4 @@
-import { useMemo, Fragment } from 'react';
+import { useMemo, Fragment, useState } from 'react';
 import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
 import { maschinenAnzahl, berechneStromverbrauch, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
 import { useForschung } from '../context/ForschungContext';
@@ -8,6 +8,22 @@ import { useQuality } from '../context/QualityContext';
 import { BELT_FARBE } from '../data/belts';
 import { formatQualityFaktor } from '../data/quality';
 import { MASCHINEN_DETAIL_NAME } from '../data/machines';
+import { ITEM_ICONS } from '../data/icons';
+
+function ItemIcon({ id }) {
+  const [err, setErr] = useState(false);
+  const src = ITEM_ICONS[id];
+  if (!src || err) return null;
+  return (
+    <img
+      src={src}
+      alt=""
+      className="w-4 h-4 object-contain flex-shrink-0 inline-block"
+      style={{ imageRendering: 'pixelated' }}
+      onError={() => setErr(true)}
+    />
+  );
+}
 
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
@@ -414,7 +430,10 @@ function Abschnitt({
                 <Fragment key={e.id}>
                   <tr className={rowBg}>
                     <td className="px-4 py-2 text-white font-medium">
-                      <span>{e.name}</span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <ItemIcon id={e.id} />
+                        <span>{e.name}</span>
+                      </span>
                       {istQualityAktiv && e.qualitaet && (
                         <QualityBadge qualitaet={e.qualitaet} />
                       )}

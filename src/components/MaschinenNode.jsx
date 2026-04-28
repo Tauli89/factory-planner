@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { MACHINE_ICONS } from '../data/icons';
 
 const MASCHINEN_STYLES = {
   schmelzofen:   { color: '#f97316', icon: '🔥', label: 'Furnace' },
@@ -17,6 +19,25 @@ const MASCHINEN_STYLES = {
 };
 
 const HANDLE_STYLE = { width: 12, height: 12, borderWidth: 2 };
+
+function MachineIcon({ maschine, color }) {
+  const [err, setErr] = useState(false);
+  const src = MACHINE_ICONS[maschine];
+  const style = MASCHINEN_STYLES[maschine];
+
+  if (src && !err) {
+    return (
+      <img
+        src={src}
+        alt=""
+        className="w-5 h-5 object-contain flex-shrink-0"
+        style={{ imageRendering: 'pixelated' }}
+        onError={() => setErr(true)}
+      />
+    );
+  }
+  return <span className="text-sm leading-none">{style?.icon ?? '🏭'}</span>;
+}
 
 export default function MaschinenNode({ data, selected }) {
   const s = MASCHINEN_STYLES[data.maschine] ?? { color: '#9ca3af', icon: '🏭', label: data.maschine };
@@ -39,7 +60,7 @@ export default function MaschinenNode({ data, selected }) {
         className="rounded-t px-2.5 py-1.5 flex items-center gap-1.5"
         style={{ backgroundColor: `${s.color}25` }}
       >
-        <span className="text-sm leading-none">{s.icon}</span>
+        <MachineIcon maschine={data.maschine} color={s.color} />
         <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: s.color }}>
           {s.label}
         </span>
