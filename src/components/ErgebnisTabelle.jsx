@@ -34,7 +34,7 @@ function ItemIcon({ id }) {
       <img
         src={src}
         alt=""
-        className="w-4 h-4 object-contain flex-shrink-0 inline-block"
+        className="w-5 h-5 object-contain flex-shrink-0 inline-block"
         style={{ imageRendering: 'pixelated' }}
         onError={() => setErr(true)}
       />
@@ -46,8 +46,8 @@ function ItemIcon({ id }) {
   const bg = KATEGORIE_FALLBACK_FARBE[rezept?.kategorie] ?? '#6b7280';
   return (
     <span
-      className="w-4 h-4 rounded flex-shrink-0 inline-flex items-center justify-center text-white font-bold"
-      style={{ background: bg, fontSize: '9px', lineHeight: 1, minWidth: '1rem' }}
+      className="w-5 h-5 rounded flex-shrink-0 inline-flex items-center justify-center text-white font-bold"
+      style={{ background: bg, fontSize: '9px', lineHeight: 1, minWidth: '1.25rem' }}
     >
       {letter}
     </span>

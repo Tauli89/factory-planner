@@ -34,7 +34,7 @@ const KATEGORIE_FALLBACK_FARBE = {
   [KATEGORIEN.SPACE_AGE]:        '#a78bfa',
 };
 
-function ItemIcon({ id, rezept, className = 'w-4 h-4' }) {
+function ItemIcon({ id, rezept, className = 'w-5 h-5' }) {
   const [err, setErr] = useState(false);
   const src = ITEM_ICONS[id];
 
@@ -53,11 +53,10 @@ function ItemIcon({ id, rezept, className = 'w-4 h-4' }) {
   const r = rezept ?? REZEPTE_MAP[id];
   const letter = (r?.name ?? id ?? '?')[0].toUpperCase();
   const bg = KATEGORIE_FALLBACK_FARBE[r?.kategorie] ?? '#6b7280';
-  const sizeStyle = className.includes('w-5') ? { width: '1.25rem', height: '1.25rem' } : { minWidth: '1rem', width: '1rem', height: '1rem' };
   return (
     <span
       className="rounded flex-shrink-0 inline-flex items-center justify-center text-white font-bold"
-      style={{ background: bg, fontSize: '9px', lineHeight: 1, ...sizeStyle }}
+      style={{ background: bg, fontSize: '9px', lineHeight: 1, width: '1.25rem', height: '1.25rem' }}
     >
       {letter}
     </span>
@@ -209,7 +208,7 @@ function DropdownOption({ r, sprache, onSelect, selected }) {
           ? 'bg-amber-500/20 text-amber-300'
           : 'text-gray-300 hover:bg-gray-700/60 hover:text-white'}`}
     >
-      <ItemIcon id={r.id} rezept={r} className="w-4 h-4 flex-shrink-0" />
+      <ItemIcon id={r.id} rezept={r} className="w-5 h-5 flex-shrink-0" />
       <span className="truncate">{name}</span>
     </button>
   );
