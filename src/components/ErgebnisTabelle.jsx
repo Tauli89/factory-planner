@@ -1,3 +1,4 @@
+import { useMemo, Fragment } from 'react';
 import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
 import { maschinenAnzahl, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
 import { useForschung } from '../context/ForschungContext';
@@ -17,54 +18,82 @@ const MASCHINEN_FARBE = {
   [MASCHINEN.BERGBAU]:      'text-gray-400',
 };
 
+const ITEM_FARBEN = [
+  'bg-blue-500/20 text-blue-300 border-blue-500/40',
+  'bg-purple-500/20 text-purple-300 border-purple-500/40',
+  'bg-pink-500/20 text-pink-300 border-pink-500/40',
+  'bg-orange-500/20 text-orange-300 border-orange-500/40',
+  'bg-teal-500/20 text-teal-300 border-teal-500/40',
+  'bg-lime-500/20 text-lime-300 border-lime-500/40',
+];
+
 const T = {
   de: {
-    herstellung: 'Herstellung',
-    rohstoffe: 'Rohstoffe / Fluide',
-    produkt: 'Produkt',
-    proMin: '/ Min',
-    proSek: '/ Sek',
-    maschine: 'Maschine',
-    anzahl: 'Anz.',
-    boniAktiv: 'Forschungsboni aktiv:',
-    bergbauBonus: (v) => `⛏ Bergbau-Produktivität +${v}%`,
+    herstellung:    'Herstellung',
+    rohstoffe:      'Rohstoffe / Fluide',
+    produkt:        'Produkt',
+    proMin:         '/ Min',
+    proSek:         '/ Sek',
+    maschine:       'Maschine',
+    anzahl:         'Anz.',
+    boniAktiv:      'Forschungsboni aktiv:',
+    bergbauBonus:   (v) => `⛏ Bergbau-Produktivität +${v}%`,
     assemblerBonus: (v) => `⚙ Assembler-Geschwindigkeit +${v}%`,
   },
   en: {
-    herstellung: 'Production',
-    rohstoffe: 'Resources / Fluids',
-    produkt: 'Product',
-    proMin: '/ Min',
-    proSek: '/ Sec',
-    maschine: 'Machine',
-    anzahl: 'Qty.',
-    boniAktiv: 'Research bonuses active:',
-    bergbauBonus: (v) => `⛏ Mining Productivity +${v}%`,
+    herstellung:    'Production',
+    rohstoffe:      'Resources / Fluids',
+    produkt:        'Product',
+    proMin:         '/ Min',
+    proSek:         '/ Sec',
+    maschine:       'Machine',
+    anzahl:         'Qty.',
+    boniAktiv:      'Research bonuses active:',
+    bergbauBonus:   (v) => `⛏ Mining Productivity +${v}%`,
     assemblerBonus: (v) => `⚙ Assembler Speed +${v}%`,
   },
 };
 
-export default function ErgebnisTabelle({ produktion }) {
+export default function ErgebnisTabelle({ produktion, perItem = [] }) {
   const { boni } = useForschung();
   const { sprache } = useSprache();
   const tx = T[sprache];
 
-  if (!produktion || Object.keys(produktion).length === 0) return null;
-
   const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
 
+  // Build per-resource contribution map when multiple items are active
+  const beitraegeMap = useMemo(() => {
+    if (perItem.length <= 1) return {};
+    const result = {};
+    for (let i = 0; i < perItem.length; i++) {
+      const item = perItem[i];
+      const name = sprache === 'de'
+        ? (REZEPTE_MAP[item.id]?.name   ?? item.id)
+        : (REZEPTE_MAP[item.id]?.nameEn ?? item.id);
+      for (const [rid, rate] of Object.entries(item.produktion)) {
+        if (!result[rid]) result[rid] = [];
+        result[rid].push({ id: item.id, name, rateProMin: rate * 60, colorIdx: i % ITEM_FARBEN.length });
+      }
+    }
+    return result;
+  }, [perItem, sprache]);
+
+  const zeigeBeitraege = perItem.length > 1;
+
+  if (!produktion || Object.keys(produktion).length === 0) return null;
+
   const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
-    const rezept = REZEPTE_MAP[id];
+    const rezept     = REZEPTE_MAP[id];
     const istRohstoff = !rezept || rezept.zeit === 0;
-    const anzahl = istRohstoff ? null : maschinenAnzahl(id, rateProSek, boni);
+    const anzahl     = istRohstoff ? null : maschinenAnzahl(id, rateProSek, boni);
     return {
       id,
-      name:      sprache === 'de' ? (rezept?.name ?? id) : (rezept?.nameEn ?? id),
+      name:       sprache === 'de' ? (rezept?.name ?? id) : (rezept?.nameEn ?? id),
       rateProSek,
       rateProMin: rateProSek * 60,
       istRohstoff,
       anzahl,
-      maschine:  rezept?.maschine ?? null,
+      maschine:   rezept?.maschine ?? null,
     };
   });
 
@@ -86,13 +115,28 @@ export default function ErgebnisTabelle({ produktion }) {
           )}
         </div>
       )}
-      <Abschnitt titel={tx.herstellung} eintraege={herstellung} zeigeMaschine tx={tx} maschinenLabels={maschinenLabels} />
-      <Abschnitt titel={tx.rohstoffe} eintraege={rohstoffe} tx={tx} maschinenLabels={maschinenLabels} />
+      <Abschnitt
+        titel={tx.herstellung}
+        eintraege={herstellung}
+        zeigeMaschine
+        tx={tx}
+        maschinenLabels={maschinenLabels}
+        beitraegeMap={beitraegeMap}
+        zeigeBeitraege={zeigeBeitraege}
+      />
+      <Abschnitt
+        titel={tx.rohstoffe}
+        eintraege={rohstoffe}
+        tx={tx}
+        maschinenLabels={maschinenLabels}
+        beitraegeMap={beitraegeMap}
+        zeigeBeitraege={zeigeBeitraege}
+      />
     </div>
   );
 }
 
-function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabels }) {
+function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabels, beitraegeMap = {}, zeigeBeitraege = false }) {
   if (eintraege.length === 0) return null;
   return (
     <div>
@@ -110,23 +154,45 @@ function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabel
           </thead>
           <tbody>
             {eintraege.map((e, i) => {
-              const farbe = MASCHINEN_FARBE[e.maschine] ?? 'text-gray-400';
+              const farbe      = MASCHINEN_FARBE[e.maschine] ?? 'text-gray-400';
+              const beitraege  = zeigeBeitraege ? (beitraegeMap[e.id] ?? []) : [];
+              const hatMehrere = beitraege.length > 1;
+              const rowBg      = i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950';
+
               return (
-                <tr key={e.id} className={i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950'}>
-                  <td className="px-4 py-2 text-white font-medium">{e.name}</td>
-                  <td className="px-4 py-2 text-right text-green-400">{e.rateProMin.toFixed(2)}</td>
-                  <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
-                  {zeigeMaschine && (
-                    <td className={`px-4 py-2 text-right text-xs hidden md:table-cell ${farbe}`}>
-                      {maschinenLabels[e.maschine] ?? '—'}
-                    </td>
+                <Fragment key={e.id}>
+                  <tr className={rowBg}>
+                    <td className="px-4 py-2 text-white font-medium">{e.name}</td>
+                    <td className="px-4 py-2 text-right text-green-400">{e.rateProMin.toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
+                    {zeigeMaschine && (
+                      <td className={`px-4 py-2 text-right text-xs hidden md:table-cell ${farbe}`}>
+                        {maschinenLabels[e.maschine] ?? '—'}
+                      </td>
+                    )}
+                    {zeigeMaschine && (
+                      <td className={`px-4 py-2 text-right font-bold ${farbe}`}>
+                        {e.anzahl ?? '—'}
+                      </td>
+                    )}
+                  </tr>
+                  {hatMehrere && (
+                    <tr className={rowBg}>
+                      <td colSpan={10} className="px-4 pb-2.5 pt-0">
+                        <div className="flex gap-1.5 flex-wrap">
+                          {beitraege.map(b => (
+                            <span
+                              key={b.id}
+                              className={`text-xs px-2 py-0.5 rounded-full border ${ITEM_FARBEN[b.colorIdx]}`}
+                            >
+                              {b.name}: {b.rateProMin.toFixed(1)}/min
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
                   )}
-                  {zeigeMaschine && (
-                    <td className={`px-4 py-2 text-right font-bold ${farbe}`}>
-                      {e.anzahl ?? '—'}
-                    </td>
-                  )}
-                </tr>
+                </Fragment>
               );
             })}
           </tbody>

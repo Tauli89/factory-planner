@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import ProduktAuswahl from './components/ProduktAuswahl';
 import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
@@ -18,47 +18,119 @@ const TABS = {
   ],
 };
 
+const TX = {
+  de: {
+    konfigurieren: 'Produktion konfigurieren',
+    hinzufuegen:   '+ Produkt hinzufügen',
+    zuruecksetzen: 'Zurücksetzen',
+    entfernen:     'Entfernen',
+    hinweis:       'Wähle ein Produkt, um die Produktionskette zu berechnen.',
+  },
+  en: {
+    konfigurieren: 'Configure production',
+    hinzufuegen:   '+ Add product',
+    zuruecksetzen: 'Reset',
+    entfernen:     'Remove',
+    hinweis:       'Select a product to calculate the production chain.',
+  },
+};
+
 function RechnerTab({ sprache }) {
-  const [produktId, setProduktId] = useState('');
-  const [mengeProMin, setMengeProMin] = useState(60);
+  const [items, setItems] = useState([{ key: 1, id: '', mengeProMin: 60 }]);
+  const keyRef = useRef(2);
 
-  const produktion = useMemo(() => {
-    if (!produktId || mengeProMin <= 0) return {};
-    return berechneProduktion(produktId, mengeProMin / 60);
-  }, [produktId, mengeProMin]);
+  const addItem = () =>
+    setItems(prev => [...prev, { key: keyRef.current++, id: '', mengeProMin: 60 }]);
 
-  const produktionKonfigurieren = sprache === 'de' ? 'Produktion konfigurieren' : 'Configure production';
-  const zuruecksetzen = sprache === 'de' ? 'Zurücksetzen' : 'Reset';
-  const hinweis = sprache === 'de'
-    ? 'Wähle ein Produkt, um die Produktionskette zu berechnen.'
-    : 'Select a product to calculate the production chain.';
+  const removeItem = key =>
+    setItems(prev => prev.length > 1 ? prev.filter(i => i.key !== key) : prev);
+
+  const updateId    = (key, id)    => setItems(prev => prev.map(i => i.key === key ? { ...i, id }          : i));
+  const updateMenge = (key, menge) => setItems(prev => prev.map(i => i.key === key ? { ...i, mengeProMin: menge } : i));
+
+  const resetAll = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60 }]);
+
+  const { combined, perItem } = useMemo(() => {
+    const active = items.filter(i => i.id && i.mengeProMin > 0);
+    if (!active.length) return { combined: {}, perItem: [] };
+
+    const perItem = active.map(item => ({
+      key:        item.key,
+      id:         item.id,
+      mengeProMin: item.mengeProMin,
+      produktion: berechneProduktion(item.id, item.mengeProMin / 60),
+    }));
+
+    const combined = {};
+    for (const p of perItem) {
+      for (const [id, rate] of Object.entries(p.produktion)) {
+        combined[id] = (combined[id] ?? 0) + rate;
+      }
+    }
+    return { combined, perItem };
+  }, [items]);
+
+  const hasResult   = Object.keys(combined).length > 0;
+  const hasSelected = items.some(i => i.id);
+  const tx = TX[sprache];
 
   return (
     <div className="flex flex-col gap-8">
       <section className="bg-gray-900 rounded-xl border border-gray-800 p-6">
-        <h2 className="text-amber-400 font-bold text-base mb-5 uppercase tracking-wide">
-          {produktionKonfigurieren}
-        </h2>
-        <div className="flex flex-wrap gap-6 items-end">
-          <ProduktAuswahl ausgewaehltId={produktId} onAuswahl={setProduktId} />
-          <MengenEingabe wert={mengeProMin} onChange={setMengeProMin} />
-          {produktId && (
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-amber-400 font-bold text-base uppercase tracking-wide">
+            {tx.konfigurieren}
+          </h2>
+          <div className="flex gap-2">
+            {hasSelected && (
+              <button
+                onClick={resetAll}
+                className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors"
+              >
+                {tx.zuruecksetzen}
+              </button>
+            )}
             <button
-              onClick={() => setProduktId('')}
-              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors"
+              onClick={addItem}
+              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-sm font-medium transition-colors"
             >
-              {zuruecksetzen}
+              {tx.hinzufuegen}
             </button>
-          )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {items.map((item, idx) => (
+            <div
+              key={item.key}
+              className="flex flex-wrap gap-4 items-end p-3 rounded-lg bg-gray-800/40 border border-gray-700/50"
+            >
+              {items.length > 1 && (
+                <span className="text-xs text-gray-500 font-mono self-center w-5 text-center">
+                  #{idx + 1}
+                </span>
+              )}
+              <ProduktAuswahl ausgewaehltId={item.id} onAuswahl={id => updateId(item.key, id)} />
+              <MengenEingabe wert={item.mengeProMin} onChange={m => updateMenge(item.key, m)} />
+              {items.length > 1 && (
+                <button
+                  onClick={() => removeItem(item.key)}
+                  className="px-3 py-2 rounded-lg bg-gray-700 hover:bg-red-900/40 text-gray-400 hover:text-red-300 text-sm transition-colors"
+                >
+                  {tx.entfernen}
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       </section>
 
-      {produktId ? (
+      {hasResult ? (
         <section className="bg-gray-900 rounded-xl border border-gray-800 p-6">
-          <ErgebnisTabelle produktion={produktion} />
+          <ErgebnisTabelle produktion={combined} perItem={perItem} />
         </section>
       ) : (
-        <div className="text-center text-gray-600 mt-16 text-lg">{hinweis}</div>
+        <div className="text-center text-gray-600 mt-16 text-lg">{tx.hinweis}</div>
       )}
     </div>
   );
@@ -114,7 +186,6 @@ function AppInner() {
         </nav>
 
         <div className="ml-auto flex items-center gap-4">
-          {/* Sprach-Switcher */}
           <div className="flex rounded-lg border border-gray-700 overflow-hidden text-xs font-bold">
             <button
               onClick={() => setSprache('de')}
@@ -142,7 +213,7 @@ function AppInner() {
           ? 'overflow-hidden py-4 flex flex-col'
           : 'overflow-auto py-8'
       }`}>
-        {aktuellerTab === 'rechner' && <RechnerTab sprache={sprache} />}
+        {aktuellerTab === 'rechner'   && <RechnerTab   sprache={sprache} />}
         {aktuellerTab === 'forschung' && <ForschungsTab sprache={sprache} />}
       </main>
     </div>
