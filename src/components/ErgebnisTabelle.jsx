@@ -3,6 +3,8 @@ import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
 import { maschinenAnzahl, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
+import { useModul } from '../context/ModulContext';
+import { BELT_FARBE } from '../data/belts';
 
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
@@ -36,6 +38,7 @@ const T = {
     proSek:         '/ Sek',
     maschine:       'Maschine',
     anzahl:         'Anz.',
+    baender:        'Bänder',
     boniAktiv:      'Forschungsboni aktiv:',
     bergbauBonus:   (v) => `⛏ Bergbau-Produktivität +${v}%`,
     assemblerBonus: (v) => `⚙ Assembler-Geschwindigkeit +${v}%`,
@@ -48,20 +51,21 @@ const T = {
     proSek:         '/ Sec',
     maschine:       'Machine',
     anzahl:         'Qty.',
+    baender:        'Belts',
     boniAktiv:      'Research bonuses active:',
     bergbauBonus:   (v) => `⛏ Mining Productivity +${v}%`,
     assemblerBonus: (v) => `⚙ Assembler Speed +${v}%`,
   },
 };
 
-export default function ErgebnisTabelle({ produktion, perItem = [] }) {
-  const { boni } = useForschung();
-  const { sprache } = useSprache();
+export default function ErgebnisTabelle({ produktion, perItem = [], foerderband = null }) {
+  const { boni }      = useForschung();
+  const { sprache }   = useSprache();
+  const { modulBoni } = useModul();
   const tx = T[sprache];
 
   const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
 
-  // Build per-resource contribution map when multiple items are active
   const beitraegeMap = useMemo(() => {
     if (perItem.length <= 1) return {};
     const result = {};
@@ -83,9 +87,10 @@ export default function ErgebnisTabelle({ produktion, perItem = [] }) {
   if (!produktion || Object.keys(produktion).length === 0) return null;
 
   const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
-    const rezept     = REZEPTE_MAP[id];
+    const rezept      = REZEPTE_MAP[id];
     const istRohstoff = !rezept || rezept.zeit === 0;
-    const anzahl     = istRohstoff ? null : maschinenAnzahl(id, rateProSek, boni);
+    const anzahl      = istRohstoff ? null : maschinenAnzahl(id, rateProSek, boni, modulBoni);
+    const baender     = foerderband?.durchsatz ? Math.ceil(rateProSek / foerderband.durchsatz) : null;
     return {
       id,
       name:       sprache === 'de' ? (rezept?.name ?? id) : (rezept?.nameEn ?? id),
@@ -94,6 +99,7 @@ export default function ErgebnisTabelle({ produktion, perItem = [] }) {
       istRohstoff,
       anzahl,
       maschine:   rezept?.maschine ?? null,
+      baender,
     };
   });
 
@@ -101,6 +107,13 @@ export default function ErgebnisTabelle({ produktion, perItem = [] }) {
   const rohstoffe   = eintraege.filter(e =>  e.istRohstoff);
 
   const bonusHinweis = boni.miningBonus > 0 || boni.assemblerBonus > 0;
+
+  // Collect active module bonuses for display
+  const aktiveModulBoni = Object.entries(modulBoni).filter(
+    ([, b]) => b.speedBonus !== 0 || b.produktivitaet > 0
+  );
+
+  const beltFarbe = foerderband ? (BELT_FARBE[foerderband.id] ?? 'text-gray-300') : 'text-gray-300';
 
   return (
     <div className="flex flex-col gap-6 mt-6">
@@ -115,6 +128,22 @@ export default function ErgebnisTabelle({ produktion, perItem = [] }) {
           )}
         </div>
       )}
+
+      {aktiveModulBoni.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-xs bg-gray-800/50 rounded-lg px-3 py-2">
+          <span className="text-green-400 font-semibold shrink-0">
+            {sprache === 'de' ? 'Module aktiv:' : 'Modules active:'}
+          </span>
+          {aktiveModulBoni.map(([maschinenType, b]) => (
+            <span key={maschinenType} className="text-gray-400">
+              {maschinenLabels[maschinenType]}:
+              {b.speedBonus  !== 0 && ` ⚡${b.speedBonus > 0 ? '+' : ''}${(b.speedBonus * 100).toFixed(0)}%`}
+              {b.produktivitaet > 0 && ` 📦+${(b.produktivitaet * 100).toFixed(0)}%`}
+            </span>
+          ))}
+        </div>
+      )}
+
       <Abschnitt
         titel={tx.herstellung}
         eintraege={herstellung}
@@ -123,6 +152,7 @@ export default function ErgebnisTabelle({ produktion, perItem = [] }) {
         maschinenLabels={maschinenLabels}
         beitraegeMap={beitraegeMap}
         zeigeBeitraege={zeigeBeitraege}
+        beltFarbe={beltFarbe}
       />
       <Abschnitt
         titel={tx.rohstoffe}
@@ -131,13 +161,16 @@ export default function ErgebnisTabelle({ produktion, perItem = [] }) {
         maschinenLabels={maschinenLabels}
         beitraegeMap={beitraegeMap}
         zeigeBeitraege={zeigeBeitraege}
+        beltFarbe={beltFarbe}
       />
     </div>
   );
 }
 
-function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabels, beitraegeMap = {}, zeigeBeitraege = false }) {
+function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabels, beitraegeMap = {}, zeigeBeitraege = false, beltFarbe }) {
   if (eintraege.length === 0) return null;
+  const zeigeBaender = eintraege.some(e => e.baender !== null);
+
   return (
     <div>
       <h2 className="text-amber-400 font-bold text-lg mb-3 border-b border-gray-700 pb-1">{titel}</h2>
@@ -148,6 +181,9 @@ function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabel
               <th className="px-4 py-3">{tx.produkt}</th>
               <th className="px-4 py-3 text-right">{tx.proMin}</th>
               <th className="px-4 py-3 text-right">{tx.proSek}</th>
+              {zeigeBaender && (
+                <th className={`px-4 py-3 text-right ${beltFarbe}`}>{tx.baender}</th>
+              )}
               {zeigeMaschine && <th className="px-4 py-3 text-right hidden md:table-cell">{tx.maschine}</th>}
               {zeigeMaschine && <th className="px-4 py-3 text-right">{tx.anzahl}</th>}
             </tr>
@@ -165,6 +201,11 @@ function Abschnitt({ titel, eintraege, zeigeMaschine = false, tx, maschinenLabel
                     <td className="px-4 py-2 text-white font-medium">{e.name}</td>
                     <td className="px-4 py-2 text-right text-green-400">{e.rateProMin.toFixed(2)}</td>
                     <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
+                    {zeigeBaender && (
+                      <td className={`px-4 py-2 text-right font-bold ${e.baender !== null ? beltFarbe : 'text-gray-600'}`}>
+                        {e.baender !== null ? e.baender : '—'}
+                      </td>
+                    )}
                     {zeigeMaschine && (
                       <td className={`px-4 py-2 text-right text-xs hidden md:table-cell ${farbe}`}>
                         {maschinenLabels[e.maschine] ?? '—'}

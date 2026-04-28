@@ -3,9 +3,13 @@ import ProduktAuswahl from './components/ProduktAuswahl';
 import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
 import ForschungsBaum from './components/ForschungsBaum';
+import ModulAuswahl from './components/ModulAuswahl';
 import { ForschungProvider, useForschung } from './context/ForschungContext';
 import { SprachProvider, useSprache } from './context/SprachContext';
+import { ModulProvider, useModul } from './context/ModulContext';
 import { berechneProduktion } from './utils/berechnung';
+import { REZEPTE_MAP } from './data/recipes';
+import { FOERDERBAENDER, FOERDERBAENDER_MAP } from './data/belts';
 
 const TABS = {
   de: [
@@ -25,6 +29,8 @@ const TX = {
     zuruecksetzen: 'Zurücksetzen',
     entfernen:     'Entfernen',
     hinweis:       'Wähle ein Produkt, um die Produktionskette zu berechnen.',
+    foerderband:   'Förderband',
+    module:        'Module',
   },
   en: {
     konfigurieren: 'Configure production',
@@ -32,33 +38,34 @@ const TX = {
     zuruecksetzen: 'Reset',
     entfernen:     'Remove',
     hinweis:       'Select a product to calculate the production chain.',
+    foerderband:   'Belt type',
+    module:        'Modules',
   },
 };
 
 function RechnerTab({ sprache }) {
-  const [items, setItems] = useState([{ key: 1, id: '', mengeProMin: 60 }]);
+  const [items, setItems]               = useState([{ key: 1, id: '', mengeProMin: 60 }]);
+  const [bandId, setBandId]             = useState('keins');
+  const [zeigeModule, setZeigeModule]   = useState(false);
   const keyRef = useRef(2);
 
-  const addItem = () =>
-    setItems(prev => [...prev, { key: keyRef.current++, id: '', mengeProMin: 60 }]);
+  const { modulBoni } = useModul();
 
-  const removeItem = key =>
-    setItems(prev => prev.length > 1 ? prev.filter(i => i.key !== key) : prev);
-
-  const updateId    = (key, id)    => setItems(prev => prev.map(i => i.key === key ? { ...i, id }          : i));
-  const updateMenge = (key, menge) => setItems(prev => prev.map(i => i.key === key ? { ...i, mengeProMin: menge } : i));
-
-  const resetAll = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60 }]);
+  const addItem    = () => setItems(prev => [...prev, { key: keyRef.current++, id: '', mengeProMin: 60 }]);
+  const removeItem = key => setItems(prev => prev.length > 1 ? prev.filter(i => i.key !== key) : prev);
+  const updateId   = (key, id)    => setItems(prev => prev.map(i => i.key === key ? { ...i, id }           : i));
+  const updateMenge= (key, menge) => setItems(prev => prev.map(i => i.key === key ? { ...i, mengeProMin: menge } : i));
+  const resetAll   = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60 }]);
 
   const { combined, perItem } = useMemo(() => {
     const active = items.filter(i => i.id && i.mengeProMin > 0);
     if (!active.length) return { combined: {}, perItem: [] };
 
     const perItem = active.map(item => ({
-      key:        item.key,
-      id:         item.id,
+      key:         item.key,
+      id:          item.id,
       mengeProMin: item.mengeProMin,
-      produktion: berechneProduktion(item.id, item.mengeProMin / 60),
+      produktion:  berechneProduktion(item.id, item.mengeProMin / 60, {}, modulBoni),
     }));
 
     const combined = {};
@@ -68,11 +75,26 @@ function RechnerTab({ sprache }) {
       }
     }
     return { combined, perItem };
-  }, [items]);
+  }, [items, modulBoni]);
 
+  // Machine types used in the current production chain (for module selector)
+  const aktiveMaschinen = useMemo(() => {
+    const maschinen = new Set();
+    for (const id of Object.keys(combined)) {
+      const rezept = REZEPTE_MAP[id];
+      if (rezept && rezept.zeit > 0) maschinen.add(rezept.maschine);
+    }
+    return maschinen;
+  }, [combined]);
+
+  const foerderband = FOERDERBAENDER_MAP[bandId] ?? null;
   const hasResult   = Object.keys(combined).length > 0;
   const hasSelected = items.some(i => i.id);
-  const tx = TX[sprache];
+  const tx          = TX[sprache];
+
+  const bandLabel = sprache === 'de'
+    ? (foerderband?.id !== 'keins' ? foerderband?.name : 'Kein Band')
+    : (foerderband?.id !== 'keins' ? foerderband?.nameEn : 'No Belt');
 
   return (
     <div className="flex flex-col gap-8">
@@ -123,11 +145,52 @@ function RechnerTab({ sprache }) {
             </div>
           ))}
         </div>
+
+        {/* Belt selector + Module toggle */}
+        <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-700/50">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">{tx.foerderband}:</span>
+            <select
+              value={bandId}
+              onChange={e => setBandId(e.target.value)}
+              className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
+            >
+              {FOERDERBAENDER.map(b => (
+                <option key={b.id} value={b.id}>
+                  {sprache === 'de' ? b.name : b.nameEn}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {hasResult && aktiveMaschinen.size > 0 && (
+            <button
+              onClick={() => setZeigeModule(v => !v)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                zeigeModule
+                  ? 'bg-green-500/20 text-green-300 border-green-500/40'
+                  : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+              }`}
+            >
+              ⚙ {tx.module}
+            </button>
+          )}
+        </div>
+
+        {zeigeModule && hasResult && (
+          <div className="mt-4">
+            <ModulAuswahl aktiveMaschinen={aktiveMaschinen} />
+          </div>
+        )}
       </section>
 
       {hasResult ? (
         <section className="bg-gray-900 rounded-xl border border-gray-800 p-6">
-          <ErgebnisTabelle produktion={combined} perItem={perItem} />
+          <ErgebnisTabelle
+            produktion={combined}
+            perItem={perItem}
+            foerderband={foerderband?.id !== 'keins' ? foerderband : null}
+          />
         </section>
       ) : (
         <div className="text-center text-gray-600 mt-16 text-lg">{tx.hinweis}</div>
@@ -224,7 +287,9 @@ export default function App() {
   return (
     <SprachProvider>
       <ForschungProvider>
-        <AppInner />
+        <ModulProvider>
+          <AppInner />
+        </ModulProvider>
       </ForschungProvider>
     </SprachProvider>
   );
