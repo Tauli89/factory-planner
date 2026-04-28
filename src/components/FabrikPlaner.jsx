@@ -17,6 +17,7 @@ import '@xyflow/react/dist/style.css';
 import MaschinenNode from './MaschinenNode';
 import { useBerechnung } from '../context/BerechnungContext';
 import { FOERDERBAENDER, FOERDERBAENDER_MAP } from '../data/belts';
+import { buildBlueprint, encodeBlueprintString, buildLayoutJSON } from '../utils/blueprintExport';
 
 const nodeTypes = { maschine: MaschinenNode };
 
@@ -45,32 +46,58 @@ const MACH_COLOR = {
 
 const TX = {
   de: {
-    titel:        'Fabrikplaner',
-    maschinen:    'Maschinen (Rechner)',
-    importAll:    'Alle importieren',
-    clear:        'Leeren',
-    noCalc:       'Berechne zuerst im Rechner-Tab eine Produktion.',
-    newBelt:      'Förderband (neue Verbindungen):',
-    changeBelt:   'Förderband ändern:',
-    hint:         'Maschinen aus der Leiste links auf die Fläche ziehen · Handles verbinden für Förderbänder',
-    deleteEdge:   'Verbindung löschen',
-    close:        'Schließen',
-    machines:     'Maschinen',
-    rateMin:      '/min',
+    titel:          'Fabrikplaner',
+    maschinen:      'Maschinen (Rechner)',
+    importAll:      'Alle importieren',
+    clear:          'Leeren',
+    noCalc:         'Berechne zuerst im Rechner-Tab eine Produktion.',
+    newBelt:        'Förderband (neue Verbindungen):',
+    changeBelt:     'Förderband ändern:',
+    hint:           'Maschinen aus der Leiste links auf die Fläche ziehen · Handles verbinden für Förderbänder',
+    deleteEdge:     'Verbindung löschen',
+    close:          'Schließen',
+    machines:       'Maschinen',
+    rateMin:        '/min',
+    exportBp:       'Blueprint',
+    exportJson:     'JSON',
+    exportSection:  'Export',
+    bpModalTitle:   'Factorio Blueprint-String',
+    bpHint:         'In Factorio: Importieren-Schaltfläche oder Strg+Alt+V · Maschinen evtl. neu anordnen',
+    bpCopy:         'In Zwischenablage',
+    bpCopied:       'Kopiert!',
+    bpLoading:      'Wird generiert…',
+    bpNoNodes:      'Keine Maschinen auf der Planfläche.',
+    jsonModalTitle: 'Layout-JSON',
+    jsonHint:       'Speichern & Teilen – enthält Positionen, Maschinentypen und Verbindungen.',
+    jsonDownload:   'JSON herunterladen',
+    jsonCopy:       'In Zwischenablage',
   },
   en: {
-    titel:        'Factory Planner',
-    maschinen:    'Machines (Calculator)',
-    importAll:    'Import all',
-    clear:        'Clear',
-    noCalc:       'First calculate a production in the Calculator tab.',
-    newBelt:      'Belt type (new connections):',
-    changeBelt:   'Change belt:',
-    hint:         'Drag machines from the left panel onto the canvas · Connect handles for belts',
-    deleteEdge:   'Delete connection',
-    close:        'Close',
-    machines:     'Machines',
-    rateMin:      '/min',
+    titel:          'Factory Planner',
+    maschinen:      'Machines (Calculator)',
+    importAll:      'Import all',
+    clear:          'Clear',
+    noCalc:         'First calculate a production in the Calculator tab.',
+    newBelt:        'Belt type (new connections):',
+    changeBelt:     'Change belt:',
+    hint:           'Drag machines from the left panel onto the canvas · Connect handles for belts',
+    deleteEdge:     'Delete connection',
+    close:          'Close',
+    machines:       'Machines',
+    rateMin:        '/min',
+    exportBp:       'Blueprint',
+    exportJson:     'JSON',
+    exportSection:  'Export',
+    bpModalTitle:   'Factorio Blueprint String',
+    bpHint:         'In Factorio: Import button or Ctrl+Alt+V · You may need to rearrange machines',
+    bpCopy:         'Copy to Clipboard',
+    bpCopied:       'Copied!',
+    bpLoading:      'Generating…',
+    bpNoNodes:      'No machines on the canvas.',
+    jsonModalTitle: 'Layout JSON',
+    jsonHint:       'Save & share – includes positions, machine types, and connections.',
+    jsonDownload:   'Download JSON',
+    jsonCopy:       'Copy to Clipboard',
   },
 };
 
@@ -100,6 +127,9 @@ function FabrikPlanerInner({ sprache }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedBelt, setSelectedBelt] = useState('gelb');
   const [selectedEdgeId, setSelectedEdgeId] = useState(null);
+  const [exportModal, setExportModal] = useState(null); // { type, content } | null
+  const [bpLoading, setBpLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { screenToFlowPosition } = useReactFlow();
   const { maschinenListe } = useBerechnung();
   const nodeIdRef = useRef(1);
@@ -187,6 +217,47 @@ function FabrikPlanerInner({ sprache }) {
     setSelectedEdgeId(null);
   }, [setNodes, setEdges]);
 
+  // ── Export as Factorio Blueprint ──────────────────────────────────────────
+  const exportBlueprint = useCallback(async () => {
+    if (nodes.length === 0) return;
+    setBpLoading(true);
+    try {
+      const obj = buildBlueprint(nodes, 'Factory Planner');
+      const str = await encodeBlueprintString(obj);
+      setExportModal({ type: 'blueprint', content: str });
+    } finally {
+      setBpLoading(false);
+    }
+  }, [nodes]);
+
+  // ── Export as JSON ────────────────────────────────────────────────────────
+  const exportJSON = useCallback(() => {
+    if (nodes.length === 0) return;
+    const json = buildLayoutJSON(nodes, edges);
+    setExportModal({ type: 'json', content: json });
+  }, [nodes, edges]);
+
+  // ── Copy to clipboard ─────────────────────────────────────────────────────
+  const copyToClipboard = useCallback(() => {
+    if (!exportModal) return;
+    navigator.clipboard.writeText(exportModal.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [exportModal]);
+
+  // ── Download JSON ─────────────────────────────────────────────────────────
+  const downloadJSON = useCallback(() => {
+    if (!exportModal) return;
+    const blob = new Blob([exportModal.content], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'factory-layout.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [exportModal]);
+
   const beltsForSelector = FOERDERBAENDER.filter(b => b.id !== 'keins');
 
   return (
@@ -204,19 +275,43 @@ function FabrikPlanerInner({ sprache }) {
         {maschinenListe.length > 0 ? (
           <>
             {/* Action buttons */}
-            <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 flex gap-2">
-              <button
-                onClick={importAll}
-                className="flex-1 text-xs px-2 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-medium transition-colors"
-              >
-                {tx.importAll}
-              </button>
-              <button
-                onClick={clearAll}
-                className="text-xs px-2 py-1.5 rounded bg-gray-700 hover:bg-red-900/40 text-gray-400 hover:text-red-300 transition-colors"
-              >
-                {tx.clear}
-              </button>
+            <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 flex flex-col gap-1.5">
+              <div className="flex gap-2">
+                <button
+                  onClick={importAll}
+                  className="flex-1 text-xs px-2 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-medium transition-colors"
+                >
+                  {tx.importAll}
+                </button>
+                <button
+                  onClick={clearAll}
+                  className="text-xs px-2 py-1.5 rounded bg-gray-700 hover:bg-red-900/40 text-gray-400 hover:text-red-300 transition-colors"
+                >
+                  {tx.clear}
+                </button>
+              </div>
+
+              {/* Export buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={exportBlueprint}
+                  disabled={nodes.length === 0 || bpLoading}
+                  title={nodes.length === 0 ? tx.bpNoNodes : undefined}
+                  className="flex-1 text-xs px-2 py-1.5 rounded bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                >
+                  <span className="text-[10px]">📋</span>
+                  {bpLoading ? tx.bpLoading : tx.exportBp}
+                </button>
+                <button
+                  onClick={exportJSON}
+                  disabled={nodes.length === 0}
+                  title={nodes.length === 0 ? tx.bpNoNodes : undefined}
+                  className="flex-1 text-xs px-2 py-1.5 rounded bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border border-violet-500/30 font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                >
+                  <span className="text-[10px]">📄</span>
+                  {tx.exportJson}
+                </button>
+              </div>
             </div>
 
             {/* Machine list */}
@@ -333,6 +428,77 @@ function FabrikPlanerInner({ sprache }) {
           )}
         </ReactFlow>
       </div>
+      {/* ── Export Modal ── */}
+      {exportModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setExportModal(null); }}
+        >
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <div>
+                <h2 className="text-white font-bold text-sm">
+                  {exportModal.type === 'blueprint' ? tx.bpModalTitle : tx.jsonModalTitle}
+                </h2>
+                <p className="text-gray-500 text-[11px] mt-0.5">
+                  {exportModal.type === 'blueprint' ? tx.bpHint : tx.jsonHint}
+                </p>
+              </div>
+              <button
+                onClick={() => { setExportModal(null); setCopied(false); }}
+                className="text-gray-600 hover:text-white transition-colors text-lg leading-none ml-4"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-5">
+              <textarea
+                readOnly
+                value={exportModal.content}
+                rows={exportModal.type === 'blueprint' ? 4 : 10}
+                onClick={e => e.target.select()}
+                className="w-full bg-gray-950 text-green-400 text-[11px] font-mono rounded-xl p-3.5 resize-none border border-gray-800 focus:outline-none focus:border-gray-600 transition-colors leading-relaxed"
+              />
+
+              {/* Action buttons */}
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={copyToClipboard}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                    copied
+                      ? 'bg-green-600/30 border border-green-500/50 text-green-300'
+                      : exportModal.type === 'blueprint'
+                        ? 'bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300'
+                        : 'bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/40 text-violet-300'
+                  }`}
+                >
+                  {copied ? tx.bpCopied : (exportModal.type === 'blueprint' ? tx.bpCopy : tx.jsonCopy)}
+                </button>
+
+                {exportModal.type === 'json' && (
+                  <button
+                    onClick={downloadJSON}
+                    className="flex-1 py-2 rounded-xl text-sm font-medium bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/40 text-violet-300 transition-colors"
+                  >
+                    {tx.jsonDownload}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => { setExportModal(null); setCopied(false); }}
+                  className="px-5 py-2 rounded-xl text-sm bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                >
+                  {tx.close}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
