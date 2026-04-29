@@ -52,8 +52,8 @@ const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'milit
 const KARTE_B     = 220;
 const KARTE_H     = 90;
 const KARTE_H_LVL = 110;
-const ABSTAND_X   = 260;
-const ABSTAND_Y   = 130;
+const ABSTAND_X   = 300;  // nodeWidth(240) + horizontalGap(60)
+const ABSTAND_Y   = 130;  // nodeHeight(110) + verticalGap(20)
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -541,7 +541,7 @@ export default function ForschungsBaum() {
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.1 }}
+            fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
             minZoom={0.05}
             maxZoom={2}
             nodesDraggable={false}
@@ -550,7 +550,7 @@ export default function ForschungsBaum() {
             style={{ background: '#030712' }}
           >
             <Background variant={BackgroundVariant.Dots} color="#1f2937" gap={24} size={1.2} />
-            <Controls showInteractive={false} />
+            <Controls className="rf-controls-dark" showInteractive={false} />
           </ReactFlow>
         </div>
       </BaumFehlerGrenze>

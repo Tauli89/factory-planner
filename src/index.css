@@ -28,6 +28,29 @@
   fill: #ffffff;
 }
 
+/* rf-controls-dark – explizite Dark-Theme Klasse für <Controls className="rf-controls-dark"> */
+.rf-controls-dark {
+  background: #1e293b !important;
+  border: 1px solid #475569 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+
+.rf-controls-dark button {
+  background: #334155 !important;
+  border-bottom: 1px solid #475569 !important;
+  color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.rf-controls-dark button:hover {
+  background: #475569 !important;
+}
+
+.rf-controls-dark button svg {
+  fill: #cbd5e1 !important;
+}
+
 .react-flow__minimap {
   background: #0f172a;
   border: 1px solid #374151;
