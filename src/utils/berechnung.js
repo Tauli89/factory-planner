@@ -49,28 +49,28 @@ export const MASCHINEN_LABEL_EN = {
 };
 
 /**
- * Berechnet rekursiv alle benötigten Produktionsraten.
+ * Berechnet alle benötigten Produktionsraten (BFS, kein exponentielles Rekursion-Problem).
  * modulBoni: { [maschinenType]: { speedBonus, produktivitaet } }
- * Produktivitätsmodule reduzieren den Zutatenverbrauch pro Output-Item.
  */
-export function berechneProduktion(id, mengeProSekunde, akkumulator = {}, modulBoni = {}) {
-  const rezept = REZEPTE_MAP[id];
-  if (!rezept || rezept.zeit === 0) {
-    akkumulator[id] = (akkumulator[id] ?? 0) + mengeProSekunde;
-    return akkumulator;
+export function berechneProduktion(rootId, rootRate, akkumulator = {}, modulBoni = {}) {
+  let pending = { [rootId]: rootRate };
+  while (Object.keys(pending).length > 0) {
+    const nextPending = {};
+    for (const [id, rate] of Object.entries(pending)) {
+      akkumulator[id] = (akkumulator[id] ?? 0) + rate;
+      const rezept = REZEPTE_MAP[id];
+      if (!rezept || rezept.zeit === 0) continue;
+      const modulBonus     = modulBoni[rezept.maschine];
+      const produktivitaet = modulBonus?.produktivitaet ?? 0;
+      const ingredientFaktor = 1 / (1 + produktivitaet);
+      for (const zutat of rezept.zutaten) {
+        if (zutat.id === id) continue; // skip self-referential ingredients (e.g. pentapod-egg)
+        const zutatRate = (zutat.menge / rezept.ergibt) * rate * ingredientFaktor;
+        nextPending[zutat.id] = (nextPending[zutat.id] ?? 0) + zutatRate;
+      }
+    }
+    pending = nextPending;
   }
-
-  akkumulator[id] = (akkumulator[id] ?? 0) + mengeProSekunde;
-
-  const modulBonus     = modulBoni[rezept.maschine];
-  const produktivitaet = modulBonus?.produktivitaet ?? 0;
-  const ingredientFaktor = 1 / (1 + produktivitaet);
-
-  for (const zutat of rezept.zutaten) {
-    const zutatRate = (zutat.menge / rezept.ergibt) * mengeProSekunde * ingredientFaktor;
-    berechneProduktion(zutat.id, zutatRate, akkumulator, modulBoni);
-  }
-
   return akkumulator;
 }
 
