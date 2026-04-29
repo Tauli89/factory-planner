@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import gamedata from '../data/gamedata.json';
 
 function resolveIconPath(id, type) {
@@ -32,30 +31,26 @@ function Fallback({ letter, size, className }) {
   );
 }
 
-/**
- * Zentrale Icon-Komponente für Factorio Items, Technologien und Maschinen.
- * type: 'items' (default) | 'technologies' | 'machines'
- */
-export default function Icon({ id, type = 'items', size = 24, className = '' }) {
-  const [err, setErr] = useState(false);
-
+export default function Icon({ id, type = 'items', size = 32, className = '' }) {
   if (!id) return <Fallback letter="?" size={size} className={className} />;
 
-  const iconPath = !err ? resolveIconPath(id, type) : null;
+  const iconPath = resolveIconPath(id, type);
+  if (!iconPath) return <Fallback letter={(id[0] ?? '?').toUpperCase()} size={size} className={className} />;
 
-  if (iconPath) {
-    return (
-      <img
-        src={iconPath}
-        alt={resolveAlt(id, type)}
-        width={size}
-        height={size}
-        className={`flex-shrink-0 ${className}`}
-        style={{ objectFit: 'contain', imageRendering: 'pixelated' }}
-        onError={() => setErr(true)}
-      />
-    );
-  }
-
-  return <Fallback letter={(id[0] ?? '?').toUpperCase()} size={size} className={className} />;
+  return (
+    <div
+      role="img"
+      aria-label={resolveAlt(id, type)}
+      className={`flex-shrink-0 ${className}`}
+      style={{
+        width: size,
+        height: size,
+        backgroundImage: `url(${iconPath})`,
+        backgroundPosition: '0 0',
+        backgroundSize: `${size * (120 / 64)}px ${size}px`,
+        backgroundRepeat: 'no-repeat',
+        imageRendering: 'pixelated',
+      }}
+    />
+  );
 }
