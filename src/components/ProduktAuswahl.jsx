@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { REZEPTE, REZEPTE_MAP, KATEGORIEN, KATEGORIEN_EN_LABEL } from '../data/recipes';
-import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/research';
-import { ITEM_ICONS } from '../data/icons';
+import { REZEPTE, REZEPTE_MAP, KATEGORIEN, KATEGORIEN_EN_LABEL, DURCH_TECH_GESPERRTE_REZEPTE, ITEM_ICONS } from '../data/gamedata-adapter';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 

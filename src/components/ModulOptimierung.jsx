@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useSprache } from '../context/SprachContext';
 import { useForschung } from '../context/ForschungContext';
 import { REZEPTE, REZEPTE_MAP, KATEGORIEN, KATEGORIEN_EN_LABEL } from '../data/recipes';
-import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/research';
+import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/gamedata-adapter';
 import { MODULE_MAP, MODUL_SLOTS } from '../data/modules';
 import { MASCHINEN_LABEL, MASCHINEN_LABEL_EN, berechneProduktion } from '../utils/berechnung';
 import {

@@ -16,7 +16,7 @@ import {
   KATEGORIEN,
   TECH_KATEGORIEN,
 } from '../data/research';
-import { TECH_ICON_URLS, TECH_ICON_LOCAL } from '../data/techIcons';
+import { TECH_ICONS } from '../data/gamedata-adapter';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 
@@ -116,18 +116,14 @@ function berechnePositionen() {
 // ── Technologie-Icon: lokal → wiki → Emoji-Fallback ──────────────────────────
 function TechIcon({ id, istErforscht, depsFehlen, iconBg }) {
   const [localErr, setLocalErr] = useState(false);
-  const [wikiErr,  setWikiErr]  = useState(false);
-  const local    = TECH_ICON_LOCAL[id];
-  const wikiUrl  = TECH_ICON_URLS[id];
+
+  const local    = TECH_ICONS[id];
   const fallback = istErforscht ? '✓' : depsFehlen ? '🔒' : '🔬';
 
-  const src = (!local || localErr) ? (wikiErr ? null : wikiUrl) : local;
+  const src = (!local || localErr) ? null : local;
   const showImg = !!src;
 
-  const handleErr = () => {
-    if (!localErr && local) { setLocalErr(true); }
-    else { setWikiErr(true); }
-  };
+  const handleErr = () => setLocalErr(true);
 
   return (
     <div

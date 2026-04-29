@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { MACHINE_ICONS } from '../data/icons';
+import { MACHINE_ICONS } from '../data/gamedata-adapter';
 
 const MASCHINEN_STYLES = {
   schmelzofen:   { color: '#f97316', icon: '🔥', label: 'Furnace' },

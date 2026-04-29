@@ -8,7 +8,7 @@ import { useQuality } from '../context/QualityContext';
 import { BELT_FARBE } from '../data/belts';
 import { formatQualityFaktor } from '../data/quality';
 import { MASCHINEN_DETAIL_NAME } from '../data/machines';
-import { ITEM_ICONS } from '../data/icons';
+import { ITEM_ICONS } from '../data/gamedata-adapter';
 
 const KATEGORIE_FALLBACK_FARBE = {
   [KATEGORIEN.ROHSTOFFE]:        '#6b7280',

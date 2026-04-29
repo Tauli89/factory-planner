@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { TECH_MAP, PRESETS } from '../data/research';
+import gamedata from '../data/gamedata.json';
 
 const ForschungContext = createContext(null);
 
@@ -92,16 +93,14 @@ export function ForschungProvider({ children }) {
     return { miningBonus, assemblerBonus };
   }, [erforscht]);
 
-  // Menge aller freigeschalteten Rezept-IDs
+  // Menge aller freigeschalteten Rezept-IDs (English IDs aus gamedata.json)
   const freigeschalteteRezepte = useMemo(() => {
     const ids = new Set();
-    // Rezepte die immer verfügbar sind (keine Tech benötigt)
-    // werden in ProduktAuswahl als Fallback behandelt
     for (const id of erforscht) {
-      const tech = TECH_MAP[id];
+      const tech = gamedata.technologies[id];
       if (!tech) continue;
-      for (const eff of tech.effects) {
-        if (eff.type === 'unlock_recipe') ids.add(eff.id);
+      for (const recipeId of tech.unlocks_recipes ?? []) {
+        ids.add(recipeId);
       }
     }
     return ids;
