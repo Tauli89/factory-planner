@@ -416,8 +416,26 @@ export default function ForschungsBaum() {
     return { nodes, edges };
   }, [erforscht, infiniteLevels, sprache, gefilterteTech, sucheAktiv, handleToggle, handleSetzeLevel]);
 
-  const anzahlErforscht = [...erforscht].filter(id => !IMMER_SICHTBAR.has(id)).length;
-  const anzahlGesamt    = TECH_LAYOUT.length;
+  // Summe aller Stufen: Level-Gruppen zählen als aktuellesLevel, reguläre Techs als 0 oder 1
+  const anzahlErforscht = useMemo(() => {
+    let summe = 0;
+    for (const tech of TECH_LAYOUT) {
+      if (IMMER_SICHTBAR.has(tech.id)) continue;
+      const gruppenInfo = LEVEL_GRUPPE_VON_TECH[tech.id];
+      if (gruppenInfo && gruppenInfo.index === 0) {
+        let level = 0;
+        for (const id of gruppenInfo.gruppe.ids) {
+          if (erforscht.has(id)) level++;
+          else break;
+        }
+        summe += level + (infiniteLevels.get(gruppenInfo.gruppe.id) ?? 0);
+      } else if (!gruppenInfo) {
+        if (erforscht.has(tech.id)) summe++;
+      }
+    }
+    return summe;
+  }, [erforscht, infiniteLevels]);
+  const anzahlGesamt = TECH_LAYOUT.length;
 
   const suchPlaceholder = sprache === 'de' ? 'Technologie suchen…' : 'Search technology…';
   const allesReset      = sprache === 'de' ? 'Alles zurücksetzen' : 'Reset all';
