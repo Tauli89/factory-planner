@@ -16,7 +16,7 @@ import {
   KATEGORIEN,
   TECH_KATEGORIEN,
 } from '../data/research';
-import { TECH_ICONS } from '../data/gamedata-adapter';
+import Icon from './Icon';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 
@@ -45,22 +45,17 @@ class BaumFehlerGrenze extends Component {
   }
 }
 
-// Techs die immer als erforscht gelten und nicht im Zähler erscheinen sollen
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
-// ── Layout constants ──────────────────────────────────────────────────────────
-const KARTE_B = 210;
-const KARTE_H = 96;
-const ABSTAND_X = 250;
-const ABSTAND_Y = 128;
+// ── Layout-Konstanten ─────────────────────────────────────────────────────────
+const KARTE_B   = 220;
+const KARTE_H   = 100;
+const ABSTAND_X = 260;
+const ABSTAND_Y = 130;
 
-// Alle Techs die als Vorgänger anderer Techs auftauchen
-const _TECH_MIT_NACHFOLGER = new Set(
-  TECH.flatMap(t => t.prerequisites)
-);
+const _TECH_MIT_NACHFOLGER = new Set(TECH.flatMap(t => t.prerequisites));
 
-// Orphan-Nodes (keine Voraussetzungen in der Karte UND keine Nachfolger) ausblenden,
-// da sie als leere Rechtecke ohne Verbindungen erscheinen.
+// Nicht-erste Gruppen-Mitglieder und Orphans ausblenden
 const TECH_LAYOUT = TECH.filter(t =>
   !LEVEL_GRUPPE_NICHT_ERSTE.has(t.id) &&
   (t.prerequisites.length > 0 || _TECH_MIT_NACHFOLGER.has(t.id))
@@ -113,51 +108,9 @@ function berechnePositionen() {
   return pos;
 }
 
-// ── Technologie-Icon: lokal → wiki → Emoji-Fallback ──────────────────────────
-function TechIcon({ id, istErforscht, depsFehlen, iconBg }) {
-  const [localErr, setLocalErr] = useState(false);
-
-  const local    = TECH_ICONS[id];
-  const fallback = istErforscht ? '✓' : depsFehlen ? '🔒' : '🔬';
-
-  const src = (!local || localErr) ? null : local;
-  const showImg = !!src;
-
-  const handleErr = () => setLocalErr(true);
-
-  return (
-    <div
-      className={`w-7 h-7 rounded flex-shrink-0 relative flex items-center justify-center overflow-visible ${iconBg}`}
-    >
-      {showImg ? (
-        <>
-          <img
-            src={src}
-            alt=""
-            className="w-5 h-5 object-contain"
-            style={{ imageRendering: 'pixelated' }}
-            onError={handleErr}
-          />
-          {istErforscht && (
-            <span className="absolute -top-1 -right-1 text-green-400 font-bold leading-none"
-              style={{ fontSize: 9, textShadow: '0 0 3px #000' }}>
-              ✓
-            </span>
-          )}
-          {!istErforscht && depsFehlen && (
-            <span className="absolute -top-1 -right-1 leading-none" style={{ fontSize: 9 }}>🔒</span>
-          )}
-        </>
-      ) : (
-        <span className="text-sm leading-none">{fallback}</span>
-      )}
-    </div>
-  );
-}
-
 // ── Wissenschaftspakete als farbige Punkte ────────────────────────────────────
 function PaketDots({ cost }) {
-  const eintraege = Object.entries(cost).filter(([, v]) => v > 0);
+  const eintraege = Object.entries(cost).filter(([, v]) => v > 0 || v === '∞');
   if (eintraege.length === 0) return <span className="text-gray-600" style={{ fontSize: 9 }}>—</span>;
   return (
     <div className="flex flex-wrap gap-1 items-center">
@@ -177,29 +130,29 @@ function PaketDots({ cost }) {
   );
 }
 
+const HANDLE_STYLE = { background: 'transparent', border: 'none', width: 0, height: 0 };
+
 // ── Custom node: reguläre Technologie ────────────────────────────────────────
 const TechNode = memo(({ data }) => {
   const { tech, istErforscht, depsFehlen, onToggle, sprache, dimmed, highlighted } = data;
 
   let cardClass = 'bg-gray-800 border-gray-600 hover:border-amber-500';
-  let iconBg = 'bg-gray-700';
   let nameClass = 'text-white';
   let shadow = '';
 
   if (istErforscht) {
     cardClass = 'bg-green-950 border-green-500';
-    iconBg = 'bg-green-800';
     nameClass = 'text-green-300';
     shadow = '0 0 14px rgba(34,197,94,0.35)';
   } else if (depsFehlen) {
     cardClass = 'bg-gray-900 border-gray-700';
-    iconBg = 'bg-gray-800';
     nameClass = 'text-gray-500';
   }
 
   return (
     <div
-      onClick={() => onToggle(tech.id)}
+      onMouseDown={(e) => { e.stopPropagation(); }}
+      onClick={(e) => { e.stopPropagation(); onToggle(tech.id); }}
       style={{
         width: KARTE_B,
         height: KARTE_H,
@@ -208,17 +161,21 @@ const TechNode = memo(({ data }) => {
         boxShadow: shadow || undefined,
         outline: highlighted ? '2px solid #f59e0b' : 'none',
         outlineOffset: '2px',
+        cursor: 'pointer',
       }}
-      className={`rounded-lg border-2 cursor-pointer select-none flex flex-col justify-between p-2 transition-colors ${cardClass}`}
+      className={`rounded-lg border-2 select-none flex flex-col justify-between p-2 transition-colors ${cardClass}`}
       title={depsFehlen && !istErforscht ? 'Voraussetzungen fehlen – werden automatisch miterforscht' : ''}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <div className="flex items-start gap-1.5">
-        <TechIcon id={tech.id} istErforscht={istErforscht} depsFehlen={depsFehlen} iconBg={iconBg} />
+        <Icon id={tech.id} type="technologies" size={28} />
         <div className="flex-1 min-w-0">
-          <div className={`font-semibold leading-tight ${nameClass}`} style={{ fontSize: 10.5 }}>
+          <div className={`font-semibold leading-tight ${nameClass}`} style={{ fontSize: 11 }}>
             {tech.name[sprache] ?? tech.name.de}
           </div>
+          {tech.is_infinite && (
+            <div className="text-amber-400 font-bold" style={{ fontSize: 9 }}>∞ unbegrenzt</div>
+          )}
         </div>
         {istErforscht && (
           <span className="text-green-400 text-xs flex-shrink-0 leading-none mt-0.5">✓</span>
@@ -230,15 +187,16 @@ const TechNode = memo(({ data }) => {
   );
 });
 
-// ── Custom node: Level-Gruppe (z. B. Bergbau-Produktivität 1–4) ──────────────
+// ── Custom node: Level-Gruppe (z.B. Bergbau-Produktivität 1–4 und darüber hinaus) ──
 const LevelNode = memo(({ data }) => {
   const { gruppe, aktuellesLevel, onSetzeLevel, sprache, dimmed, highlighted, techId } = data;
-  const maxLevel = gruppe.ids.length;
-  const name = gruppe.label[sprache] ?? gruppe.label.de;
+  const maxDiscrete = gruppe.ids.length;
+  const isInfinite  = gruppe.isInfinite ?? false;
+  const name        = gruppe.label[sprache] ?? gruppe.label.de;
+  const maxDisplay  = isInfinite ? '∞' : maxDiscrete;
 
-  const aktiv = aktuellesLevel > 0;
+  const aktiv  = aktuellesLevel > 0;
   const shadow = aktiv ? '0 0 14px rgba(34,197,94,0.35)' : '';
-  const iconBg = aktiv ? 'bg-green-800' : 'bg-gray-700';
 
   return (
     <div
@@ -257,33 +215,34 @@ const LevelNode = memo(({ data }) => {
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <div className="flex items-start gap-1.5">
-        <TechIcon id={techId} istErforscht={aktiv} depsFehlen={false} iconBg={iconBg} />
+        <Icon id={techId} type="technologies" size={28} />
         <div className="flex-1 min-w-0">
-          <div className={`font-semibold leading-tight ${aktiv ? 'text-green-300' : 'text-white'}`} style={{ fontSize: 10.5 }}>
+          <div className={`font-semibold leading-tight ${aktiv ? 'text-green-300' : 'text-white'}`} style={{ fontSize: 11 }}>
             {name}
           </div>
-          <div className="text-gray-500" style={{ fontSize: 9 }}>
-            {sprache === 'de' ? `Stufe ${aktuellesLevel} / ${maxLevel}` : `Level ${aktuellesLevel} / ${maxLevel}`}
+          <div className="text-gray-500 flex items-center gap-1" style={{ fontSize: 9 }}>
+            {sprache === 'de' ? `Stufe ${aktuellesLevel} / ${maxDisplay}` : `Level ${aktuellesLevel} / ${maxDisplay}`}
+            {isInfinite && <span className="text-amber-400 font-bold">∞</span>}
           </div>
         </div>
       </div>
       <div className="flex items-center gap-1 justify-end">
         <button
           onMouseDown={e => e.stopPropagation()}
-          onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe.ids, Math.max(0, aktuellesLevel - 1)); }}
+          onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, Math.max(0, aktuellesLevel - 1)); }}
           disabled={aktuellesLevel === 0}
           className="w-5 h-5 rounded bg-gray-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-bold leading-none"
         >−</button>
         <span
-          className={`font-bold w-8 text-center ${aktiv ? 'text-amber-300' : 'text-gray-400'}`}
+          className={`font-bold w-10 text-center ${aktiv ? 'text-amber-300' : 'text-gray-400'}`}
           style={{ fontSize: 10 }}
         >
-          {aktuellesLevel}/{maxLevel}
+          {aktuellesLevel}/{maxDisplay}
         </span>
         <button
           onMouseDown={e => e.stopPropagation()}
-          onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe.ids, Math.min(maxLevel, aktuellesLevel + 1)); }}
-          disabled={aktuellesLevel === maxLevel}
+          onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, aktuellesLevel + 1); }}
+          disabled={!isInfinite && aktuellesLevel >= maxDiscrete}
           className="w-5 h-5 rounded bg-gray-600 hover:bg-green-700 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-bold leading-none"
         >+</button>
       </div>
@@ -292,44 +251,34 @@ const LevelNode = memo(({ data }) => {
   );
 });
 
-const HANDLE_STYLE = {
-  background: 'transparent',
-  border: 'none',
-  width: 0,
-  height: 0,
-};
-
 const nodeTypes = { techNode: TechNode, levelNode: LevelNode };
 
 const POSITIONEN = berechnePositionen();
 
 // ── Hauptkomponente ───────────────────────────────────────────────────────────
 export default function ForschungsBaum() {
-  const { erforscht, toggle, setzePreset, allesZuruecksetzen, setzeLevel, boni } = useForschung();
+  const { erforscht, infiniteLevels, toggle, setzePreset, allesZuruecksetzen, setzeLevel, boni } = useForschung();
   const { sprache } = useSprache();
   const [suchbegriff, setSuchbegriff] = useState('');
   const [aktivKategorie, setAktivKategorie] = useState(null);
 
-  const handleToggle = useCallback((id) => toggle(id), [toggle]);
-  const handleSetzeLevel = useCallback((ids, level) => setzeLevel(ids, level), [setzeLevel]);
+  const handleToggle    = useCallback((id)          => toggle(id),           [toggle]);
+  const handleSetzeLevel= useCallback((gruppe, level)=> setzeLevel(gruppe, level), [setzeLevel]);
 
   const sucheAktiv = suchbegriff.trim() !== '';
 
-  // Gefilterte Techs: Schnittmenge aus Suche UND Kategoriefilter
   const gefilterteTech = useMemo(() => {
-    const hatSuche = suchbegriff.trim() !== '';
-    const hatKategorie = aktivKategorie !== null;
+    const hatSuche    = suchbegriff.trim() !== '';
+    const hatKategorie= aktivKategorie !== null;
     if (!hatSuche && !hatKategorie) return null;
 
     const s = suchbegriff.toLowerCase();
     return new Set(
       TECH_LAYOUT
         .filter(t => {
-          const matchesSuche = !hatSuche ||
-            t.name.de?.toLowerCase().includes(s) ||
-            t.name.en?.toLowerCase().includes(s);
-          const matchesKat = !hatKategorie || TECH_KATEGORIEN[t.id] === aktivKategorie;
-          return matchesSuche && matchesKat;
+          const matchesSuche    = !hatSuche    || t.name.de?.toLowerCase().includes(s) || t.name.en?.toLowerCase().includes(s);
+          const matchesKategorie= !hatKategorie || TECH_KATEGORIEN[t.id] === aktivKategorie;
+          return matchesSuche && matchesKategorie;
         })
         .map(t => t.id)
     );
@@ -343,17 +292,20 @@ export default function ForschungsBaum() {
       const pos = POSITIONEN[tech.id];
       if (!pos) continue;
 
-      const dimmed = gefilterteTech !== null && !gefilterteTech.has(tech.id);
+      const dimmed      = gefilterteTech !== null && !gefilterteTech.has(tech.id);
       const highlighted = sucheAktiv && gefilterteTech !== null && gefilterteTech.has(tech.id);
       const gruppenInfo = LEVEL_GRUPPE_VON_TECH[tech.id];
 
       if (gruppenInfo && gruppenInfo.index === 0) {
         const gruppe = gruppenInfo.gruppe;
-        let aktuellesLevel = 0;
+        let aktuellesDiscreteLevel = 0;
         for (const id of gruppe.ids) {
-          if (erforscht.has(id)) aktuellesLevel++;
+          if (erforscht.has(id)) aktuellesDiscreteLevel++;
           else break;
         }
+        const extraLevel   = infiniteLevels.get(gruppe.id) ?? 0;
+        const aktuellesLevel = aktuellesDiscreteLevel + extraLevel;
+
         nodes.push({
           id: tech.id,
           type: 'levelNode',
@@ -362,7 +314,7 @@ export default function ForschungsBaum() {
         });
       } else {
         const istErforscht = erforscht.has(tech.id);
-        const depsFehlen = tech.prerequisites.some(p => !erforscht.has(p));
+        const depsFehlen   = tech.prerequisites.some(p => !erforscht.has(p));
         nodes.push({
           id: tech.id,
           type: 'techNode',
@@ -373,9 +325,8 @@ export default function ForschungsBaum() {
 
       for (const preId of tech.prerequisites) {
         if (!TECH_LAYOUT_MAP[preId]) continue;
-        const beideErforscht = erforscht.has(preId) && erforscht.has(tech.id);
+        const beideErforscht  = erforscht.has(preId) && erforscht.has(tech.id);
         const sourceErforscht = erforscht.has(preId);
-
         edges.push({
           id: `${preId}->${tech.id}`,
           source: preId,
@@ -383,11 +334,7 @@ export default function ForschungsBaum() {
           type: 'smoothstep',
           animated: beideErforscht,
           style: {
-            stroke: beideErforscht
-              ? '#22c55e'
-              : sourceErforscht
-              ? '#f59e0b'
-              : '#374151',
+            stroke: beideErforscht ? '#22c55e' : sourceErforscht ? '#f59e0b' : '#374151',
             strokeWidth: beideErforscht ? 2.5 : 1.5,
             opacity: beideErforscht ? 1 : 0.45,
           },
@@ -396,22 +343,21 @@ export default function ForschungsBaum() {
     }
 
     return { nodes, edges };
-  }, [erforscht, sprache, gefilterteTech, sucheAktiv, handleToggle, handleSetzeLevel]);
+  }, [erforscht, infiniteLevels, sprache, gefilterteTech, sucheAktiv, handleToggle, handleSetzeLevel]);
 
   const anzahlErforscht = [...erforscht].filter(id => !IMMER_SICHTBAR.has(id)).length;
-  const anzahlGesamt = TECH_LAYOUT.length;
+  const anzahlGesamt    = TECH_LAYOUT.length;
 
   const suchPlaceholder = sprache === 'de' ? 'Technologie suchen…' : 'Search technology…';
-  const allesReset = sprache === 'de' ? 'Alles zurücksetzen' : 'Reset all';
-  const erforschtLabel = sprache === 'de' ? 'erforscht' : 'researched';
-  const alleLabel = sprache === 'de' ? 'Alle' : 'All';
-
-  const treffer = gefilterteTech?.size ?? null;
+  const allesReset      = sprache === 'de' ? 'Alles zurücksetzen' : 'Reset all';
+  const erforschtLabel  = sprache === 'de' ? 'erforscht' : 'researched';
+  const alleLabel       = sprache === 'de' ? 'Alle' : 'All';
+  const treffer         = gefilterteTech?.size ?? null;
 
   return (
     <div className="flex flex-col gap-2 h-full">
 
-      {/* ── Toolbar Zeile 1: Presets + Suche + Stats ── */}
+      {/* ── Toolbar Zeile 1 ── */}
       <div className="flex-shrink-0 flex flex-wrap gap-2 items-center">
         <div className="flex gap-1.5 flex-wrap">
           {Object.entries(PRESETS).map(([key, preset]) => (
@@ -431,7 +377,6 @@ export default function ForschungsBaum() {
           </button>
         </div>
 
-        {/* Suchfeld mit Löschen-Button */}
         <div className="relative">
           <input
             type="text"
@@ -444,20 +389,16 @@ export default function ForschungsBaum() {
             <button
               onClick={() => setSuchbegriff('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs leading-none"
-            >
-              ✕
-            </button>
+            >✕</button>
           )}
         </div>
 
-        {/* Treffer-Anzeige */}
         {treffer !== null && (
           <span className="text-xs text-amber-400">
             {treffer} {sprache === 'de' ? 'Treffer' : 'matches'}
           </span>
         )}
 
-        {/* Stats */}
         <div className="ml-auto flex items-center gap-3 text-xs text-gray-400">
           <span>
             <span className="text-green-400 font-bold">{anzahlErforscht}</span>
@@ -466,11 +407,6 @@ export default function ForschungsBaum() {
           {boni.miningBonus > 0 && (
             <span className="text-amber-300 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-700/40">
               ⛏ +{(boni.miningBonus * 100).toFixed(0)}%
-            </span>
-          )}
-          {boni.assemblerBonus > 0 && (
-            <span className="text-blue-300 bg-blue-900/30 px-2 py-0.5 rounded border border-blue-700/40">
-              ⚙ +{(boni.assemblerBonus * 100).toFixed(0)}%
             </span>
           )}
         </div>
@@ -516,20 +452,15 @@ export default function ForschungsBaum() {
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.12, minZoom: 0.25, maxZoom: 0.7 }}
-            minZoom={0.08}
+            fitViewOptions={{ padding: 0.1 }}
+            minZoom={0.05}
             maxZoom={2}
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable={false}
             style={{ background: '#030712' }}
           >
-            <Background
-              variant={BackgroundVariant.Dots}
-              color="#1f2937"
-              gap={24}
-              size={1.2}
-            />
+            <Background variant={BackgroundVariant.Dots} color="#1f2937" gap={24} size={1.2} />
             <Controls showInteractive={false} />
           </ReactFlow>
         </div>
@@ -550,22 +481,13 @@ export default function ForschungsBaum() {
           {sprache === 'de' ? 'Gesperrt' : 'Locked'}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-amber-400 inline-block rounded" style={{ outline: '1px solid #f59e0b' }} />
-          {sprache === 'de' ? 'Sucherfolgnis' : 'Search match'}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-6 h-0.5 bg-green-500 inline-block rounded" />
-          {sprache === 'de' ? 'Abhängigkeit erfüllt' : 'Dependency met'}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-6 h-0.5 bg-amber-500 inline-block rounded opacity-60" />
-          {sprache === 'de' ? 'Bereit zu erforschen' : 'Ready to research'}
+          <span className="text-amber-400 font-bold">∞</span>
+          {sprache === 'de' ? 'Unendlich erforscht' : 'Infinite research'}
         </span>
         <span className="text-gray-700 ml-1">
-          {sprache === 'de' ? 'Scrollen = Zoom · Ziehen = Pan' : 'Scroll = Zoom · Drag = Pan'}
+          {sprache === 'de' ? 'Scrollen = Zoom · Ziehen = Pan · Klick = Erforschen/Sperren' : 'Scroll = Zoom · Drag = Pan · Click = Research/Lock'}
         </span>
       </div>
-
     </div>
   );
 }
