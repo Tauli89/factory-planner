@@ -128,9 +128,16 @@ function berechnePositionen() {
 
 const HANDLE_STYLE = { background: 'transparent', border: 'none', width: 0, height: 0 };
 
+// Hellere Variante einer Hex-Farbe für Hover-Effekt
+function hoverBorder(color) {
+  const map = { '#5dbf3c': '#7ddf5c', '#f0b070': '#ffcf90', '#475569': '#64748b', '#f59e0b': '#fbbf24' };
+  return map[color] ?? color;
+}
+
 // ── TechNode ──────────────────────────────────────────────────────────────────
 const TechNode = memo(({ data }) => {
   const { tech, istErforscht, depsFehlen, onToggle, sprache, dimmed, highlighted } = data;
+  const [hovered, setHovered] = useState(false);
 
   const borderColor = highlighted
     ? '#f59e0b'
@@ -147,12 +154,14 @@ const TechNode = memo(({ data }) => {
     <div
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => { e.stopPropagation(); onToggle(tech.id); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       title={depsFehlen && !istErforscht ? 'Voraussetzungen fehlen – werden automatisch miterforscht' : ''}
       style={{
         width: KARTE_B,
         height: KARTE_H,
-        background: '#1e293b',
-        border: `2px solid ${borderColor}`,
+        background: hovered && !dimmed ? '#263548' : '#1e293b',
+        border: `2px solid ${hovered && !dimmed ? hoverBorder(borderColor) : borderColor}`,
         borderRadius: 6,
         padding: 8,
         opacity: dimmed ? 0.15 : 1,
@@ -162,7 +171,7 @@ const TechNode = memo(({ data }) => {
         gap: 8,
         boxSizing: 'border-box',
         boxShadow: istErforscht ? '0 0 12px rgba(93,191,60,0.3)' : 'none',
-        transition: 'opacity 0.2s',
+        transition: 'background 0.12s, border-color 0.12s, opacity 0.2s',
         userSelect: 'none',
         pointerEvents: 'all',
       }}
