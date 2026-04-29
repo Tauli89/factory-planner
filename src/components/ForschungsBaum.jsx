@@ -9,13 +9,14 @@ import {
 } from '@xyflow/react';
 import {
   TECH,
-  PACK_META,
+  TECH_MAP,
   PRESETS,
   LEVEL_GRUPPE_VON_TECH,
   LEVEL_GRUPPE_NICHT_ERSTE,
   KATEGORIEN,
   TECH_KATEGORIEN,
 } from '../data/research';
+import gamedata from '../data/gamedata.json';
 import Icon from './Icon';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
@@ -48,10 +49,27 @@ class BaumFehlerGrenze extends Component {
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
-const KARTE_B   = 220;
-const KARTE_H   = 100;
-const ABSTAND_X = 260;
-const ABSTAND_Y = 130;
+const KARTE_B     = 220;
+const KARTE_H     = 90;
+const KARTE_H_LVL = 110;
+const ABSTAND_X   = 260;
+const ABSTAND_Y   = 130;
+
+// Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
+const PACK_KEY_TO_ITEM_ID = {
+  red:        'automation-science-pack',
+  green:      'logistic-science-pack',
+  blue:       'chemical-science-pack',
+  black:      'production-science-pack',
+  purple:     'military-science-pack',
+  yellow:     'utility-science-pack',
+  white:      'space-science-pack',
+  se:         'metallurgic-science-pack',
+  biologisch: 'agricultural-science-pack',
+  em:         'electromagnetic-science-pack',
+  kryogen:    'cryogenic-science-pack',
+  promethium: 'promethium-science-pack',
+};
 
 const _TECH_MIT_NACHFOLGER = new Set(TECH.flatMap(t => t.prerequisites));
 
@@ -108,143 +126,187 @@ function berechnePositionen() {
   return pos;
 }
 
-// ── Wissenschaftspakete als farbige Punkte ────────────────────────────────────
-function PaketDots({ cost }) {
-  const eintraege = Object.entries(cost).filter(([, v]) => v > 0 || v === '∞');
-  if (eintraege.length === 0) return <span className="text-gray-600" style={{ fontSize: 9 }}>—</span>;
-  return (
-    <div className="flex flex-wrap gap-1 items-center">
-      {eintraege.map(([pack, count]) => {
-        const meta = PACK_META[pack];
-        return (
-          <span key={pack} title={`${meta?.label ?? pack}: ${count}`} className="inline-flex items-center gap-0.5">
-            <span
-              className="inline-block w-2.5 h-2.5 rounded-full border border-black/30 flex-shrink-0"
-              style={{ background: meta?.color ?? '#888' }}
-            />
-            <span className="text-gray-400" style={{ fontSize: 9 }}>{count}</span>
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
 const HANDLE_STYLE = { background: 'transparent', border: 'none', width: 0, height: 0 };
 
-// ── Custom node: reguläre Technologie ────────────────────────────────────────
+// ── TechNode ──────────────────────────────────────────────────────────────────
 const TechNode = memo(({ data }) => {
   const { tech, istErforscht, depsFehlen, onToggle, sprache, dimmed, highlighted } = data;
 
-  let cardClass = 'bg-gray-800 border-gray-600 hover:border-amber-500';
-  let nameClass = 'text-white';
-  let shadow = '';
+  const borderColor = highlighted
+    ? '#f59e0b'
+    : istErforscht
+    ? '#5dbf3c'
+    : depsFehlen
+    ? '#475569'
+    : '#f0b070';
 
-  if (istErforscht) {
-    cardClass = 'bg-green-950 border-green-500';
-    nameClass = 'text-green-300';
-    shadow = '0 0 14px rgba(34,197,94,0.35)';
-  } else if (depsFehlen) {
-    cardClass = 'bg-gray-900 border-gray-700';
-    nameClass = 'text-gray-500';
-  }
+  const costEntries = Object.entries(tech.cost).filter(([, v]) => v > 0 || v === '∞');
+  const techTime    = gamedata.technologies[tech.id]?.cost?.time;
 
   return (
     <div
-      onMouseDown={(e) => { e.stopPropagation(); }}
+      onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => { e.stopPropagation(); onToggle(tech.id); }}
+      title={depsFehlen && !istErforscht ? 'Voraussetzungen fehlen – werden automatisch miterforscht' : ''}
       style={{
         width: KARTE_B,
         height: KARTE_H,
+        background: '#1e293b',
+        border: `2px solid ${borderColor}`,
+        borderRadius: 6,
+        padding: 8,
         opacity: dimmed ? 0.15 : 1,
-        transition: 'opacity 0.2s',
-        boxShadow: shadow || undefined,
-        outline: highlighted ? '2px solid #f59e0b' : 'none',
-        outlineOffset: '2px',
         cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        boxSizing: 'border-box',
+        boxShadow: istErforscht ? '0 0 12px rgba(93,191,60,0.3)' : 'none',
+        transition: 'opacity 0.2s',
+        userSelect: 'none',
+        pointerEvents: 'all',
       }}
-      className={`rounded-lg border-2 select-none flex flex-col justify-between p-2 transition-colors ${cardClass}`}
-      title={depsFehlen && !istErforscht ? 'Voraussetzungen fehlen – werden automatisch miterforscht' : ''}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
-      <div className="flex items-start gap-1.5">
-        <Icon id={tech.id} type="technologies" size={28} />
-        <div className="flex-1 min-w-0">
-          <div className={`font-semibold leading-tight ${nameClass}`} style={{ fontSize: 11 }}>
-            {tech.name[sprache] ?? tech.name.de}
-          </div>
-          {tech.is_infinite && (
-            <div className="text-amber-400 font-bold" style={{ fontSize: 9 }}>∞ unbegrenzt</div>
+      <Icon id={tech.id} type="technologies" size={48} />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: '#f1f5f9',
+          lineHeight: 1.2,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {tech.name[sprache] ?? tech.name.de}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
+          {costEntries.map(([pack, count]) => (
+            <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={18} />
+              <span style={{ fontSize: 10, color: '#94a3b8' }}>×{count}</span>
+            </span>
+          ))}
+          {techTime != null && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
+              <span style={{ fontSize: 10, color: '#64748b' }}>⏱</span>
+              <span style={{ fontSize: 10, color: '#64748b' }}>{techTime}s</span>
+            </span>
           )}
         </div>
-        {istErforscht && (
-          <span className="text-green-400 text-xs flex-shrink-0 leading-none mt-0.5">✓</span>
-        )}
       </div>
-      <PaketDots cost={tech.cost} />
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
 });
 
-// ── Custom node: Level-Gruppe (z.B. Bergbau-Produktivität 1–4 und darüber hinaus) ──
+// ── LevelNode ─────────────────────────────────────────────────────────────────
 const LevelNode = memo(({ data }) => {
   const { gruppe, aktuellesLevel, onSetzeLevel, sprache, dimmed, highlighted, techId } = data;
   const maxDiscrete = gruppe.ids.length;
   const isInfinite  = gruppe.isInfinite ?? false;
   const name        = gruppe.label[sprache] ?? gruppe.label.de;
   const maxDisplay  = isInfinite ? '∞' : maxDiscrete;
+  const aktiv       = aktuellesLevel > 0;
 
-  const aktiv  = aktuellesLevel > 0;
-  const shadow = aktiv ? '0 0 14px rgba(34,197,94,0.35)' : '';
+  const borderColor = highlighted ? '#f59e0b' : aktiv ? '#5dbf3c' : '#475569';
+
+  const firstTech   = TECH_MAP[gruppe.ids[0]];
+  const costEntries = firstTech
+    ? Object.entries(firstTech.cost).filter(([, v]) => v > 0 || v === '∞')
+    : [];
+  const techTime    = gamedata.technologies[gruppe.ids[0]]?.cost?.time;
+
+  const btnStyle = (disabled) => ({
+    width: 20,
+    height: 20,
+    background: '#334155',
+    border: '1px solid #475569',
+    borderRadius: 3,
+    color: '#cbd5e1',
+    fontSize: 14,
+    lineHeight: 1,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.4 : 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  });
 
   return (
     <div
       style={{
         width: KARTE_B,
-        height: KARTE_H,
+        height: KARTE_H_LVL,
+        background: '#1e293b',
+        border: `2px solid ${borderColor}`,
+        borderRadius: 6,
+        padding: 8,
         opacity: dimmed ? 0.15 : 1,
+        cursor: 'default',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        boxSizing: 'border-box',
+        boxShadow: aktiv ? '0 0 12px rgba(93,191,60,0.3)' : 'none',
         transition: 'opacity 0.2s',
-        boxShadow: shadow || undefined,
-        outline: highlighted ? '2px solid #f59e0b' : 'none',
-        outlineOffset: '2px',
+        userSelect: 'none',
+        pointerEvents: 'all',
       }}
-      className={`rounded-lg border-2 select-none flex flex-col justify-between p-2 transition-colors ${
-        aktiv ? 'bg-green-950 border-green-500' : 'bg-gray-800 border-gray-600'
-      }`}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
-      <div className="flex items-start gap-1.5">
-        <Icon id={techId} type="technologies" size={28} />
-        <div className="flex-1 min-w-0">
-          <div className={`font-semibold leading-tight ${aktiv ? 'text-green-300' : 'text-white'}`} style={{ fontSize: 11 }}>
-            {name}
-          </div>
-          <div className="text-gray-500 flex items-center gap-1" style={{ fontSize: 9 }}>
-            {sprache === 'de' ? `Stufe ${aktuellesLevel} / ${maxDisplay}` : `Level ${aktuellesLevel} / ${maxDisplay}`}
-            {isInfinite && <span className="text-amber-400 font-bold">∞</span>}
-          </div>
+      <Icon id={techId} type="technologies" size={48} />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: '#f1f5f9',
+          lineHeight: 1.2,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {name}
         </div>
-      </div>
-      <div className="flex items-center gap-1 justify-end">
-        <button
-          onMouseDown={e => e.stopPropagation()}
-          onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, Math.max(0, aktuellesLevel - 1)); }}
-          disabled={aktuellesLevel === 0}
-          className="w-5 h-5 rounded bg-gray-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-bold leading-none"
-        >−</button>
-        <span
-          className={`font-bold w-10 text-center ${aktiv ? 'text-amber-300' : 'text-gray-400'}`}
-          style={{ fontSize: 10 }}
-        >
-          {aktuellesLevel}/{maxDisplay}
-        </span>
-        <button
-          onMouseDown={e => e.stopPropagation()}
-          onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, aktuellesLevel + 1); }}
-          disabled={!isInfinite && aktuellesLevel >= maxDiscrete}
-          className="w-5 h-5 rounded bg-gray-600 hover:bg-green-700 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-bold leading-none"
-        >+</button>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
+          {costEntries.map(([pack, count]) => (
+            <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={18} />
+              <span style={{ fontSize: 10, color: '#94a3b8' }}>×{count}</span>
+            </span>
+          ))}
+          {techTime != null && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
+              <span style={{ fontSize: 10, color: '#64748b' }}>⏱</span>
+              <span style={{ fontSize: 10, color: '#64748b' }}>{techTime}s</span>
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, Math.max(0, aktuellesLevel - 1)); }}
+            disabled={aktuellesLevel === 0}
+            style={btnStyle(aktuellesLevel === 0)}
+          >−</button>
+          <span style={{
+            fontSize: 11,
+            color: aktiv ? '#fbbf24' : '#64748b',
+            flex: 1,
+            textAlign: 'center',
+            fontWeight: 600,
+          }}>
+            {sprache === 'de' ? `Stufe ${aktuellesLevel}` : `Lvl ${aktuellesLevel}`} / {maxDisplay}
+          </span>
+          <button
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, aktuellesLevel + 1); }}
+            disabled={!isInfinite && aktuellesLevel >= maxDiscrete}
+            style={btnStyle(!isInfinite && aktuellesLevel >= maxDiscrete)}
+          >+</button>
+        </div>
       </div>
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
@@ -262,22 +324,22 @@ export default function ForschungsBaum() {
   const [suchbegriff, setSuchbegriff] = useState('');
   const [aktivKategorie, setAktivKategorie] = useState(null);
 
-  const handleToggle    = useCallback((id)          => toggle(id),           [toggle]);
-  const handleSetzeLevel= useCallback((gruppe, level)=> setzeLevel(gruppe, level), [setzeLevel]);
+  const handleToggle     = useCallback((id)           => toggle(id),            [toggle]);
+  const handleSetzeLevel = useCallback((gruppe, level) => setzeLevel(gruppe, level), [setzeLevel]);
 
   const sucheAktiv = suchbegriff.trim() !== '';
 
   const gefilterteTech = useMemo(() => {
-    const hatSuche    = suchbegriff.trim() !== '';
-    const hatKategorie= aktivKategorie !== null;
+    const hatSuche     = suchbegriff.trim() !== '';
+    const hatKategorie = aktivKategorie !== null;
     if (!hatSuche && !hatKategorie) return null;
 
     const s = suchbegriff.toLowerCase();
     return new Set(
       TECH_LAYOUT
         .filter(t => {
-          const matchesSuche    = !hatSuche    || t.name.de?.toLowerCase().includes(s) || t.name.en?.toLowerCase().includes(s);
-          const matchesKategorie= !hatKategorie || TECH_KATEGORIEN[t.id] === aktivKategorie;
+          const matchesSuche     = !hatSuche     || t.name.de?.toLowerCase().includes(s) || t.name.en?.toLowerCase().includes(s);
+          const matchesKategorie = !hatKategorie || TECH_KATEGORIEN[t.id] === aktivKategorie;
           return matchesSuche && matchesKategorie;
         })
         .map(t => t.id)
@@ -303,7 +365,7 @@ export default function ForschungsBaum() {
           if (erforscht.has(id)) aktuellesDiscreteLevel++;
           else break;
         }
-        const extraLevel   = infiniteLevels.get(gruppe.id) ?? 0;
+        const extraLevel     = infiniteLevels.get(gruppe.id) ?? 0;
         const aktuellesLevel = aktuellesDiscreteLevel + extraLevel;
 
         nodes.push({
@@ -469,20 +531,16 @@ export default function ForschungsBaum() {
       {/* ── Legende ── */}
       <div className="flex-shrink-0 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded border-2 border-green-500 bg-green-950 inline-block" />
+          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #5dbf3c', background: '#1e293b', display: 'inline-block' }} />
           {sprache === 'de' ? 'Erforscht' : 'Researched'}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded border-2 border-gray-600 bg-gray-800 inline-block" />
+          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #f0b070', background: '#1e293b', display: 'inline-block' }} />
           {sprache === 'de' ? 'Verfügbar' : 'Available'}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded border-2 border-gray-700 bg-gray-900 opacity-50 inline-block" />
+          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #475569', background: '#1e293b', display: 'inline-block', opacity: 0.6 }} />
           {sprache === 'de' ? 'Gesperrt' : 'Locked'}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="text-amber-400 font-bold">∞</span>
-          {sprache === 'de' ? 'Unendlich erforscht' : 'Infinite research'}
         </span>
         <span className="text-gray-700 ml-1">
           {sprache === 'de' ? 'Scrollen = Zoom · Ziehen = Pan · Klick = Erforschen/Sperren' : 'Scroll = Zoom · Drag = Pan · Click = Research/Lock'}
