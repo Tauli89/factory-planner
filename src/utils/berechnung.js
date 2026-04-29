@@ -2,18 +2,18 @@ import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
 import { MASCHINEN_STROMVERBRAUCH, ENERGIEQUELLEN } from '../data/machines';
 
 const MASCHINENGESCHWINDIGKEIT = {
-  [MASCHINEN.ASSEMBLER]:    0.75,
-  [MASCHINEN.SCHMELZOFEN]:  2.0,
-  [MASCHINEN.CHEMIEANLAGE]: 1.0,
-  [MASCHINEN.OELRAFFINERIE]:1.0,
-  [MASCHINEN.ZENTRIFUGE]:   1.0,
-  [MASCHINEN.HOCHOFEN]:     2.0,
-  [MASCHINEN.EM_ANLAGE]:    2.0,
-  [MASCHINEN.BIOKAMMER]:    1.0,
-  [MASCHINEN.KRYOGENANLAGE]:1.0,
-  [MASCHINEN.RECYCLER]:     0.5,
-  [MASCHINEN.RAUMPLATTFORM]:1.0,
-  [MASCHINEN.CRUSHER]:      1.0,
+  [MASCHINEN.ASSEMBLER]:    0.75, // assembling-machine-2
+  [MASCHINEN.SCHMELZOFEN]:  2.0,  // electric-furnace
+  [MASCHINEN.CHEMIEANLAGE]: 1.0,  // chemical-plant
+  [MASCHINEN.OELRAFFINERIE]:1.0,  // oil-refinery
+  [MASCHINEN.ZENTRIFUGE]:   1.0,  // centrifuge
+  [MASCHINEN.HOCHOFEN]:     4.0,  // foundry (gamedata: 4.0, was 2.0)
+  [MASCHINEN.EM_ANLAGE]:    2.0,  // electromagnetic-plant
+  [MASCHINEN.BIOKAMMER]:    2.0,  // biochamber (gamedata: 2.0, was 1.0)
+  [MASCHINEN.KRYOGENANLAGE]:2.0,  // cryogenic-plant (gamedata: 2.0, was 1.0)
+  [MASCHINEN.RECYCLER]:     0.5,  // recycler
+  [MASCHINEN.RAUMPLATTFORM]:1.0,  // space-platform-hub
+  [MASCHINEN.CRUSHER]:      1.0,  // crusher
 };
 
 export const MASCHINEN_LABEL = {
