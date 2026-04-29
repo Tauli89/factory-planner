@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { REZEPTE, REZEPTE_MAP, KATEGORIEN, KATEGORIEN_EN_LABEL, DURCH_TECH_GESPERRTE_REZEPTE, ITEM_ICONS } from '../data/gamedata-adapter';
+import { REZEPTE, KATEGORIEN, KATEGORIEN_EN_LABEL, DURCH_TECH_GESPERRTE_REZEPTE } from '../data/gamedata-adapter';
+import Icon from './Icon';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 
@@ -32,34 +33,6 @@ const KATEGORIE_FALLBACK_FARBE = {
   [KATEGORIEN.SPACE_AGE]:        '#a78bfa',
 };
 
-function ItemIcon({ id, rezept, className = 'w-5 h-5' }) {
-  const [err, setErr] = useState(false);
-  const src = ITEM_ICONS[id];
-
-  if (src && !err) {
-    return (
-      <img
-        src={src}
-        alt=""
-        className={`${className} object-contain flex-shrink-0`}
-        style={{ imageRendering: 'pixelated' }}
-        onError={() => setErr(true)}
-      />
-    );
-  }
-
-  const r = rezept ?? REZEPTE_MAP[id];
-  const letter = (r?.name ?? id ?? '?')[0].toUpperCase();
-  const bg = KATEGORIE_FALLBACK_FARBE[r?.kategorie] ?? '#6b7280';
-  return (
-    <span
-      className="rounded flex-shrink-0 inline-flex items-center justify-center text-white font-bold"
-      style={{ background: bg, fontSize: '9px', lineHeight: 1, width: '1.25rem', height: '1.25rem' }}
-    >
-      {letter}
-    </span>
-  );
-}
 
 export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
   const { freigeschalteteRezepte } = useForschung();
@@ -132,7 +105,7 @@ export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
         >
           {ausgewaehlt ? (
             <>
-              <ItemIcon id={ausgewaehlt.id} rezept={ausgewaehlt} />
+              <Icon id={ausgewaehlt.id} size={20} />
               <span className="flex-1 truncate">{ausgewaehltName}</span>
             </>
           ) : (
@@ -206,7 +179,7 @@ function DropdownOption({ r, sprache, onSelect, selected }) {
           ? 'bg-amber-500/20 text-amber-300'
           : 'text-gray-300 hover:bg-gray-700/60 hover:text-white'}`}
     >
-      <ItemIcon id={r.id} rezept={r} className="w-5 h-5 flex-shrink-0" />
+      <Icon id={r.id} size={20} />
       <span className="truncate">{name}</span>
     </button>
   );

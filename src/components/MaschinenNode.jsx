@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { MACHINE_ICONS } from '../data/gamedata-adapter';
+import Icon from './Icon';
 
 const MASCHINEN_STYLES = {
   schmelzofen:   { color: '#f97316', icon: '🔥', label: 'Furnace' },
@@ -20,21 +19,27 @@ const MASCHINEN_STYLES = {
 
 const HANDLE_STYLE = { width: 12, height: 12, borderWidth: 2 };
 
-function MachineIcon({ maschine, color }) {
-  const [err, setErr] = useState(false);
-  const src = MACHINE_ICONS[maschine];
-  const style = MASCHINEN_STYLES[maschine];
+// Maps abstract machine type → gamedata machine ID for Icon lookup
+const MASCHINE_ZU_GAMEDATA_ID = {
+  schmelzofen:   'electric-furnace',
+  assembler:     'assembling-machine-2',
+  chemieanlage:  'chemical-plant',
+  oelraffinerie: 'oil-refinery',
+  zentrifuge:    'centrifuge',
+  hochofen:      'foundry',
+  'em-anlage':   'electromagnetic-plant',
+  biokammer:     'biochamber',
+  kryogenanlage: 'cryogenic-plant',
+  bergbau:       'electric-mining-drill',
+  recycler:      'recycler',
+  crusher:       'crusher',
+};
 
-  if (src && !err) {
-    return (
-      <img
-        src={src}
-        alt=""
-        className="w-5 h-5 object-contain flex-shrink-0"
-        style={{ imageRendering: 'pixelated' }}
-        onError={() => setErr(true)}
-      />
-    );
+function MachineIcon({ maschine }) {
+  const gamedataId = MASCHINE_ZU_GAMEDATA_ID[maschine];
+  const style = MASCHINEN_STYLES[maschine];
+  if (gamedataId) {
+    return <Icon id={gamedataId} type="machines" size={20} />;
   }
   return <span className="text-sm leading-none">{style?.icon ?? '🏭'}</span>;
 }
@@ -60,7 +65,7 @@ export default function MaschinenNode({ data, selected }) {
         className="rounded-t px-2.5 py-1.5 flex items-center gap-1.5"
         style={{ backgroundColor: `${s.color}25` }}
       >
-        <MachineIcon maschine={data.maschine} color={s.color} />
+        <MachineIcon maschine={data.maschine} />
         <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: s.color }}>
           {s.label}
         </span>

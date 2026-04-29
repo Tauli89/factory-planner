@@ -247,3 +247,15 @@ function buildGesperrteRezepte() {
 }
 
 export const DURCH_TECH_GESPERRTE_REZEPTE = buildGesperrteRezepte();
+
+// ── Item- und Fluid-Namen aus gamedata.json ───────────────────────────────────
+export function getItemName(id, lang = 'de') {
+  const item = gamedata.items[id];
+  if (item?.name?.[lang]) return item.name[lang];
+  if (item?.name?.en)     return item.name.en;
+  // Fallback: über Rezept-Hauptergebnis
+  const recipe = gamedata.recipes?.[id];
+  if (recipe?.name?.[lang]) return recipe.name[lang];
+  if (recipe?.name?.en)     return recipe.name.en;
+  return id;
+}

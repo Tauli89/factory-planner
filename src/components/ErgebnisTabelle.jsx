@@ -8,7 +8,8 @@ import { useQuality } from '../context/QualityContext';
 import { BELT_FARBE } from '../data/belts';
 import { formatQualityFaktor } from '../data/quality';
 import { MASCHINEN_DETAIL_NAME } from '../data/machines';
-import { ITEM_ICONS } from '../data/gamedata-adapter';
+import { ITEM_ICONS, getItemName } from '../data/gamedata-adapter';
+import Icon from './Icon';
 
 const KATEGORIE_FALLBACK_FARBE = {
   [KATEGORIEN.ROHSTOFFE]:        '#6b7280',
@@ -25,34 +26,6 @@ const KATEGORIE_FALLBACK_FARBE = {
   [KATEGORIEN.SPACE_AGE]:        '#a78bfa',
 };
 
-function ItemIcon({ id }) {
-  const [err, setErr] = useState(false);
-  const src = ITEM_ICONS[id];
-
-  if (src && !err) {
-    return (
-      <img
-        src={src}
-        alt=""
-        className="w-5 h-5 object-contain flex-shrink-0 inline-block"
-        style={{ imageRendering: 'pixelated' }}
-        onError={() => setErr(true)}
-      />
-    );
-  }
-
-  const rezept = REZEPTE_MAP[id];
-  const letter = (rezept?.name ?? id ?? '?')[0].toUpperCase();
-  const bg = KATEGORIE_FALLBACK_FARBE[rezept?.kategorie] ?? '#6b7280';
-  return (
-    <span
-      className="w-5 h-5 rounded flex-shrink-0 inline-flex items-center justify-center text-white font-bold"
-      style={{ background: bg, fontSize: '9px', lineHeight: 1, minWidth: '1.25rem' }}
-    >
-      {letter}
-    </span>
-  );
-}
 
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
@@ -205,7 +178,7 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
 
     return {
       id,
-      name:         sprache === 'de' ? (rezept?.name ?? id) : (rezept?.nameEn ?? id),
+      name:         sprache === 'de' ? (rezept?.name ?? getItemName(id, 'de')) : (rezept?.nameEn ?? getItemName(id, 'en')),
       rateProSek:   displayRate,
       rateProMin:   displayRate * 60,
       craftingRate,
@@ -460,7 +433,7 @@ function Abschnitt({
                   <tr className={rowBg}>
                     <td className="px-4 py-2 text-white font-medium">
                       <span className="inline-flex items-center gap-1.5">
-                        <ItemIcon id={e.id} />
+                        <Icon id={e.id} size={20} />
                         <span>{e.name}</span>
                       </span>
                       {istQualityAktiv && e.qualitaet && (
