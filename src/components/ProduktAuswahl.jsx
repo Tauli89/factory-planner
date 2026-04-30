@@ -34,6 +34,21 @@ const KATEGORIE_FALLBACK_FARBE = {
 };
 
 
+const ALIAS_MAP = {
+  'verarbeitungseinheit':       'processing-unit',
+  'roter schaltkreis':          'electronic-circuit',
+  'grüner schaltkreis':         'electronic-circuit',
+  'blauer schaltkreis':         'processing-unit',
+  'fortgeschrittener schaltkreis': 'advanced-circuit',
+  'rote wissenschaft':          'automation-science-pack',
+  'grüne wissenschaft':         'logistic-science-pack',
+  'blaue wissenschaft':         'chemical-science-pack',
+  'schwarze wissenschaft':      'production-science-pack',
+  'lila wissenschaft':          'military-science-pack',
+  'gelbe wissenschaft':         'utility-science-pack',
+  'weisse wissenschaft':        'space-science-pack',
+};
+
 export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
   const { freigeschalteteRezepte } = useForschung();
   const { sprache } = useSprache();
@@ -76,11 +91,14 @@ export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
 
   const gefiltert = useMemo(() => {
     if (!sucheNorm) return null;
-    return herstellbar.filter(r => {
-      const n = sprache === 'de' ? r.name : r.nameEn;
-      return n.toLowerCase().includes(sucheNorm);
-    });
-  }, [herstellbar, sucheNorm, sprache]);
+    const aliasId = ALIAS_MAP[sucheNorm];
+    return herstellbar.filter(r =>
+      r.name.toLowerCase().includes(sucheNorm) ||
+      r.nameEn.toLowerCase().includes(sucheNorm) ||
+      r.id.includes(sucheNorm) ||
+      (aliasId && r.id === aliasId)
+    );
+  }, [herstellbar, sucheNorm]);
 
   const nachKategorie = useMemo(() => KATEGORIE_REIHENFOLGE.map(kat => ({
     kat,
