@@ -1,9 +1,48 @@
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
 
-/* React Flow – Factorio dark theme overrides */
+/* ── Factorio color palette ─────────────────────────────────────────────────── */
+@theme {
+  /* Warm neutral grays (replaces cool blue-grays) */
+  --color-gray-950: #111111;
+  --color-gray-900: #1a1a1a;
+  --color-gray-800: #252525;
+  --color-gray-700: #313131;
+  --color-gray-600: #3d3d3d;
+  --color-gray-500: #5a5a5a;
+  --color-gray-400: #8a8278;
+  --color-gray-300: #a09888;
+  --color-gray-200: #c8b898;
+  --color-gray-100: #e8d8b0;
+  --color-gray-50:  #f0e8d0;
+
+  /* Factorio orange-amber accent */
+  --color-amber-300: #ffd090;
+  --color-amber-400: #f0b070;
+  --color-amber-500: #e09848;
+  --color-amber-600: #c87830;
+
+  /* Factorio greens */
+  --color-green-300: #7ddf5c;
+  --color-green-400: #5dbf3c;
+  --color-green-500: #4aaa2a;
+  --color-green-600: #388020;
+  --color-green-700: #285818;
+  --color-green-800: #1c3e10;
+  --color-green-900: #122808;
+
+  /* Factorio reds */
+  --color-red-300: #e07070;
+  --color-red-400: #c14747;
+  --color-red-500: #a03030;
+  --color-red-800: #3d1010;
+  --color-red-900: #280808;
+  --color-red-950: #180404;
+}
+
+/* ── React Flow – Factorio dark theme ──────────────────────────────────────── */
 .react-flow {
-  background: #030712;
+  background: #111111;
 }
 
 .react-flow__controls {
@@ -14,9 +53,9 @@
 }
 
 .react-flow__controls-button {
-  background: #1f2937;
-  border: 1px solid #374151;
-  fill: #9ca3af;
+  background: #313131;
+  border: 1px solid #4a4a4a;
+  fill: #8a8278;
   width: 28px;
   height: 28px;
   border-radius: 6px;
@@ -24,36 +63,36 @@
 }
 
 .react-flow__controls-button:hover {
-  background: #374151;
-  fill: #ffffff;
+  background: #4a4a4a;
+  fill: #e8d8b0;
 }
 
-/* rf-controls-dark – explizite Dark-Theme Klasse für <Controls className="rf-controls-dark"> */
+/* rf-controls-dark – explicit dark-theme class for <Controls className="rf-controls-dark"> */
 .rf-controls-dark {
-  background: #1e293b !important;
-  border: 1px solid #475569 !important;
+  background: #252525 !important;
+  border: 1px solid #5a5a5a !important;
   border-radius: 4px !important;
   box-shadow: none !important;
 }
 
 .rf-controls-dark button {
-  background: #334155 !important;
-  border-bottom: 1px solid #475569 !important;
-  color: #cbd5e1 !important;
+  background: #363636 !important;
+  border-bottom: 1px solid #5a5a5a !important;
+  color: #c8b898 !important;
   box-shadow: none !important;
 }
 
 .rf-controls-dark button:hover {
-  background: #475569 !important;
+  background: #4a4a4a !important;
 }
 
 .rf-controls-dark button svg {
-  fill: #cbd5e1 !important;
+  fill: #c8b898 !important;
 }
 
 .react-flow__minimap {
-  background: #0f172a;
-  border: 1px solid #374151;
+  background: #1a1a1a;
+  border: 1px solid #4a4a4a;
   border-radius: 8px;
 }
 
@@ -79,6 +118,6 @@
 /* Attribution */
 .react-flow__attribution {
   background: transparent;
-  color: #374151;
+  color: #4a4a4a;
   font-size: 10px;
 }

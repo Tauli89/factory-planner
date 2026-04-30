@@ -128,9 +128,8 @@ function berechnePositionen() {
 
 const HANDLE_STYLE = { background: 'transparent', border: 'none', width: 0, height: 0 };
 
-// Hellere Variante einer Hex-Farbe für Hover-Effekt
 function hoverBorder(color) {
-  const map = { '#5dbf3c': '#7ddf5c', '#f0b070': '#ffcf90', '#475569': '#64748b', '#f59e0b': '#fbbf24' };
+  const map = { '#5dbf3c': '#7ddf5c', '#f0b070': '#ffd090', '#5a5a5a': '#7a7a7a', '#f59e0b': '#f0b070' };
   return map[color] ?? color;
 }
 
@@ -140,12 +139,12 @@ const TechNode = memo(({ data }) => {
   const [hovered, setHovered] = useState(false);
 
   const borderColor = highlighted
-    ? '#f59e0b'
+    ? '#f0b070'
     : istErforscht
     ? '#5dbf3c'
     : depsFehlen
-    ? '#475569'
-    : '#f0b070';
+    ? '#5a5a5a'
+    : '#c8903c';
 
   const costEntries = Object.entries(tech.cost).filter(([, v]) => v > 0 || v === '∞');
   const techTime    = gamedata.technologies[tech.id]?.cost?.time;
@@ -160,7 +159,7 @@ const TechNode = memo(({ data }) => {
       style={{
         width: KARTE_B,
         height: KARTE_H,
-        background: hovered && !dimmed ? '#263548' : '#1e293b',
+        background: hovered && !dimmed ? '#2a2a2a' : '#1e1e1e',
         border: `2px solid ${hovered && !dimmed ? hoverBorder(borderColor) : borderColor}`,
         borderRadius: 6,
         padding: 8,
@@ -182,7 +181,7 @@ const TechNode = memo(({ data }) => {
         <div style={{
           fontSize: 13,
           fontWeight: 600,
-          color: '#f1f5f9',
+          color: '#e8d8b0',
           lineHeight: 1.2,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -194,13 +193,13 @@ const TechNode = memo(({ data }) => {
           {costEntries.map(([pack, count]) => (
             <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
               <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={18} />
-              <span style={{ fontSize: 10, color: '#94a3b8' }}>×{count}</span>
+              <span style={{ fontSize: 10, color: '#8a8278' }}>×{count}</span>
             </span>
           ))}
           {techTime != null && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-              <span style={{ fontSize: 10, color: '#64748b' }}>⏱</span>
-              <span style={{ fontSize: 10, color: '#64748b' }}>{techTime}s</span>
+              <span style={{ fontSize: 10, color: '#706860' }}>⏱</span>
+              <span style={{ fontSize: 10, color: '#706860' }}>{techTime}s</span>
             </span>
           )}
         </div>
@@ -219,7 +218,7 @@ const LevelNode = memo(({ data }) => {
   const maxDisplay  = isInfinite ? '∞' : maxDiscrete;
   const aktiv       = aktuellesLevel > 0;
 
-  const borderColor = highlighted ? '#f59e0b' : aktiv ? '#5dbf3c' : '#475569';
+  const borderColor = highlighted ? '#f0b070' : aktiv ? '#5dbf3c' : '#5a5a5a';
 
   const firstTech   = TECH_MAP[gruppe.ids[0]];
   const costEntries = firstTech
@@ -230,10 +229,10 @@ const LevelNode = memo(({ data }) => {
   const btnStyle = (disabled) => ({
     width: 20,
     height: 20,
-    background: '#334155',
-    border: '1px solid #475569',
+    background: '#363636',
+    border: '1px solid #5a5a5a',
     borderRadius: 3,
-    color: '#cbd5e1',
+    color: '#c8b898',
     fontSize: 14,
     lineHeight: 1,
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -249,7 +248,7 @@ const LevelNode = memo(({ data }) => {
       style={{
         width: KARTE_B,
         height: KARTE_H_LVL,
-        background: '#1e293b',
+        background: '#1e1e1e',
         border: `2px solid ${borderColor}`,
         borderRadius: 6,
         padding: 8,
@@ -271,7 +270,7 @@ const LevelNode = memo(({ data }) => {
         <div style={{
           fontSize: 13,
           fontWeight: 600,
-          color: '#f1f5f9',
+          color: '#e8d8b0',
           lineHeight: 1.2,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -283,13 +282,13 @@ const LevelNode = memo(({ data }) => {
           {costEntries.map(([pack, count]) => (
             <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
               <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={18} />
-              <span style={{ fontSize: 10, color: '#94a3b8' }}>×{count}</span>
+              <span style={{ fontSize: 10, color: '#8a8278' }}>×{count}</span>
             </span>
           ))}
           {techTime != null && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-              <span style={{ fontSize: 10, color: '#64748b' }}>⏱</span>
-              <span style={{ fontSize: 10, color: '#64748b' }}>{techTime}s</span>
+              <span style={{ fontSize: 10, color: '#706860' }}>⏱</span>
+              <span style={{ fontSize: 10, color: '#706860' }}>{techTime}s</span>
             </span>
           )}
         </div>
@@ -302,7 +301,7 @@ const LevelNode = memo(({ data }) => {
           >−</button>
           <span style={{
             fontSize: 11,
-            color: aktiv ? '#fbbf24' : '#64748b',
+            color: aktiv ? '#f0b070' : '#706860',
             flex: 1,
             textAlign: 'center',
             fontWeight: 600,
@@ -405,7 +404,7 @@ export default function ForschungsBaum() {
           type: 'smoothstep',
           animated: beideErforscht,
           style: {
-            stroke: beideErforscht ? '#22c55e' : sourceErforscht ? '#f59e0b' : '#374151',
+            stroke: beideErforscht ? '#5dbf3c' : sourceErforscht ? '#f0b070' : '#4a4a4a',
             strokeWidth: beideErforscht ? 2.5 : 1.5,
             opacity: beideErforscht ? 1 : 0.45,
           },
@@ -522,10 +521,10 @@ export default function ForschungsBaum() {
               className="px-2.5 py-1 rounded text-xs font-medium transition-all border"
               style={aktiv
                 ? { background: kat.color, borderColor: kat.color, color: '#fff' }
-                : { background: 'transparent', borderColor: '#374151', color: '#9ca3af' }
+                : { background: 'transparent', borderColor: '#4a4a4a', color: '#8a8278' }
               }
               onMouseEnter={e => { if (!aktiv) e.currentTarget.style.borderColor = kat.color; }}
-              onMouseLeave={e => { if (!aktiv) e.currentTarget.style.borderColor = '#374151'; }}
+              onMouseLeave={e => { if (!aktiv) e.currentTarget.style.borderColor = '#4a4a4a'; }}
             >
               {kat.icon} {kat.label[sprache]}
             </button>
@@ -547,9 +546,9 @@ export default function ForschungsBaum() {
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable={false}
-            style={{ background: '#030712' }}
+            style={{ background: '#111111' }}
           >
-            <Background variant={BackgroundVariant.Dots} color="#1f2937" gap={24} size={1.2} />
+            <Background variant={BackgroundVariant.Dots} color="#333333" gap={24} size={1.2} />
             <Controls className="rf-controls-dark" showInteractive={false} />
           </ReactFlow>
         </div>
@@ -558,15 +557,15 @@ export default function ForschungsBaum() {
       {/* ── Legende ── */}
       <div className="flex-shrink-0 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
-          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #5dbf3c', background: '#1e293b', display: 'inline-block' }} />
+          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #5dbf3c', background: '#1e1e1e', display: 'inline-block' }} />
           {sprache === 'de' ? 'Erforscht' : 'Researched'}
         </span>
         <span className="flex items-center gap-1.5">
-          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #f0b070', background: '#1e293b', display: 'inline-block' }} />
+          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #c8903c', background: '#1e1e1e', display: 'inline-block' }} />
           {sprache === 'de' ? 'Verfügbar' : 'Available'}
         </span>
         <span className="flex items-center gap-1.5">
-          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #475569', background: '#1e293b', display: 'inline-block', opacity: 0.6 }} />
+          <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #5a5a5a', background: '#1e1e1e', display: 'inline-block', opacity: 0.6 }} />
           {sprache === 'de' ? 'Gesperrt' : 'Locked'}
         </span>
         <span className="text-gray-700 ml-1">
