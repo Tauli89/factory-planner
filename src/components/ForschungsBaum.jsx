@@ -49,11 +49,11 @@ class BaumFehlerGrenze extends Component {
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
-const KARTE_B     = 260;
+const KARTE_B     = 220;
 const KARTE_H     = 90;
 const KARTE_H_LVL = 110;
-const ABSTAND_X   = 130;  // horizontaler Abstand zwischen Karten in einer Tier-Ebene
-const ABSTAND_Y   = 180;  // vertikaler Abstand zwischen Tier-Ebenen
+const ABSTAND_X   = 260;  // KARTE_B + 40px Luft → kein horizontales Überlappen
+const ABSTAND_Y   = 200;  // KARTE_H_LVL + 90px Luft → großzügiger vertikaler Abstand
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
