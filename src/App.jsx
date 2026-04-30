@@ -58,11 +58,35 @@ const TX = {
 // Full-height tabs that need no scroll wrapper
 const FULLSCREEN_TABS = new Set(['forschung', 'fabrikplaner']);
 
+const LS_KEY = 'factoryplanner_rechner_v1';
+
+function ladeGespeicherteItems() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    return parsed.map((p, i) => ({
+      key: i + 1,
+      id: typeof p.id === 'string' ? p.id : '',
+      mengeProMin: typeof p.mengeProMin === 'number' && p.mengeProMin > 0 ? p.mengeProMin : 60,
+    }));
+  } catch {
+    return null;
+  }
+}
+
 function RechnerTab({ sprache }) {
-  const [items, setItems]             = useState([{ key: 1, id: '', mengeProMin: 60 }]);
+  const [items, setItems]             = useState(() => ladeGespeicherteItems() ?? [{ key: 1, id: '', mengeProMin: 60 }]);
   const [bandId, setBandId]           = useState('keins');
   const [zeigeModule, setZeigeModule] = useState(false);
-  const keyRef = useRef(2);
+  const keyRef = useRef(1000);
+
+  useEffect(() => {
+    localStorage.setItem(LS_KEY, JSON.stringify(
+      items.map(i => ({ id: i.id, mengeProMin: i.mengeProMin }))
+    ));
+  }, [items]);
 
   const { boni }                                          = useForschung();
   const { modulBoni }                                     = useModul();
