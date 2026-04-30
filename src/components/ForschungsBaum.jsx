@@ -49,11 +49,11 @@ class BaumFehlerGrenze extends Component {
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
-const KARTE_B     = 220;
+const KARTE_B     = 260;
 const KARTE_H     = 90;
 const KARTE_H_LVL = 110;
-const ABSTAND_X   = 300;  // nodeWidth(240) + horizontalGap(60)
-const ABSTAND_Y   = 130;  // nodeHeight(110) + verticalGap(20)
+const ABSTAND_X   = 130;  // horizontaler Abstand zwischen Karten in einer Tier-Ebene
+const ABSTAND_Y   = 180;  // vertikaler Abstand zwischen Tier-Ebenen
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -121,11 +121,11 @@ function berechnePositionen() {
 
   const pos = {};
   for (const [e, ids] of Object.entries(ebenen)) {
-    const offsetY = ((maxProEbene - ids.length) / 2) * ABSTAND_Y;
+    const offsetX = ((maxProEbene - ids.length) / 2) * ABSTAND_X;
     ids.forEach((id, i) => {
       pos[id] = {
-        x: parseInt(e) * ABSTAND_X,
-        y: offsetY + i * ABSTAND_Y,
+        x: offsetX + i * ABSTAND_X,
+        y: parseInt(e) * ABSTAND_Y,
       };
     });
   }
@@ -245,7 +245,7 @@ const TechNode = memo(({ data }) => {
         overflow: 'visible',
       }}
     >
-      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
       <Icon id={tech.id} type="technologies" size={48} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div
@@ -277,7 +277,7 @@ const TechNode = memo(({ data }) => {
           )}
         </div>
       </div>
-      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
       {hovered && !dimmed && <TechTooltip tech={tech} sprache={sprache} />}
     </div>
   );
@@ -338,7 +338,7 @@ const LevelNode = memo(({ data }) => {
         pointerEvents: 'all',
       }}
     >
-      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
       <Icon id={techId} type="technologies" size={48} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div
@@ -393,7 +393,7 @@ const LevelNode = memo(({ data }) => {
           >+</button>
         </div>
       </div>
-      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
     </div>
   );
 });
