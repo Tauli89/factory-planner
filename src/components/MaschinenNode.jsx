@@ -57,7 +57,7 @@ export default function MaschinenNode({ data, selected }) {
       <Handle
         type="target"
         position={Position.Left}
-        style={{ ...HANDLE_STYLE, borderColor: s.color, backgroundColor: '#1f2937' }}
+        style={{ ...HANDLE_STYLE, borderColor: s.color, backgroundColor: '#252525' }}
       />
 
       {/* Header bar */}
@@ -93,7 +93,7 @@ export default function MaschinenNode({ data, selected }) {
       <Handle
         type="source"
         position={Position.Right}
-        style={{ ...HANDLE_STYLE, borderColor: s.color, backgroundColor: '#1f2937' }}
+        style={{ ...HANDLE_STYLE, borderColor: s.color, backgroundColor: '#252525' }}
       />
     </div>
   );
