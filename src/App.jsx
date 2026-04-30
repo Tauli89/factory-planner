@@ -6,6 +6,7 @@ import ForschungsBaum from './components/ForschungsBaum';
 import ModulAuswahl from './components/ModulAuswahl';
 import ModulOptimierung from './components/ModulOptimierung';
 import QualityAuswahl from './components/QualityAuswahl';
+import QualityRechner from './components/QualityRechner';
 import FabrikPlaner from './components/FabrikPlaner';
 import { ForschungProvider, useForschung } from './context/ForschungContext';
 import { SprachProvider, useSprache } from './context/SprachContext';
@@ -20,12 +21,14 @@ const TABS = {
   de: [
     { id: 'rechner',      label: '⚙️ Rechner' },
     { id: 'optimierung',  label: '🎯 Modul-Optimierung' },
+    { id: 'qualitaet',    label: '✨ Qualität' },
     { id: 'forschung',    label: '🔬 Forschung' },
     { id: 'fabrikplaner', label: '🏗️ Fabrikplaner' },
   ],
   en: [
     { id: 'rechner',      label: '⚙️ Calculator' },
     { id: 'optimierung',  label: '🎯 Module Optimizer' },
+    { id: 'qualitaet',    label: '✨ Quality' },
     { id: 'forschung',    label: '🔬 Research' },
     { id: 'fabrikplaner', label: '🏗️ Factory Planner' },
   ],
@@ -340,6 +343,7 @@ function AppInner() {
       >
         {aktuellerTab === 'rechner'      && <RechnerTab      sprache={sprache} />}
         {aktuellerTab === 'optimierung'  && <ModulOptimierung />}
+        {aktuellerTab === 'qualitaet'   && <QualityRechner />}
         {aktuellerTab === 'forschung'    && <ForschungsTab    sprache={sprache} />}
         {aktuellerTab === 'fabrikplaner' && <FabrikPlanerTab  sprache={sprache} />}
 
