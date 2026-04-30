@@ -117,10 +117,16 @@ function berechnePositionen() {
     ebenen[e].push(t.id);
   }
 
+  const maxProEbene = Math.max(...Object.values(ebenen).map(ids => ids.length));
+
   const pos = {};
   for (const [e, ids] of Object.entries(ebenen)) {
+    const offsetY = ((maxProEbene - ids.length) / 2) * ABSTAND_Y;
     ids.forEach((id, i) => {
-      pos[id] = { x: parseInt(e) * ABSTAND_X, y: i * ABSTAND_Y };
+      pos[id] = {
+        x: parseInt(e) * ABSTAND_X,
+        y: offsetY + i * ABSTAND_Y,
+      };
     });
   }
   return pos;
@@ -242,15 +248,18 @@ const TechNode = memo(({ data }) => {
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <Icon id={tech.id} type="technologies" size={48} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: '#e8d8b0',
-          lineHeight: 1.2,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
+        <div
+          title={tech.name[sprache] ?? tech.name.de}
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: '#e8d8b0',
+            lineHeight: 1.2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {tech.name[sprache] ?? tech.name.de}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
@@ -332,15 +341,18 @@ const LevelNode = memo(({ data }) => {
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <Icon id={techId} type="technologies" size={48} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: '#e8d8b0',
-          lineHeight: 1.2,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
+        <div
+          title={name}
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: '#e8d8b0',
+            lineHeight: 1.2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {name}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
