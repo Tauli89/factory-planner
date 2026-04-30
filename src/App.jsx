@@ -342,6 +342,44 @@ function AppInner() {
         {aktuellerTab === 'optimierung'  && <ModulOptimierung />}
         {aktuellerTab === 'forschung'    && <ForschungsTab    sprache={sprache} />}
         {aktuellerTab === 'fabrikplaner' && <FabrikPlanerTab  sprache={sprache} />}
+
+        {!isFullscreen && (
+          <footer className="mt-12 pt-4 border-t border-gray-800 text-center text-xs text-gray-500 flex flex-wrap items-center justify-center gap-4">
+            <span>
+              {sprache === 'de' ? 'Erstellt von' : 'Made by'}{' '}
+              <a
+                href="https://github.com/Tauli89"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 hover:text-amber-300 transition-colors"
+              >
+                Tauli89
+              </a>
+            </span>
+            <span className="text-gray-700">·</span>
+            <span>
+              {sprache === 'de' ? 'Kein offizielles Factorio-Produkt' : 'Not an official Factorio product'}
+            </span>
+            <span className="text-gray-700">·</span>
+            <a
+              href="https://ko-fi.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:text-amber-300 transition-colors"
+            >
+              ☕ Ko-fi
+            </a>
+            <span className="text-gray-700">·</span>
+            <a
+              href="https://github.com/Tauli89/factory-planner"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:text-amber-300 transition-colors"
+            >
+              GitHub
+            </a>
+          </footer>
+        )}
       </main>
     </div>
   );

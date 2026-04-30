@@ -134,6 +134,69 @@ function hoverBorder(color) {
 }
 
 // ── TechNode ──────────────────────────────────────────────────────────────────
+function TechTooltip({ tech, sprache }) {
+  const gd         = gamedata.technologies[tech.id];
+  const prereqs    = gd?.prerequisites ?? [];
+  const unlocks    = gd?.unlocks_recipes ?? [];
+
+  const prereqNames = prereqs.map(id => {
+    const t = gamedata.technologies[id];
+    return t?.name?.[sprache] ?? t?.name?.en ?? id;
+  });
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: KARTE_B + 10,
+      top: 0,
+      width: 220,
+      background: '#252525',
+      border: '1px solid #5a5a5a',
+      borderRadius: 6,
+      padding: '10px 12px',
+      zIndex: 9999,
+      pointerEvents: 'none',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#f0b070', marginBottom: 6 }}>
+        {tech.name[sprache] ?? tech.name.de}
+      </div>
+      {prereqNames.length > 0 && (
+        <div style={{ marginBottom: 5 }}>
+          <div style={{ fontSize: 10, color: '#8a8278', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+            {sprache === 'de' ? 'Voraussetzungen' : 'Prerequisites'}
+          </div>
+          {prereqNames.map((n, i) => (
+            <div key={i} style={{ fontSize: 11, color: '#c8b898' }}>· {n}</div>
+          ))}
+        </div>
+      )}
+      {unlocks.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10, color: '#8a8278', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+            {sprache === 'de' ? 'Schaltet frei' : 'Unlocks'} ({unlocks.length})
+          </div>
+          {unlocks.slice(0, 5).map((id, i) => {
+            const r = gamedata.recipes?.[id];
+            const name = r?.name?.[sprache] ?? r?.name?.en ?? id;
+            return (
+              <div key={i} style={{ fontSize: 11, color: '#c8b898', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon id={id} type="items" size={14} />
+                {name}
+              </div>
+            );
+          })}
+          {unlocks.length > 5 && (
+            <div style={{ fontSize: 10, color: '#706860' }}>
+              +{unlocks.length - 5} {sprache === 'de' ? 'weitere' : 'more'}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TechNode = memo(({ data }) => {
   const { tech, istErforscht, depsFehlen, onToggle, sprache, dimmed, highlighted } = data;
   const [hovered, setHovered] = useState(false);
@@ -155,7 +218,6 @@ const TechNode = memo(({ data }) => {
       onClick={(e) => { e.stopPropagation(); onToggle(tech.id); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      title={depsFehlen && !istErforscht ? 'Voraussetzungen fehlen – werden automatisch miterforscht' : ''}
       style={{
         width: KARTE_B,
         height: KARTE_H,
@@ -173,6 +235,8 @@ const TechNode = memo(({ data }) => {
         transition: 'background 0.12s, border-color 0.12s, opacity 0.2s',
         userSelect: 'none',
         pointerEvents: 'all',
+        position: 'relative',
+        overflow: 'visible',
       }}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
@@ -205,6 +269,7 @@ const TechNode = memo(({ data }) => {
         </div>
       </div>
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
+      {hovered && !dimmed && <TechTooltip tech={tech} sprache={sprache} />}
     </div>
   );
 });
