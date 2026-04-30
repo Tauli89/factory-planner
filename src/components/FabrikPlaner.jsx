@@ -114,7 +114,7 @@ function buildEdge(params, beltId, sprache) {
     style: { stroke: color, strokeWidth: 2.5 },
     label,
     labelStyle: { fill: color, fontSize: 9, fontWeight: 600 },
-    labelBgStyle: { fill: '#111827', fillOpacity: 0.85 },
+    labelBgStyle: { fill: '#1a1a1a', fillOpacity: 0.85 },
     data: { beltId },
     markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
   };
@@ -372,19 +372,19 @@ function FabrikPlanerInner({ sprache }) {
           fitViewOptions={{ padding: 0.3 }}
           deleteKeyCode="Delete"
           colorMode="dark"
-          style={{ background: '#030712' }}
+          style={{ background: '#111111' }}
         >
           <Background
             variant={BackgroundVariant.Dots}
             gap={20}
             size={1}
-            color="#374151"
+            color="#3d3d3d"
           />
           <Controls showInteractive={false} />
           <MiniMap
-            nodeColor={n => MACH_COLOR[n.data?.maschine] ?? '#374151'}
+            nodeColor={n => MACH_COLOR[n.data?.maschine] ?? '#4a4a4a'}
             maskColor="rgba(0,0,0,0.6)"
-            style={{ background: '#111827', border: '1px solid #374151' }}
+            style={{ background: '#1a1a1a', border: '1px solid #4a4a4a' }}
           />
 
           {/* Hint when canvas is empty */}
@@ -551,6 +551,31 @@ function SidebarItem({ maschine, sprache, onAdd }) {
 // ── Public export with ReactFlowProvider wrapper ───────────────────────────
 
 export default function FabrikPlaner({ sprache }) {
+  const [forceShow, setForceShow] = useState(false);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  if (isMobile && !forceShow) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-4">
+        <div className="text-5xl">🏭</div>
+        <h2 className="text-amber-400 font-bold text-lg">
+          {sprache === 'de' ? 'Desktop empfohlen' : 'Desktop recommended'}
+        </h2>
+        <p className="text-gray-400 text-sm max-w-sm leading-relaxed">
+          {sprache === 'de'
+            ? 'Der Fabrikplaner ist für große Bildschirme optimiert. Auf mobilen Geräten kann die Bedienung eingeschränkt sein.'
+            : 'The factory planner is optimised for large screens. The experience may be limited on mobile devices.'}
+        </p>
+        <button
+          onClick={() => setForceShow(true)}
+          className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors"
+        >
+          {sprache === 'de' ? 'Trotzdem öffnen' : 'Open anyway'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <ReactFlowProvider>
       <FabrikPlanerInner sprache={sprache} />
