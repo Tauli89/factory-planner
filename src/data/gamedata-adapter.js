@@ -167,6 +167,28 @@ function buildRezepte() {
 export const REZEPTE = buildRezepte();
 export const REZEPTE_MAP = Object.fromEntries(REZEPTE.map(r => [r.id, r]));
 
+// recipe ID → main result item ID
+export const REZEPT_ZU_ITEM_ID = (() => {
+  const map = {};
+  for (const r of Object.values(gamedata.recipes)) {
+    if (r.results?.[0]?.item) map[r.id] = r.results[0].item;
+  }
+  return map;
+})();
+
+// item ID → [recipe IDs in REZEPTE that produce it]
+export const ITEM_TO_REZEPTE_IDS = (() => {
+  const map = {};
+  for (const r of Object.values(gamedata.recipes)) {
+    if (!REZEPTE_MAP[r.id]) continue;
+    for (const result of r.results ?? []) {
+      if (!map[result.item]) map[result.item] = [];
+      if (!map[result.item].includes(r.id)) map[result.item].push(r.id);
+    }
+  }
+  return map;
+})();
+
 // ── Build ITEM_ICONS from gamedata.json ───────────────────────────────────────
 function buildItemIcons() {
   const icons = {};

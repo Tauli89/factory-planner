@@ -1,4 +1,4 @@
-import { REZEPTE_MAP, MASCHINEN } from '../data/recipes';
+import { REZEPTE_MAP, MASCHINEN, ITEM_TO_REZEPTE_IDS, REZEPT_ZU_ITEM_ID } from '../data/recipes';
 import { MASCHINEN_STROMVERBRAUCH, ENERGIEQUELLEN } from '../data/machines';
 
 const MASCHINENGESCHWINDIGKEIT = {
@@ -49,16 +49,28 @@ export const MASCHINEN_LABEL_EN = {
 };
 
 /**
- * Berechnet alle benötigten Produktionsraten (BFS, kein exponentielles Rekursion-Problem).
- * modulBoni: { [maschinenType]: { speedBonus, produktivitaet } }
+ * Gibt alle Rezepte zurück, die dasselbe Hauptprodukt erzeugen wie `id`
+ * (id kann eine Rezept-ID oder eine Item-ID sein).
  */
-export function berechneProduktion(rootId, rootRate, akkumulator = {}, modulBoni = {}) {
+export function getVerfuegbareRezepte(id) {
+  const itemId   = REZEPT_ZU_ITEM_ID[id] ?? id;
+  const rezeptIds = ITEM_TO_REZEPTE_IDS[itemId] ?? (REZEPTE_MAP[id] ? [id] : []);
+  return rezeptIds.map(rid => REZEPTE_MAP[rid]).filter(Boolean);
+}
+
+/**
+ * Berechnet alle benötigten Produktionsraten (BFS, kein exponentielles Rekursion-Problem).
+ * modulBoni:      { [maschinenType]: { speedBonus, produktivitaet } }
+ * rezeptOverrides: { [itemOderRezeptId]: rezeptId } – alternatives Rezept pro Produkt
+ */
+export function berechneProduktion(rootId, rootRate, akkumulator = {}, modulBoni = {}, rezeptOverrides = {}) {
   let pending = { [rootId]: rootRate };
   while (Object.keys(pending).length > 0) {
     const nextPending = {};
     for (const [id, rate] of Object.entries(pending)) {
       akkumulator[id] = (akkumulator[id] ?? 0) + rate;
-      const rezept = REZEPTE_MAP[id];
+      const rezeptId = rezeptOverrides[id] ?? id;
+      const rezept   = REZEPTE_MAP[rezeptId];
       if (!rezept || rezept.zeit === 0) continue;
       const modulBonus     = modulBoni[rezept.maschine];
       const produktivitaet = modulBonus?.produktivitaet ?? 0;

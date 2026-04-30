@@ -4,4 +4,6 @@ export {
   KATEGORIEN_EN_LABEL,
   REZEPTE,
   REZEPTE_MAP,
+  ITEM_TO_REZEPTE_IDS,
+  REZEPT_ZU_ITEM_ID,
 } from './gamedata-adapter.js';

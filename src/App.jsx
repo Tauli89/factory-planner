@@ -13,7 +13,7 @@ import { SprachProvider, useSprache } from './context/SprachContext';
 import { ModulProvider, useModul } from './context/ModulContext';
 import { QualityProvider, useQuality } from './context/QualityContext';
 import { BerechnungProvider, useBerechnung } from './context/BerechnungContext';
-import { berechneProduktion, maschinenAnzahl } from './utils/berechnung';
+import { berechneProduktion, maschinenAnzahl, getVerfuegbareRezepte } from './utils/berechnung';
 import { REZEPTE_MAP } from './data/recipes';
 import { FOERDERBAENDER, FOERDERBAENDER_MAP } from './data/belts';
 
@@ -43,6 +43,7 @@ const TX = {
     hinweis:       'Wähle ein Produkt, um die Produktionskette zu berechnen.',
     foerderband:   'Förderband',
     module:        'Module',
+    rezept:        'Rezept',
   },
   en: {
     konfigurieren: 'Configure production',
@@ -52,6 +53,7 @@ const TX = {
     hinweis:       'Select a product to calculate the production chain.',
     foerderband:   'Belt type',
     module:        'Modules',
+    rezept:        'Recipe',
   },
 };
 
@@ -70,6 +72,7 @@ function ladeGespeicherteItems() {
       key: i + 1,
       id: typeof p.id === 'string' ? p.id : '',
       mengeProMin: typeof p.mengeProMin === 'number' && p.mengeProMin > 0 ? p.mengeProMin : 60,
+      rezeptOverride: typeof p.rezeptOverride === 'string' ? p.rezeptOverride : null,
     }));
   } catch {
     return null;
@@ -77,14 +80,14 @@ function ladeGespeicherteItems() {
 }
 
 function RechnerTab({ sprache }) {
-  const [items, setItems]             = useState(() => ladeGespeicherteItems() ?? [{ key: 1, id: '', mengeProMin: 60 }]);
+  const [items, setItems]             = useState(() => ladeGespeicherteItems() ?? [{ key: 1, id: '', mengeProMin: 60, rezeptOverride: null }]);
   const [bandId, setBandId]           = useState('keins');
   const [zeigeModule, setZeigeModule] = useState(false);
   const keyRef = useRef(1000);
 
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(
-      items.map(i => ({ id: i.id, mengeProMin: i.mengeProMin }))
+      items.map(i => ({ id: i.id, mengeProMin: i.mengeProMin, rezeptOverride: i.rezeptOverride }))
     ));
   }, [items]);
 
@@ -93,22 +96,32 @@ function RechnerTab({ sprache }) {
   const { zielQualitaet, maschinenQualitaet, getQualityFaktorFuerMaschine } = useQuality();
   const { setMaschinenListe }                             = useBerechnung();
 
-  const addItem    = () => setItems(prev => [...prev, { key: keyRef.current++, id: '', mengeProMin: 60 }]);
+  const addItem    = () => setItems(prev => [...prev, { key: keyRef.current++, id: '', mengeProMin: 60, rezeptOverride: null }]);
   const removeItem = key => setItems(prev => prev.length > 1 ? prev.filter(i => i.key !== key) : prev);
-  const updateId   = (key, id)    => setItems(prev => prev.map(i => i.key === key ? { ...i, id }            : i));
+  const updateId   = (key, id) => setItems(prev => prev.map(i => i.key === key ? { ...i, id, rezeptOverride: null } : i));
   const updateMenge= (key, menge) => setItems(prev => prev.map(i => i.key === key ? { ...i, mengeProMin: menge } : i));
-  const resetAll   = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60 }]);
+  const updateRezeptOverride = (key, rezeptId) => setItems(prev => prev.map(i => i.key === key ? { ...i, rezeptOverride: rezeptId } : i));
+  const resetAll   = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60, rezeptOverride: null }]);
+
+  const rezeptOverrides = useMemo(() => {
+    const map = {};
+    for (const item of items) {
+      if (item.id && item.rezeptOverride) map[item.id] = item.rezeptOverride;
+    }
+    return map;
+  }, [items]);
 
   const { combined, perItem } = useMemo(() => {
     const active = items.filter(i => i.id && i.mengeProMin > 0);
     if (!active.length) return { combined: {}, perItem: [] };
 
     const perItemList = active.map(item => {
-      const rezept        = REZEPTE_MAP[item.id];
+      const effektivRezeptId = item.rezeptOverride ?? item.id;
+      const rezept        = REZEPTE_MAP[effektivRezeptId] ?? REZEPTE_MAP[item.id];
       const maschinenType = rezept?.maschine;
       const qualityFaktor = getQualityFaktorFuerMaschine(maschinenType);
       const craftingRateSek = (item.mengeProMin / 60) * qualityFaktor;
-      const produktion = berechneProduktion(item.id, craftingRateSek, {}, modulBoni);
+      const produktion = berechneProduktion(item.id, craftingRateSek, {}, modulBoni, rezeptOverrides);
       return {
         key:         item.key,
         id:          item.id,
@@ -126,7 +139,7 @@ function RechnerTab({ sprache }) {
       }
     }
     return { combined, perItem: perItemList };
-  }, [items, modulBoni, zielQualitaet, getQualityFaktorFuerMaschine]);
+  }, [items, modulBoni, zielQualitaet, getQualityFaktorFuerMaschine, rezeptOverrides]);
 
   // Publish calculated machine list to BerechnungContext for FabrikPlaner
   const maschinenFuerPlaner = useMemo(() => {
@@ -206,6 +219,26 @@ function RechnerTab({ sprache }) {
                 </span>
               )}
               <ProduktAuswahl ausgewaehltId={item.id} onAuswahl={id => updateId(item.key, id)} />
+              {item.id && (() => {
+                const rezepte = getVerfuegbareRezepte(item.id);
+                if (rezepte.length <= 1) return null;
+                return (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-400">{tx.rezept}</label>
+                    <select
+                      value={item.rezeptOverride ?? item.id}
+                      onChange={e => updateRezeptOverride(item.key, e.target.value)}
+                      className="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-2 py-2 focus:outline-none focus:ring-1 focus:ring-amber-400 max-w-[220px]"
+                    >
+                      {rezepte.map(r => (
+                        <option key={r.id} value={r.id}>
+                          {sprache === 'de' ? r.name : r.nameEn}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })()}
               <MengenEingabe wert={item.mengeProMin} onChange={m => updateMenge(item.key, m)} />
               {items.length > 1 && (
                 <button
