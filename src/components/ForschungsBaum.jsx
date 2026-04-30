@@ -49,11 +49,11 @@ class BaumFehlerGrenze extends Component {
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
-const KARTE_B     = 220;
-const KARTE_H     = 90;
-const KARTE_H_LVL = 110;
-const ABSTAND_X   = 260;  // KARTE_B + 40px Luft → kein horizontales Überlappen
-const ABSTAND_Y   = 200;  // KARTE_H_LVL + 90px Luft → großzügiger vertikaler Abstand
+const KARTE_B     = 310;
+const KARTE_H     = 100;
+const KARTE_H_LVL = 120;
+const ABSTAND_X   = 370;  // KARTE_B (310) + 60px Luft
+const ABSTAND_Y   = 200;  // KARTE_H_LVL (120) + 80px Luft
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -256,8 +256,10 @@ const TechNode = memo(({ data }) => {
             color: '#e8d8b0',
             lineHeight: 1.2,
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            whiteSpace: 'normal',
           }}
         >
           {tech.name[sprache] ?? tech.name.de}
@@ -349,8 +351,10 @@ const LevelNode = memo(({ data }) => {
             color: '#e8d8b0',
             lineHeight: 1.2,
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            whiteSpace: 'normal',
           }}
         >
           {name}
