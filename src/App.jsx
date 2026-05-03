@@ -3,6 +3,7 @@ import ProduktAuswahl from './components/ProduktAuswahl';
 import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
 import ProduktionsBaum from './components/ProduktionsBaum';
+import PlanManager from './components/PlanManager';
 import ForschungsBaum from './components/ForschungsBaum';
 import ModulAuswahl from './components/ModulAuswahl';
 import ModulOptimierung from './components/ModulOptimierung';
@@ -147,6 +148,11 @@ function RechnerTab({ sprache }) {
   const { zielQualitaet, maschinenQualitaet, getQualityFaktorFuerMaschine } = useQuality();
   const { setMaschinenListe }                             = useBerechnung();
 
+  const onPlanLoad = (neueItems) => {
+    setItems(neueItems.map((it, i) => ({ ...it, key: keyRef.current + i + 1 })));
+    keyRef.current += neueItems.length + 1;
+  };
+
   const addItem    = () => setItems(prev => [...prev, { key: keyRef.current++, id: '', mengeProMin: 60, rezeptOverride: null }]);
   const removeItem = key => setItems(prev => prev.length > 1 ? prev.filter(i => i.key !== key) : prev);
   const updateId   = (key, id) => setItems(prev => prev.map(i => i.key === key ? { ...i, id, rezeptOverride: null } : i));
@@ -247,6 +253,12 @@ function RechnerTab({ sprache }) {
 
   return (
     <div className="flex flex-col gap-8">
+      <PlanManager
+        currentItems={items}
+        onPlanLoad={onPlanLoad}
+        sprache={sprache}
+      />
+
       <section className="bg-gray-900 rounded-xl border border-gray-800 p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-amber-400 font-bold text-base uppercase tracking-wide">
