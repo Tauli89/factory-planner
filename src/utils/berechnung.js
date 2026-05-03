@@ -172,6 +172,31 @@ export function maschinenAnzahl(id, mengeProSekunde, boni = {}, modulBoni = {}, 
   return Math.ceil(mengeProSekunde / basisRate);
 }
 
+// Private: output items/sec from ONE machine, mirrors maschinenAnzahl logic without ceil
+function getMachineRatePerSec(id, boni, modulBoni, maschinenQualitaetMulti, maschinenOverrideId, beaconConfig) {
+  const rezept = REZEPTE_MAP[id];
+  if (!rezept || rezept.zeit === 0) return null;
+
+  let speed;
+  if (maschinenOverrideId && gamedata.machines[maschinenOverrideId]) {
+    speed = gamedata.machines[maschinenOverrideId].crafting_speed;
+  } else {
+    speed = MASCHINENGESCHWINDIGKEIT[rezept.maschine] ?? 1.0;
+  }
+  if (maschinenQualitaetMulti !== 1) speed *= maschinenQualitaetMulti;
+  if (rezept.maschine !== MASCHINEN.BERGBAU && (boni.assemblerBonus ?? 0) > 0) speed *= (1 + boni.assemblerBonus);
+  const mb = modulBoni[rezept.maschine];
+  if (mb?.speedBonus) speed *= (1 + mb.speedBonus);
+  if (beaconConfig?.anzahlBeacons > 0) {
+    const bkE = BEACON_MODUL_EFFEKTE[beaconConfig.modulTyp];
+    if (bkE?.speed) speed *= (1 + beaconConfig.anzahlBeacons * beaconConfig.moduleProBeacon * bkE.speed * 0.5);
+  }
+  const prod = mb?.produktivitaet ?? 0;
+  let rate = (rezept.ergibt * (1 + prod) / rezept.zeit) * speed;
+  if (rezept.maschine === MASCHINEN.BERGBAU && (boni.miningBonus ?? 0) > 0) rate *= (1 + boni.miningBonus);
+  return rate;
+}
+
 /**
  * Berechnet den Gesamtstromverbrauch der Produktionskette.
  * Gibt pro Maschinen-Typ die Anzahl und kW-Werte zurück,
@@ -229,4 +254,109 @@ export function berechneStromverbrauch(produktion, boni = {}, modulBoni = {}, ma
     solarPanels:    Math.ceil(gesamtKW / ENERGIEQUELLEN.solarPanel.leistungKW),
     dampfmaschinen: Math.ceil(gesamtKW / ENERGIEQUELLEN.dampfmaschine.leistungKW),
   };
+}
+
+/**
+ * Analysiert die Produktionskette auf Effizienz und Engpässe.
+ * herstellungEintraege: gefilterte eintraege aus ErgebnisTabelle (nur !istRohstoff)
+ * Gibt zurück: { effizienzScore, bottleneck, vorschlaege }
+ */
+export function analysiereProduktion(herstellungEintraege, boni, modulBoni, mQMulti, sprache) {
+  const iDE = sprache !== 'en';
+
+  const details = herstellungEintraege
+    .filter(e => e.anzahl !== null && e.anzahl > 0)
+    .map(e => {
+      const machineRate = getMachineRatePerSec(e.id, boni, modulBoni, mQMulti, e.selectedMaschinenId, e.beaconCfg);
+      if (!machineRate) return null;
+
+      const exactMachines  = e.craftingRate / machineRate;
+      const actualMachines = e.anzahl;
+      const utilization    = exactMachines / actualMachines;
+      const wastedMachines = actualMachines - exactMachines;
+
+      const rezept = REZEPTE_MAP[e.id];
+      const currentBaseSpeed = (e.selectedMaschinenId && gamedata.machines[e.selectedMaschinenId])
+        ? gamedata.machines[e.selectedMaschinenId].crafting_speed
+        : (MASCHINENGESCHWINDIGKEIT[rezept?.maschine] ?? 1.0);
+
+      const verfuegbare  = e.verfuegbareMaschinen ?? [];
+      const schnellste   = verfuegbare.length > 0 ? verfuegbare[verfuegbare.length - 1] : null;
+      const isNichtSchnellste = schnellste && schnellste.speed > currentBaseSpeed + 0.001;
+
+      const mb = modulBoni[rezept?.maschine];
+      const hasSpeedModule = (mb?.speedBonus ?? 0) > 0;
+
+      return {
+        id: e.id, name: e.name, maschine: rezept?.maschine,
+        exactMachines, actualMachines, utilization, wastedMachines,
+        machineRatePerMin: machineRate * 60,
+        craftingRatePerMin: e.craftingRate * 60,
+        currentBaseSpeed, schnellste, isNichtSchnellste, hasSpeedModule,
+      };
+    })
+    .filter(Boolean);
+
+  if (details.length === 0) return { effizienzScore: 100, bottleneck: null, vorschlaege: [] };
+
+  const totalExact  = details.reduce((s, d) => s + d.exactMachines,  0);
+  const totalActual = details.reduce((s, d) => s + d.actualMachines, 0);
+  const effizienzScore = Math.round((totalExact / totalActual) * 100);
+
+  // Bottleneck = item with most absolute machine waste
+  const worst = details.reduce((max, d) => d.wastedMachines > max.wastedMachines ? d : max, details[0]);
+  const bottleneck = worst.wastedMachines > 0.01 ? {
+    rezeptId:     worst.id,
+    itemName:     worst.name,
+    istDurchsatz: worst.craftingRatePerMin,
+    sollDurchsatz: worst.actualMachines * worst.machineRatePerMin,
+    auslastung:   Math.round(worst.utilization * 100),
+  } : null;
+
+  const vorschlaege = [];
+
+  // Machine upgrade suggestions
+  for (const d of details) {
+    if (!d.isNichtSchnellste) continue;
+    const newActual = Math.ceil(d.exactMachines / (d.schnellste.speed / d.currentBaseSpeed));
+    const ersparnis = d.actualMachines - newActual;
+    if (ersparnis <= 0) continue;
+    const mName = iDE ? d.schnellste.nameDe : d.schnellste.nameEn;
+    vorschlaege.push({
+      typ: 'upgrade', itemId: d.id, ersparnis,
+      beschreibung: iDE
+        ? `Upgrade auf ${mName} bei „${d.name}": ${d.actualMachines} → ${newActual} Maschinen`
+        : `Upgrade to ${mName} at "${d.name}": ${d.actualMachines} → ${newActual} machines`,
+    });
+  }
+
+  // Speed Module 3 suggestions (if none active)
+  for (const d of details) {
+    if (d.hasSpeedModule || d.maschine === MASCHINEN.BERGBAU || d.maschine === MASCHINEN.RECYCLER) continue;
+    const newActual = Math.ceil(d.exactMachines / 1.5); // speed-module-3: +50%
+    const ersparnis = d.actualMachines - newActual;
+    if (ersparnis <= 0) continue;
+    vorschlaege.push({
+      typ: 'module', itemId: d.id, ersparnis,
+      beschreibung: iDE
+        ? `Geschwindigkeitsmodul 3 in „${d.name}" (${d.actualMachines}×) → spart ${ersparnis} Maschine${ersparnis > 1 ? 'n' : ''}`
+        : `Speed Module 3 in "${d.name}" (${d.actualMachines}×) → saves ${ersparnis} machine${ersparnis > 1 ? 's' : ''}`,
+    });
+  }
+
+  // Throughput-to-integer suggestions
+  for (const d of details) {
+    const frac = d.exactMachines % 1;
+    if (frac < 0.05 || frac > 0.95) continue;
+    const targetRate = (d.actualMachines * d.machineRatePerMin).toFixed(1);
+    vorschlaege.push({
+      typ: 'durchsatz', itemId: d.id, ersparnis: 0,
+      beschreibung: iDE
+        ? `„${d.name}": Zieldurchsatz auf ${targetRate}/min → alle ${d.actualMachines} Maschinen zu 100% ausgelastet`
+        : `"${d.name}": set target to ${targetRate}/min → all ${d.actualMachines} machines fully utilized`,
+    });
+  }
+
+  vorschlaege.sort((a, b) => b.ersparnis - a.ersparnis);
+  return { effizienzScore, bottleneck, vorschlaege: vorschlaege.slice(0, 6) };
 }

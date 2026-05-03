@@ -1,6 +1,9 @@
 import { useMemo, Fragment, useState } from 'react';
 import { REZEPTE_MAP, MASCHINEN, KATEGORIEN } from '../data/recipes';
-import { maschinenAnzahl, berechneStromverbrauch, MASCHINEN_LABEL, MASCHINEN_LABEL_EN, getVerfuegbareMaschinen, BEACON_MODUL_EFFEKTE } from '../utils/berechnung';
+import {
+  maschinenAnzahl, berechneStromverbrauch, analysiereProduktion,
+  MASCHINEN_LABEL, MASCHINEN_LABEL_EN, getVerfuegbareMaschinen, BEACON_MODUL_EFFEKTE,
+} from '../utils/berechnung';
 import { ABSTRACT_TO_MACHINE_ID } from '../data/gamedata-adapter';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
@@ -47,21 +50,6 @@ const BEACON_MODUL_NAMEN = {
   },
 };
 
-const KATEGORIE_FALLBACK_FARBE = {
-  [KATEGORIEN.ROHSTOFFE]:        '#6b7280',
-  [KATEGORIEN.ZWISCHENPRODUKTE]: '#f59e0b',
-  [KATEGORIEN.LOGISTIK]:         '#60a5fa',
-  [KATEGORIEN.ENERGIE]:          '#f97316',
-  [KATEGORIEN.MILITAER]:         '#ef4444',
-  [KATEGORIEN.MASCHINEN_BAU]:    '#8b5cf6',
-  [KATEGORIEN.MODULE]:           '#10b981',
-  [KATEGORIEN.SCIENCE]:          '#3b82f6',
-  [KATEGORIEN.OELVERARBEITUNG]:  '#78716c',
-  [KATEGORIEN.NUKLEAR]:          '#22d3ee',
-  [KATEGORIEN.RAKETE]:           '#e879f9',
-  [KATEGORIEN.SPACE_AGE]:        '#a78bfa',
-};
-
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
   [MASCHINEN.ASSEMBLER]:    'text-blue-400',
@@ -102,7 +90,6 @@ const T = {
     zielQualitaet:     'Ziel',
     maschinenQ:        'Maschinen',
     craftingFaktor:    'Crafting-Faktor',
-    craftingRate:      'Crafting-Rate',
     qualNormal:        'Normal',
     stromverbrauch:    'Stromverbrauch',
     maschinenTyp:      'Maschinen-Typ',
@@ -111,7 +98,6 @@ const T = {
     gesamtverbrauch:   'Gesamtverbrauch Fabrik',
     solarEmpfehlung:   'Solarpanels',
     dampfEmpfehlung:   'Dampfmaschinen',
-    empfehlung:        'Energieempfehlung',
     beaconAnzahl:      'Beacons',
     beaconModul:       'Modultyp',
     beaconProBeacon:   'Module/Beacon',
@@ -119,6 +105,13 @@ const T = {
     beaconEnergie:     'Energie',
     beaconMaschinen:   'Maschinen',
     beaconKonfig:      'Beacons konfigurieren',
+    analyseTitle:      '🔍 Produktionsanalyse',
+    effizienzHinweis:  v => `Produktion läuft auf ${v}% Effizienz`,
+    engpass:           'Engpass',
+    engpassText:       (name, ist, soll, aut) =>
+      `${name}: ${ist.toFixed(1)}/min benötigt, Maschinen liefern ${soll.toFixed(1)}/min (${aut}% Auslastung)`,
+    vorschlaegeTitle:  'Optimierungsvorschläge',
+    keinVorschlag:     'Keine Verbesserungen – Produktion ist optimal!',
   },
   en: {
     herstellung:       'Production',
@@ -136,7 +129,6 @@ const T = {
     zielQualitaet:     'Target',
     maschinenQ:        'Machines',
     craftingFaktor:    'Crafting factor',
-    craftingRate:      'Crafting rate',
     qualNormal:        'Normal',
     stromverbrauch:    'Power Consumption',
     maschinenTyp:      'Machine type',
@@ -145,7 +137,6 @@ const T = {
     gesamtverbrauch:   'Total factory power',
     solarEmpfehlung:   'Solar Panels',
     dampfEmpfehlung:   'Steam Engines',
-    empfehlung:        'Power recommendation',
     beaconAnzahl:      'Beacons',
     beaconModul:       'Module type',
     beaconProBeacon:   'Modules/Beacon',
@@ -153,6 +144,13 @@ const T = {
     beaconEnergie:     'energy',
     beaconMaschinen:   'Machines',
     beaconKonfig:      'Configure beacons',
+    analyseTitle:      '🔍 Production Analysis',
+    effizienzHinweis:  v => `Production runs at ${v}% efficiency`,
+    engpass:           'Bottleneck',
+    engpassText:       (name, ist, soll, aut) =>
+      `${name}: ${ist.toFixed(1)}/min needed, machines produce ${soll.toFixed(1)}/min (${aut}% utilized)`,
+    vorschlaegeTitle:  'Optimization Suggestions',
+    keinVorschlag:     'No improvements found – production is optimal!',
   },
 };
 
@@ -180,7 +178,6 @@ function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprac
           className="bg-gray-700 border border-gray-600 text-white text-sm rounded px-2 py-1 w-20 focus:outline-none focus:ring-1 focus:ring-amber-400"
         />
       </div>
-
       <div className="flex flex-col gap-1">
         <label className="text-xs text-gray-400">{tx.beaconModul}</label>
         <select
@@ -199,7 +196,6 @@ function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprac
           ))}
         </select>
       </div>
-
       <div className="flex flex-col gap-1">
         <label className="text-xs text-gray-400">{tx.beaconProBeacon}</label>
         <select
@@ -211,7 +207,6 @@ function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprac
           <option value={2}>2</option>
         </select>
       </div>
-
       {config.anzahlBeacons > 0 && (
         <div className="flex flex-wrap items-center gap-3 text-xs bg-gray-800/50 rounded px-3 py-2">
           {hasSpeedEffect && (
@@ -228,6 +223,78 @@ function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprac
               <span className="text-green-400 font-bold">{currentAnzahl}</span>
             </span>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ProduktionsAnalyse ────────────────────────────────────────────────────────
+
+function ProduktionsAnalyse({ analyseData, tx }) {
+  const [offen, setOffen] = useState(false);
+  if (!analyseData) return null;
+
+  const { effizienzScore, bottleneck, vorschlaege } = analyseData;
+  const scoreColor  = effizienzScore >= 90 ? 'text-green-400' : effizienzScore >= 70 ? 'text-yellow-400' : 'text-red-400';
+  const borderColor = effizienzScore >= 90 ? 'border-green-700/40' : effizienzScore >= 70 ? 'border-yellow-700/40' : 'border-red-700/40';
+
+  return (
+    <div className={`rounded-xl border ${borderColor} bg-gray-900/60 overflow-hidden`}>
+      <button
+        onClick={() => setOffen(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-800/30 transition-colors"
+      >
+        <span className="text-amber-400 font-bold">{tx.analyseTitle}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-baseline gap-0.5">
+            <span className={`text-3xl font-black tabular-nums leading-none ${scoreColor}`}>{effizienzScore}</span>
+            <span className={`text-lg font-bold ${scoreColor}`}>%</span>
+          </div>
+          <span className="text-gray-500 text-xs">{offen ? '▲' : '▼'}</span>
+        </div>
+      </button>
+
+      {offen && (
+        <div className="px-4 pb-5 pt-3 flex flex-col gap-4 border-t border-gray-700/40">
+          <p className="text-sm text-gray-400">{tx.effizienzHinweis(effizienzScore)}</p>
+
+          {bottleneck && (
+            <div className="flex items-start gap-3 bg-red-900/20 border border-red-500/30 rounded-lg px-4 py-3">
+              <span className="text-lg leading-none mt-0.5">⚠️</span>
+              <div>
+                <div className="text-red-300 font-semibold text-sm mb-0.5">{tx.engpass}</div>
+                <div className="text-gray-300 text-sm">
+                  {tx.engpassText(bottleneck.itemName, bottleneck.istDurchsatz, bottleneck.sollDurchsatz, bottleneck.auslastung)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+              {tx.vorschlaegeTitle}
+            </div>
+            {vorschlaege.length === 0 ? (
+              <div className="text-sm text-green-400">✓ {tx.keinVorschlag}</div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {vorschlaege.map((v, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 bg-gray-800/50 border border-gray-700/40 rounded-lg px-3 py-2.5"
+                  >
+                    <span className={`font-bold text-sm flex-shrink-0 mt-0.5 tabular-nums w-7 text-right ${
+                      v.ersparnis > 0 ? 'text-green-400' : 'text-blue-400'
+                    }`}>
+                      {v.ersparnis > 0 ? `−${v.ersparnis}` : '→'}
+                    </span>
+                    <span className="text-gray-200 text-sm">{v.beschreibung}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -254,7 +321,6 @@ function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
       <h2 className="text-amber-400 font-bold text-lg mb-3 border-b border-gray-700 pb-1">
         ⚡ {tx.stromverbrauch}
       </h2>
-
       <div className="overflow-x-auto rounded-lg border border-gray-700 mb-3">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
@@ -295,7 +361,6 @@ function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
           </tbody>
         </table>
       </div>
-
       <div className="flex flex-wrap gap-4 items-center bg-gray-800/50 rounded-lg px-4 py-3 text-sm">
         <div>
           <span className="text-gray-400">{tx.gesamtverbrauch}:</span>
@@ -326,6 +391,7 @@ function Abschnitt({
   beitraegeMap = {}, zeigeBeitraege = false, beltFarbe,
   istQualityAktiv, sprache, onMaschinenOverrideChange = null,
   beaconConfigs = {}, onBeaconConfigChange = null,
+  bottleneckId = null,
 }) {
   if (eintraege.length === 0) return null;
   const zeigeBaender = eintraege.some(e => e.baender !== null);
@@ -358,6 +424,7 @@ function Abschnitt({
           </thead>
           <tbody>
             {eintraege.map((e, i) => {
+              const istBottleneck  = e.id === bottleneckId;
               const maschinenFarbe = e.beaconActive ? 'text-green-400' : (MASCHINEN_FARBE[e.maschine] ?? 'text-gray-400');
               const beitraege      = zeigeBeitraege ? (beitraegeMap[e.id] ?? []) : [];
               const hatMehrere     = beitraege.length > 1;
@@ -366,8 +433,8 @@ function Abschnitt({
 
               return (
                 <Fragment key={e.id}>
-                  <tr className={rowBg}>
-                    <td className="px-4 py-2 text-white font-medium">
+                  <tr className={`${rowBg}${istBottleneck ? ' border-l-4 border-red-500' : ''}`}>
+                    <td className={`py-2 text-white font-medium ${istBottleneck ? 'pl-3 pr-4' : 'px-4'}`}>
                       <span className="inline-flex items-center gap-1.5">
                         <Icon id={e.id} size={20} />
                         <span>{e.name}</span>
@@ -577,6 +644,12 @@ export default function ErgebnisTabelle({
   const herstellung = eintraege.filter(e => !e.istRohstoff);
   const rohstoffe   = eintraege.filter(e =>  e.istRohstoff);
 
+  // Analysis (computed inline — only runs when eintraege changes)
+  const analyseData = herstellung.length > 0
+    ? analysiereProduktion(herstellung, boni, modulBoni, mQMulti, sprache)
+    : null;
+  const bottleneckId = analyseData?.bottleneck?.rezeptId ?? null;
+
   const bonusHinweis = boni.miningBonus > 0 || boni.assemblerBonus > 0;
   const aktiveModulBoni = Object.entries(modulBoni).filter(
     ([, b]) => b.speedBonus !== 0 || b.produktivitaet > 0
@@ -658,6 +731,7 @@ export default function ErgebnisTabelle({
         onMaschinenOverrideChange={onMaschinenOverrideChange}
         beaconConfigs={beaconConfigs}
         onBeaconConfigChange={onBeaconConfigChange}
+        bottleneckId={bottleneckId}
       />
       <Abschnitt
         titel={tx.rohstoffe}
@@ -679,6 +753,8 @@ export default function ErgebnisTabelle({
           maschinenLabels={maschinenLabels}
         />
       )}
+
+      <ProduktionsAnalyse analyseData={analyseData} tx={tx} />
     </div>
   );
 }
