@@ -1,5 +1,6 @@
 import { REZEPTE_MAP, MASCHINEN, ITEM_TO_REZEPTE_IDS, REZEPT_ZU_ITEM_ID } from '../data/recipes';
 import { MASCHINEN_STROMVERBRAUCH, ENERGIEQUELLEN } from '../data/machines';
+import gamedata from '../data/gamedata.json';
 
 const MASCHINENGESCHWINDIGKEIT = {
   [MASCHINEN.ASSEMBLER]:    0.75, // assembling-machine-2
@@ -49,6 +50,23 @@ export const MASCHINEN_LABEL_EN = {
 };
 
 /**
+ * Gibt alle Maschinen zurück, die ein bestimmtes Rezept herstellen können.
+ * Sortiert nach crafting_speed aufsteigend.
+ */
+export function getVerfuegbareMaschinen(rezeptId) {
+  const recipe = gamedata.recipes[rezeptId];
+  if (!recipe?.made_in?.length) return [];
+  return recipe.made_in
+    .map(machineId => {
+      const m = gamedata.machines[machineId];
+      if (!m) return null;
+      return { id: machineId, nameDe: m.name.de, nameEn: m.name.en, speed: m.crafting_speed, energyUsage: m.energy_usage_kw };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.speed - b.speed);
+}
+
+/**
  * Gibt alle Rezepte zurück, die dasselbe Hauptprodukt erzeugen wie `id`
  * (id kann eine Rezept-ID oder eine Item-ID sein).
  */
@@ -93,11 +111,16 @@ export function berechneProduktion(rootId, rootRate, akkumulator = {}, modulBoni
  * maschinenQualitaetMulti: Geschwindigkeitsmultiplikator durch Maschinenqualität (Standard: 1.0)
  *                          Höhere Qualität = schnellere Maschine = weniger Maschinen benötigt
  */
-export function maschinenAnzahl(id, mengeProSekunde, boni = {}, modulBoni = {}, maschinenQualitaetMulti = 1) {
+export function maschinenAnzahl(id, mengeProSekunde, boni = {}, modulBoni = {}, maschinenQualitaetMulti = 1, maschinenOverrideId = null) {
   const rezept = REZEPTE_MAP[id];
   if (!rezept || rezept.zeit === 0) return null;
 
-  let geschwindigkeit = MASCHINENGESCHWINDIGKEIT[rezept.maschine] ?? 1.0;
+  let geschwindigkeit;
+  if (maschinenOverrideId && gamedata.machines[maschinenOverrideId]) {
+    geschwindigkeit = gamedata.machines[maschinenOverrideId].crafting_speed;
+  } else {
+    geschwindigkeit = MASCHINENGESCHWINDIGKEIT[rezept.maschine] ?? 1.0;
+  }
 
   // Maschinenqualität steigert die Basisgeschwindigkeit
   if (maschinenQualitaetMulti !== 1) {
@@ -134,23 +157,35 @@ export function maschinenAnzahl(id, mengeProSekunde, boni = {}, modulBoni = {}, 
  * Gibt pro Maschinen-Typ die Anzahl und kW-Werte zurück,
  * sowie den Gesamtverbrauch und Energieempfehlungen.
  */
-export function berechneStromverbrauch(produktion, boni = {}, modulBoni = {}, maschinenQualitaetMulti = 1) {
-  const perTyp = {}; // maschinenType → { anzahl, kwProMaschine }
+export function berechneStromverbrauch(produktion, boni = {}, modulBoni = {}, maschinenQualitaetMulti = 1, maschinenOverrides = {}) {
+  const perTyp = {}; // maschinenKey → { anzahl, kwProMaschine, name? }
 
   for (const [id, rateProSek] of Object.entries(produktion)) {
     const rezept = REZEPTE_MAP[id];
     if (!rezept || rezept.zeit === 0) continue;
 
-    const anzahl = maschinenAnzahl(id, rateProSek, boni, modulBoni, maschinenQualitaetMulti);
+    const overrideId = maschinenOverrides[id] ?? null;
+    const anzahl = maschinenAnzahl(id, rateProSek, boni, modulBoni, maschinenQualitaetMulti, overrideId);
     if (!anzahl) continue;
 
-    const kwProMaschine = MASCHINEN_STROMVERBRAUCH[rezept.maschine] ?? 0;
+    let maschinenKey, kwProMaschine, name;
+    if (overrideId && gamedata.machines[overrideId]) {
+      const m = gamedata.machines[overrideId];
+      maschinenKey  = overrideId;
+      kwProMaschine = m.energy_usage_kw;
+      name          = { de: m.name.de, en: m.name.en };
+    } else {
+      maschinenKey  = rezept.maschine;
+      kwProMaschine = MASCHINEN_STROMVERBRAUCH[rezept.maschine] ?? 0;
+      name          = null;
+    }
+
     if (kwProMaschine === 0) continue;
 
-    if (!perTyp[rezept.maschine]) {
-      perTyp[rezept.maschine] = { anzahl: 0, kwProMaschine };
+    if (!perTyp[maschinenKey]) {
+      perTyp[maschinenKey] = { anzahl: 0, kwProMaschine, name };
     }
-    perTyp[rezept.maschine].anzahl += anzahl;
+    perTyp[maschinenKey].anzahl += anzahl;
   }
 
   const gesamtKW = Object.values(perTyp).reduce((s, v) => s + v.anzahl * v.kwProMaschine, 0);

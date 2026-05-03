@@ -210,7 +210,7 @@ export const ITEM_ICONS = buildItemIcons();
 
 // ── MACHINE_ICONS: abstract machine type → icon path ────────────────────────
 // Maps the same abstract type strings as MASCHINEN values to machine icons.
-const ABSTRACT_TO_MACHINE_ID = {
+export const ABSTRACT_TO_MACHINE_ID = {
   [MASCHINEN.BERGBAU]:      'electric-mining-drill',
   [MASCHINEN.SCHMELZOFEN]:  'electric-furnace',
   [MASCHINEN.ASSEMBLER]:    'assembling-machine-2',

@@ -67,21 +67,38 @@ const FULLSCREEN_TABS = new Set(['forschung', 'fabrikplaner']);
 
 const LS_KEY = 'factoryplanner_rechner_v1';
 
+function parseItemsArr(arr) {
+  return arr.map((p, i) => ({
+    key: i + 1,
+    id: typeof p.id === 'string' ? p.id : '',
+    mengeProMin: typeof p.mengeProMin === 'number' && p.mengeProMin > 0 ? p.mengeProMin : 60,
+    rezeptOverride: typeof p.rezeptOverride === 'string' ? p.rezeptOverride : null,
+  }));
+}
+
 function ladeGespeicherteItems() {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) return null;
-    return parsed.map((p, i) => ({
-      key: i + 1,
-      id: typeof p.id === 'string' ? p.id : '',
-      mengeProMin: typeof p.mengeProMin === 'number' && p.mengeProMin > 0 ? p.mengeProMin : 60,
-      rezeptOverride: typeof p.rezeptOverride === 'string' ? p.rezeptOverride : null,
-    }));
+    const arr = Array.isArray(parsed) ? parsed : (parsed.items ?? []);
+    if (!arr.length) return null;
+    return parseItemsArr(arr);
   } catch {
     return null;
   }
+}
+
+function ladeInitialMaschinenOverrides() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return {};
+    return typeof parsed.maschinenOverrides === 'object' && parsed.maschinenOverrides !== null
+      ? parsed.maschinenOverrides
+      : {};
+  } catch { return {}; }
 }
 
 function ladeInitialItems() {
@@ -97,17 +114,19 @@ function ladeInitialItems() {
 }
 
 function RechnerTab({ sprache }) {
-  const [items, setItems]             = useState(ladeInitialItems);
-  const [bandId, setBandId]           = useState('keins');
-  const [zeigeModule, setZeigeModule] = useState(false);
-  const [linkKopiert, setLinkKopiert] = useState(false);
+  const [items, setItems]                           = useState(ladeInitialItems);
+  const [maschinenOverrides, setMaschinenOverrides] = useState(ladeInitialMaschinenOverrides);
+  const [bandId, setBandId]                         = useState('keins');
+  const [zeigeModule, setZeigeModule]               = useState(false);
+  const [linkKopiert, setLinkKopiert]               = useState(false);
   const keyRef = useRef(1000);
 
   useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(
-      items.map(i => ({ id: i.id, mengeProMin: i.mengeProMin, rezeptOverride: i.rezeptOverride }))
-    ));
-  }, [items]);
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      items: items.map(i => ({ id: i.id, mengeProMin: i.mengeProMin, rezeptOverride: i.rezeptOverride })),
+      maschinenOverrides,
+    }));
+  }, [items, maschinenOverrides]);
 
   const { boni }                                          = useForschung();
   const { modulBoni }                                     = useModul();
@@ -120,6 +139,8 @@ function RechnerTab({ sprache }) {
   const updateMenge= (key, menge) => setItems(prev => prev.map(i => i.key === key ? { ...i, mengeProMin: menge } : i));
   const updateRezeptOverride = (key, rezeptId) => setItems(prev => prev.map(i => i.key === key ? { ...i, rezeptOverride: rezeptId } : i));
   const resetAll   = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60, rezeptOverride: null }]);
+  const updateMaschinenOverride = (rezeptId, maschinenId) =>
+    setMaschinenOverrides(prev => ({ ...prev, [rezeptId]: maschinenId }));
 
   const teilePlan  = () => {
     const encoded = encodePlan(items);
@@ -185,12 +206,12 @@ function RechnerTab({ sprache }) {
           name:       r.name,
           nameEn:     r.nameEn,
           maschine:   r.maschine,
-          anzahl:     maschinenAnzahl(id, rateProSek, boni, modulBoni, mQMulti),
+          anzahl:     maschinenAnzahl(id, rateProSek, boni, modulBoni, mQMulti, maschinenOverrides[id] ?? null),
           rateProMin: rateProSek * 60,
           rateProSek,
         };
       });
-  }, [combined, boni, modulBoni, maschinenQualitaet]);
+  }, [combined, boni, modulBoni, maschinenQualitaet, maschinenOverrides]);
 
   useEffect(() => {
     setMaschinenListe(maschinenFuerPlaner);
@@ -333,6 +354,8 @@ function RechnerTab({ sprache }) {
             produktion={combined}
             perItem={perItem}
             foerderband={foerderband?.id !== 'keins' ? foerderband : null}
+            maschinenOverrides={maschinenOverrides}
+            onMaschinenOverrideChange={updateMaschinenOverride}
           />
         </section>
       ) : (

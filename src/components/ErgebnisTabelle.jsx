@@ -1,6 +1,7 @@
 import { useMemo, Fragment, useState } from 'react';
 import { REZEPTE_MAP, MASCHINEN, KATEGORIEN } from '../data/recipes';
-import { maschinenAnzahl, berechneStromverbrauch, MASCHINEN_LABEL, MASCHINEN_LABEL_EN } from '../utils/berechnung';
+import { maschinenAnzahl, berechneStromverbrauch, MASCHINEN_LABEL, MASCHINEN_LABEL_EN, getVerfuegbareMaschinen } from '../utils/berechnung';
+import { ABSTRACT_TO_MACHINE_ID } from '../data/gamedata-adapter';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 import { useModul } from '../context/ModulContext';
@@ -107,7 +108,7 @@ const T = {
   },
 };
 
-export default function ErgebnisTabelle({ produktion, perItem = [], foerderband = null }) {
+export default function ErgebnisTabelle({ produktion, perItem = [], foerderband = null, maschinenOverrides = {}, onMaschinenOverrideChange = null }) {
   const { boni }           = useForschung();
   const { sprache }        = useSprache();
   const { modulBoni }      = useModul();
@@ -115,8 +116,8 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
   const tx = T[sprache];
 
   const stromDaten = useMemo(
-    () => berechneStromverbrauch(produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti),
-    [produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti]
+    () => berechneStromverbrauch(produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti, maschinenOverrides),
+    [produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti, maschinenOverrides]
   );
 
   const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
@@ -168,25 +169,32 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
     const craftingRate = rateProSek; // immer Akkumulator-Rate (= Crafting-Rate)
 
     // Maschinenqualitäts-Multiplikator für Geschwindigkeit
-    const mQMulti = maschinenQualitaet.maschinenMulti;
-    const anzahl  = istRohstoff ? null : maschinenAnzahl(id, craftingRate, boni, modulBoni, mQMulti);
+    const mQMulti    = maschinenQualitaet.maschinenMulti;
+    const overrideId = istRohstoff ? null : (maschinenOverrides[id] ?? null);
+    const anzahl     = istRohstoff ? null : maschinenAnzahl(id, craftingRate, boni, modulBoni, mQMulti, overrideId);
 
     const baender = foerderband?.durchsatz ? Math.ceil(displayRate / foerderband.durchsatz) : null;
 
     // Quality-Badge: Zielprodukte bekommen die Ziel-Qualität, andere Normal
     const qualitaet = istZiel ? (zielInfo.qualitaet ?? zielQualitaet) : null;
 
+    const verfuegbareMaschinen = istRohstoff ? [] : getVerfuegbareMaschinen(id);
+    const defaultMaschinenId   = rezept ? (ABSTRACT_TO_MACHINE_ID[rezept.maschine] ?? null) : null;
+
     return {
       id,
-      name:         sprache === 'de' ? (rezept?.name ?? getItemName(id, 'de')) : (rezept?.nameEn ?? getItemName(id, 'en')),
-      rateProSek:   displayRate,
-      rateProMin:   displayRate * 60,
+      name:                sprache === 'de' ? (rezept?.name ?? getItemName(id, 'de')) : (rezept?.nameEn ?? getItemName(id, 'en')),
+      rateProSek:          displayRate,
+      rateProMin:          displayRate * 60,
       craftingRate,
       istRohstoff,
       istZiel,
       qualitaet,
       anzahl,
-      maschine:     rezept?.maschine ?? null,
+      maschine:            rezept?.maschine ?? null,
+      verfuegbareMaschinen,
+      selectedMaschinenId: overrideId,
+      defaultMaschinenId,
       baender,
     };
   });
@@ -285,6 +293,7 @@ export default function ErgebnisTabelle({ produktion, perItem = [], foerderband 
         beltFarbe={beltFarbe}
         istQualityAktiv={istQualityAktiv}
         sprache={sprache}
+        onMaschinenOverrideChange={onMaschinenOverrideChange}
       />
       <Abschnitt
         titel={tx.rohstoffe}
@@ -331,13 +340,19 @@ function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
             </tr>
           </thead>
           <tbody>
-            {eintraege.map(([maschinenType, { anzahl, kwProMaschine }], i) => {
+            {eintraege.map(([maschinenType, entry], i) => {
+              const { anzahl, kwProMaschine, name: overrideName } = entry;
               const totalKW  = anzahl * kwProMaschine;
               const farbe    = MASCHINEN_FARBE[maschinenType] ?? 'text-gray-400';
-              const detailName = MASCHINEN_DETAIL_NAME[maschinenType];
-              const name     = detailName
-                ? (sprache === 'de' ? detailName.de : detailName.en)
-                : (maschinenLabels[maschinenType] ?? maschinenType);
+              let name;
+              if (overrideName) {
+                name = sprache === 'de' ? overrideName.de : overrideName.en;
+              } else {
+                const detailName = MASCHINEN_DETAIL_NAME[maschinenType];
+                name = detailName
+                  ? (sprache === 'de' ? detailName.de : detailName.en)
+                  : (maschinenLabels[maschinenType] ?? maschinenType);
+              }
               return (
                 <tr key={maschinenType} className={i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950'}>
                   <td className={`px-4 py-2 font-medium ${farbe}`}>{name}</td>
@@ -395,7 +410,7 @@ function QualityBadge({ qualitaet }) {
 function Abschnitt({
   titel, eintraege, zeigeMaschine = false, tx, maschinenLabels,
   beitraegeMap = {}, zeigeBeitraege = false, beltFarbe,
-  istQualityAktiv, sprache,
+  istQualityAktiv, sprache, onMaschinenOverrideChange = null,
 }) {
   if (eintraege.length === 0) return null;
   const zeigeBaender = eintraege.some(e => e.baender !== null);
@@ -449,7 +464,21 @@ function Abschnitt({
                     )}
                     {zeigeMaschine && (
                       <td className="px-4 py-2 text-right text-xs hidden md:table-cell text-gray-400">
-                        {maschinenLabels[e.maschine] ?? '—'}
+                        {e.verfuegbareMaschinen.length > 1 ? (
+                          <select
+                            value={e.selectedMaschinenId ?? e.defaultMaschinenId ?? e.verfuegbareMaschinen[0]?.id ?? ''}
+                            onChange={ev => onMaschinenOverrideChange?.(e.id, ev.target.value)}
+                            className="bg-gray-800 border border-gray-600 text-gray-200 text-xs rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400 max-w-[180px] cursor-pointer"
+                          >
+                            {e.verfuegbareMaschinen.map(m => (
+                              <option key={m.id} value={m.id}>
+                                {sprache === 'de' ? m.nameDe : m.nameEn} ({m.speed}/s)
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          maschinenLabels[e.maschine] ?? '—'
+                        )}
                       </td>
                     )}
                     {zeigeMaschine && (
