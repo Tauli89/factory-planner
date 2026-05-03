@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import ProduktAuswahl from './components/ProduktAuswahl';
 import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
+import ProduktionsBaum from './components/ProduktionsBaum';
 import ForschungsBaum from './components/ForschungsBaum';
 import ModulAuswahl from './components/ModulAuswahl';
 import ModulOptimierung from './components/ModulOptimierung';
@@ -47,6 +48,8 @@ const TX = {
     rezept:        'Rezept',
     teilenBtn:     '🔗 Plan teilen',
     teilenKopiert: '✓ Link kopiert!',
+    ansichtTabelle: '☰ Tabelle',
+    ansichtBaum:    '🌿 Baum',
   },
   en: {
     konfigurieren: 'Configure production',
@@ -59,8 +62,12 @@ const TX = {
     rezept:        'Recipe',
     teilenBtn:     '🔗 Share plan',
     teilenKopiert: '✓ Copied!',
+    ansichtTabelle: '☰ Table',
+    ansichtBaum:    '🌿 Tree',
   },
 };
+
+const LS_ANSICHT = 'factoryplanner_ansicht_v1';
 
 // Full-height tabs that need no scroll wrapper
 const FULLSCREEN_TABS = new Set(['forschung', 'fabrikplaner']);
@@ -119,6 +126,9 @@ function RechnerTab({ sprache }) {
   const [bandId, setBandId]                         = useState('keins');
   const [zeigeModule, setZeigeModule]               = useState(false);
   const [linkKopiert, setLinkKopiert]               = useState(false);
+  const [ansicht, setAnsicht] = useState(() => {
+    try { return localStorage.getItem(LS_ANSICHT) ?? 'tabelle'; } catch { return 'tabelle'; }
+  });
   const keyRef = useRef(1000);
 
   useEffect(() => {
@@ -127,6 +137,10 @@ function RechnerTab({ sprache }) {
       maschinenOverrides,
     }));
   }, [items, maschinenOverrides]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_ANSICHT, ansicht); } catch {}
+  }, [ansicht]);
 
   const { boni }                                          = useForschung();
   const { modulBoni }                                     = useModul();
@@ -350,13 +364,40 @@ function RechnerTab({ sprache }) {
 
       {hasResult ? (
         <section className="bg-gray-900 rounded-xl border border-gray-800 p-6">
-          <ErgebnisTabelle
-            produktion={combined}
-            perItem={perItem}
-            foerderband={foerderband?.id !== 'keins' ? foerderband : null}
-            maschinenOverrides={maschinenOverrides}
-            onMaschinenOverrideChange={updateMaschinenOverride}
-          />
+          <div className="flex items-center gap-2 mb-5">
+            {[
+              { id: 'tabelle', label: tx.ansichtTabelle },
+              { id: 'baum',    label: tx.ansichtBaum },
+            ].map(a => (
+              <button
+                key={a.id}
+                onClick={() => setAnsicht(a.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                  ansicht === a.id
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+
+          {ansicht === 'tabelle' ? (
+            <ErgebnisTabelle
+              produktion={combined}
+              perItem={perItem}
+              foerderband={foerderband?.id !== 'keins' ? foerderband : null}
+              maschinenOverrides={maschinenOverrides}
+              onMaschinenOverrideChange={updateMaschinenOverride}
+            />
+          ) : (
+            <ProduktionsBaum
+              perItem={perItem}
+              maschinenOverrides={maschinenOverrides}
+              rezeptOverrides={rezeptOverrides}
+            />
+          )}
         </section>
       ) : (
         <div className="text-center text-gray-600 mt-16 text-lg">{tx.hinweis}</div>
