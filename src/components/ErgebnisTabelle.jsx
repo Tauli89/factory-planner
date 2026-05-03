@@ -1,6 +1,6 @@
 import { useMemo, Fragment, useState } from 'react';
 import { REZEPTE_MAP, MASCHINEN, KATEGORIEN } from '../data/recipes';
-import { maschinenAnzahl, berechneStromverbrauch, MASCHINEN_LABEL, MASCHINEN_LABEL_EN, getVerfuegbareMaschinen } from '../utils/berechnung';
+import { maschinenAnzahl, berechneStromverbrauch, MASCHINEN_LABEL, MASCHINEN_LABEL_EN, getVerfuegbareMaschinen, BEACON_MODUL_EFFEKTE } from '../utils/berechnung';
 import { ABSTRACT_TO_MACHINE_ID } from '../data/gamedata-adapter';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
@@ -11,6 +11,41 @@ import { formatQualityFaktor } from '../data/quality';
 import { MASCHINEN_DETAIL_NAME } from '../data/machines';
 import { ITEM_ICONS, getItemName } from '../data/gamedata-adapter';
 import Icon from './Icon';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const DEFAULT_BEACON_CONFIG = { anzahlBeacons: 0, modulTyp: 'speed-module-3', moduleProBeacon: 2 };
+
+const BEACON_MODUL_GRUPPEN = [
+  { key: 'speed',        de: 'Geschwindigkeit', en: 'Speed',        ids: ['speed-module', 'speed-module-2', 'speed-module-3'] },
+  { key: 'efficiency',   de: 'Effizienz',       en: 'Efficiency',   ids: ['efficiency-module', 'efficiency-module-2', 'efficiency-module-3'] },
+  { key: 'productivity', de: 'Produktivität',   en: 'Productivity', ids: ['productivity-module', 'productivity-module-2', 'productivity-module-3'] },
+];
+
+const BEACON_MODUL_NAMEN = {
+  de: {
+    'speed-module':          'Geschwindigkeitsmodul 1 (+20%)',
+    'speed-module-2':        'Geschwindigkeitsmodul 2 (+30%)',
+    'speed-module-3':        'Geschwindigkeitsmodul 3 (+50%)',
+    'efficiency-module':     'Effizienzmodul 1 (-30% Energie)',
+    'efficiency-module-2':   'Effizienzmodul 2 (-40% Energie)',
+    'efficiency-module-3':   'Effizienzmodul 3 (-50% Energie)',
+    'productivity-module':   'Produktivitätsmodul 1 (+4% Geschw.)',
+    'productivity-module-2': 'Produktivitätsmodul 2 (+6% Geschw.)',
+    'productivity-module-3': 'Produktivitätsmodul 3 (+10% Geschw.)',
+  },
+  en: {
+    'speed-module':          'Speed Module 1 (+20%)',
+    'speed-module-2':        'Speed Module 2 (+30%)',
+    'speed-module-3':        'Speed Module 3 (+50%)',
+    'efficiency-module':     'Efficiency Module 1 (-30% energy)',
+    'efficiency-module-2':   'Efficiency Module 2 (-40% energy)',
+    'efficiency-module-3':   'Efficiency Module 3 (-50% energy)',
+    'productivity-module':   'Productivity Module 1 (+4% speed)',
+    'productivity-module-2': 'Productivity Module 2 (+6% speed)',
+    'productivity-module-3': 'Productivity Module 3 (+10% speed)',
+  },
+};
 
 const KATEGORIE_FALLBACK_FARBE = {
   [KATEGORIEN.ROHSTOFFE]:        '#6b7280',
@@ -26,7 +61,6 @@ const KATEGORIE_FALLBACK_FARBE = {
   [KATEGORIEN.RAKETE]:           '#e879f9',
   [KATEGORIEN.SPACE_AGE]:        '#a78bfa',
 };
-
 
 const MASCHINEN_FARBE = {
   [MASCHINEN.SCHMELZOFEN]:  'text-orange-400',
@@ -78,6 +112,13 @@ const T = {
     solarEmpfehlung:   'Solarpanels',
     dampfEmpfehlung:   'Dampfmaschinen',
     empfehlung:        'Energieempfehlung',
+    beaconAnzahl:      'Beacons',
+    beaconModul:       'Modultyp',
+    beaconProBeacon:   'Module/Beacon',
+    beaconGeschw:      'Geschw.',
+    beaconEnergie:     'Energie',
+    beaconMaschinen:   'Maschinen',
+    beaconKonfig:      'Beacons konfigurieren',
   },
   en: {
     herstellung:       'Production',
@@ -105,217 +146,102 @@ const T = {
     solarEmpfehlung:   'Solar Panels',
     dampfEmpfehlung:   'Steam Engines',
     empfehlung:        'Power recommendation',
+    beaconAnzahl:      'Beacons',
+    beaconModul:       'Module type',
+    beaconProBeacon:   'Modules/Beacon',
+    beaconGeschw:      'speed',
+    beaconEnergie:     'energy',
+    beaconMaschinen:   'Machines',
+    beaconKonfig:      'Configure beacons',
   },
 };
 
-export default function ErgebnisTabelle({ produktion, perItem = [], foerderband = null, maschinenOverrides = {}, onMaschinenOverrideChange = null }) {
-  const { boni }           = useForschung();
-  const { sprache }        = useSprache();
-  const { modulBoni }      = useModul();
-  const { zielQualitaet, maschinenQualitaet, gesamtQualityChance, qualityFaktorPerMaschine } = useQuality();
-  const tx = T[sprache];
+// ── BeaconKonfigurator ────────────────────────────────────────────────────────
 
-  const stromDaten = useMemo(
-    () => berechneStromverbrauch(produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti, maschinenOverrides),
-    [produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti, maschinenOverrides]
-  );
+function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprache, tx }) {
+  const modulEffekt     = BEACON_MODUL_EFFEKTE[config.modulTyp] ?? {};
+  const speedBonus      = config.anzahlBeacons * config.moduleProBeacon * (modulEffekt.speed  ?? 0) * 0.5 * 100;
+  const energyRed       = config.anzahlBeacons * config.moduleProBeacon * Math.abs(modulEffekt.energy ?? 0) * 0.5 * 100;
+  const hasSpeedEffect  = speedBonus > 0;
+  const hasEnergyEffect = energyRed > 0;
+  const machineSaving   = baseAnzahl !== null && currentAnzahl !== null && baseAnzahl !== currentAnzahl;
 
-  const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
-
-  const istQualityAktiv = zielQualitaet.tierIndex > 0;
-
-  // Map: ZielproduktId → { gewuenschteRateSek, qualitaet, craftingFaktor }
-  const zielProduktMap = useMemo(() => {
-    const map = {};
-    for (const p of perItem) {
-      if (!p.id) continue;
-      map[p.id] = {
-        gewuenschteRateSek: p.mengeProMin / 60,
-        qualitaet:          p.qualitaet ?? zielQualitaet,
-        craftingFaktor:     p.qualityFaktor ?? 1,
-      };
-    }
-    return map;
-  }, [perItem, zielQualitaet]);
-
-  const beitraegeMap = useMemo(() => {
-    if (perItem.length <= 1) return {};
-    const result = {};
-    for (let i = 0; i < perItem.length; i++) {
-      const item = perItem[i];
-      const name = sprache === 'de'
-        ? (REZEPTE_MAP[item.id]?.name   ?? item.id)
-        : (REZEPTE_MAP[item.id]?.nameEn ?? item.id);
-      for (const [rid, rate] of Object.entries(item.produktion)) {
-        if (!result[rid]) result[rid] = [];
-        result[rid].push({ id: item.id, name, rateProMin: rate * 60, colorIdx: i % ITEM_FARBEN.length });
-      }
-    }
-    return result;
-  }, [perItem, sprache]);
-
-  const zeigeBeitraege = perItem.length > 1;
-
-  if (!produktion || Object.keys(produktion).length === 0) return null;
-
-  const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
-    const rezept      = REZEPTE_MAP[id];
-    const istRohstoff = !rezept || rezept.zeit === 0;
-
-    // Zielprodukte: Wunsch-Rate anzeigen, Crafting-Rate für Maschinenberechnung nutzen
-    const zielInfo   = zielProduktMap[id];
-    const istZiel    = !!zielInfo;
-    const displayRate = istZiel ? zielInfo.gewuenschteRateSek : rateProSek;
-    const craftingRate = rateProSek; // immer Akkumulator-Rate (= Crafting-Rate)
-
-    // Maschinenqualitäts-Multiplikator für Geschwindigkeit
-    const mQMulti    = maschinenQualitaet.maschinenMulti;
-    const overrideId = istRohstoff ? null : (maschinenOverrides[id] ?? null);
-    const anzahl     = istRohstoff ? null : maschinenAnzahl(id, craftingRate, boni, modulBoni, mQMulti, overrideId);
-
-    const baender = foerderband?.durchsatz ? Math.ceil(displayRate / foerderband.durchsatz) : null;
-
-    // Quality-Badge: Zielprodukte bekommen die Ziel-Qualität, andere Normal
-    const qualitaet = istZiel ? (zielInfo.qualitaet ?? zielQualitaet) : null;
-
-    const verfuegbareMaschinen = istRohstoff ? [] : getVerfuegbareMaschinen(id);
-    const defaultMaschinenId   = rezept ? (ABSTRACT_TO_MACHINE_ID[rezept.maschine] ?? null) : null;
-
-    return {
-      id,
-      name:                sprache === 'de' ? (rezept?.name ?? getItemName(id, 'de')) : (rezept?.nameEn ?? getItemName(id, 'en')),
-      rateProSek:          displayRate,
-      rateProMin:          displayRate * 60,
-      craftingRate,
-      istRohstoff,
-      istZiel,
-      qualitaet,
-      anzahl,
-      maschine:            rezept?.maschine ?? null,
-      verfuegbareMaschinen,
-      selectedMaschinenId: overrideId,
-      defaultMaschinenId,
-      baender,
-    };
-  });
-
-  const herstellung = eintraege.filter(e => !e.istRohstoff);
-  const rohstoffe   = eintraege.filter(e =>  e.istRohstoff);
-
-  const bonusHinweis = boni.miningBonus > 0 || boni.assemblerBonus > 0;
-
-  const aktiveModulBoni = Object.entries(modulBoni).filter(
-    ([, b]) => b.speedBonus !== 0 || b.produktivitaet > 0
-  );
-
-  const beltFarbe = foerderband ? (BELT_FARBE[foerderband.id] ?? 'text-gray-300') : 'text-gray-300';
-
-  // Besten Crafting-Faktor ermitteln (für Info-Zeile)
-  const maxCraftingFaktor = Math.max(...Object.values(qualityFaktorPerMaschine), 1);
+  const set = (field, val) => onChange({ ...config, [field]: val });
 
   return (
-    <div className="flex flex-col gap-6 mt-6">
-
-      {/* Forschungsboni */}
-      {bonusHinweis && (
-        <div className="flex gap-4 text-xs text-gray-500 bg-gray-800/50 rounded-lg px-3 py-2">
-          <span className="text-amber-400 font-semibold">{tx.boniAktiv}</span>
-          {boni.miningBonus > 0 && (
-            <span>{tx.bergbauBonus((boni.miningBonus * 100).toFixed(0))}</span>
-          )}
-          {boni.assemblerBonus > 0 && (
-            <span>{tx.assemblerBonus((boni.assemblerBonus * 100).toFixed(0))}</span>
-          )}
-        </div>
-      )}
-
-      {/* Aktive Modulboni */}
-      {aktiveModulBoni.length > 0 && (
-        <div className="flex flex-wrap gap-2 text-xs bg-gray-800/50 rounded-lg px-3 py-2">
-          <span className="text-green-400 font-semibold shrink-0">
-            {sprache === 'de' ? 'Module aktiv:' : 'Modules active:'}
-          </span>
-          {aktiveModulBoni.map(([maschinenType, b]) => (
-            <span key={maschinenType} className="text-gray-400">
-              {maschinenLabels[maschinenType]}:
-              {b.speedBonus  !== 0 && ` ⚡${b.speedBonus > 0 ? '+' : ''}${(b.speedBonus * 100).toFixed(0)}%`}
-              {b.produktivitaet > 0 && ` 📦+${(b.produktivitaet * 100).toFixed(0)}%`}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Quality-Crafting-Info */}
-      {istQualityAktiv && (
-        <div className="flex flex-wrap items-center gap-3 text-xs bg-gray-800/50 rounded-lg px-3 py-2">
-          <span className="font-semibold" style={{ color: 'inherit' }}>
-            <span className={zielQualitaet.farbe}>★ {tx.qualitaetAktiv}</span>
-          </span>
-
-          <span className={`px-2 py-0.5 rounded border font-medium ${zielQualitaet.badge}`}>
-            {tx.zielQualitaet}: {zielQualitaet.icon} {sprache === 'de' ? zielQualitaet.name : zielQualitaet.nameEn}
-          </span>
-
-          <span className={`px-2 py-0.5 rounded border font-medium ${maschinenQualitaet.badge}`}>
-            {tx.maschinenQ}: {maschinenQualitaet.icon} {sprache === 'de' ? maschinenQualitaet.name : maschinenQualitaet.nameEn}
-            {maschinenQualitaet.maschinenMulti !== 1 && ` (⚡×${maschinenQualitaet.maschinenMulti})`}
-          </span>
-
-          {gesamtQualityChance > 0 && (
-            <>
-              <span className="text-gray-400">
-                {tx.craftingFaktor}: <span className="text-amber-300 font-bold">{formatQualityFaktor(maxCraftingFaktor)}</span>
-              </span>
-              <span className="text-gray-500">
-                ({(gesamtQualityChance * 100).toFixed(1)}% {sprache === 'de' ? 'Chance' : 'chance'})
-              </span>
-            </>
-          )}
-
-          {gesamtQualityChance === 0 && (
-            <span className="text-amber-300">
-              {sprache === 'de'
-                ? '⚠ Keine Qualitätsmodule → Zutaten werden nicht angepasst'
-                : '⚠ No quality modules → ingredients not adjusted'}
-            </span>
-          )}
-        </div>
-      )}
-
-      <Abschnitt
-        titel={tx.herstellung}
-        eintraege={herstellung}
-        zeigeMaschine
-        tx={tx}
-        maschinenLabels={maschinenLabels}
-        beitraegeMap={beitraegeMap}
-        zeigeBeitraege={zeigeBeitraege}
-        beltFarbe={beltFarbe}
-        istQualityAktiv={istQualityAktiv}
-        sprache={sprache}
-        onMaschinenOverrideChange={onMaschinenOverrideChange}
-      />
-      <Abschnitt
-        titel={tx.rohstoffe}
-        eintraege={rohstoffe}
-        tx={tx}
-        maschinenLabels={maschinenLabels}
-        beitraegeMap={beitraegeMap}
-        zeigeBeitraege={zeigeBeitraege}
-        beltFarbe={beltFarbe}
-        istQualityAktiv={istQualityAktiv}
-        sprache={sprache}
-      />
-
-      {stromDaten.gesamtKW > 0 && (
-        <StromverbrauchAbschnitt
-          stromDaten={stromDaten}
-          tx={tx}
-          sprache={sprache}
-          maschinenLabels={maschinenLabels}
+    <div className="flex flex-wrap gap-4 items-end px-4 py-3 bg-blue-950/30 border border-blue-700/30 rounded-lg">
+      <div className="flex flex-col gap-1">
+        <label className="text-xs text-gray-400">{tx.beaconAnzahl}</label>
+        <input
+          type="number"
+          min={0} max={20}
+          value={config.anzahlBeacons}
+          onChange={e => set('anzahlBeacons', Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)))}
+          className="bg-gray-700 border border-gray-600 text-white text-sm rounded px-2 py-1 w-20 focus:outline-none focus:ring-1 focus:ring-amber-400"
         />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-xs text-gray-400">{tx.beaconModul}</label>
+        <select
+          value={config.modulTyp}
+          onChange={e => set('modulTyp', e.target.value)}
+          className="bg-gray-700 border border-gray-600 text-gray-200 text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400"
+        >
+          {BEACON_MODUL_GRUPPEN.map(g => (
+            <optgroup key={g.key} label={sprache === 'de' ? g.de : g.en}>
+              {g.ids.map(id => (
+                <option key={id} value={id}>
+                  {(BEACON_MODUL_NAMEN[sprache] ?? BEACON_MODUL_NAMEN.en)[id]}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-xs text-gray-400">{tx.beaconProBeacon}</label>
+        <select
+          value={config.moduleProBeacon}
+          onChange={e => set('moduleProBeacon', parseInt(e.target.value, 10))}
+          className="bg-gray-700 border border-gray-600 text-gray-200 text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400"
+        >
+          <option value={1}>1</option>
+          <option value={2}>2</option>
+        </select>
+      </div>
+
+      {config.anzahlBeacons > 0 && (
+        <div className="flex flex-wrap items-center gap-3 text-xs bg-gray-800/50 rounded px-3 py-2">
+          {hasSpeedEffect && (
+            <span className="text-amber-300">⚡ +{speedBonus.toFixed(0)}% {tx.beaconGeschw}</span>
+          )}
+          {hasEnergyEffect && (
+            <span className="text-green-300">🔋 -{energyRed.toFixed(0)}% {tx.beaconEnergie}</span>
+          )}
+          {machineSaving && (
+            <span className="text-gray-300">
+              {tx.beaconMaschinen}:{' '}
+              <span className="text-gray-400 line-through">{baseAnzahl}</span>
+              {' → '}
+              <span className="text-green-400 font-bold">{currentAnzahl}</span>
+            </span>
+          )}
+        </div>
       )}
     </div>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function QualityBadge({ qualitaet }) {
+  if (!qualitaet) return null;
+  return (
+    <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded border font-medium align-middle ${qualitaet.badge}`}>
+      {qualitaet.icon} {qualitaet.name}
+    </span>
   );
 }
 
@@ -341,9 +267,9 @@ function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
           </thead>
           <tbody>
             {eintraege.map(([maschinenType, entry], i) => {
-              const { anzahl, kwProMaschine, name: overrideName } = entry;
-              const totalKW  = anzahl * kwProMaschine;
-              const farbe    = MASCHINEN_FARBE[maschinenType] ?? 'text-gray-400';
+              const { anzahl, kwProMaschine, totalKW: rawTotalKW, name: overrideName } = entry;
+              const totalKW = rawTotalKW ?? (anzahl * kwProMaschine);
+              const farbe   = MASCHINEN_FARBE[maschinenType] ?? 'text-gray-400';
               let name;
               if (overrideName) {
                 name = sprache === 'de' ? overrideName.de : overrideName.en;
@@ -361,7 +287,7 @@ function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
                   <td className="px-4 py-2 text-right font-bold text-yellow-400">
                     {totalKW >= 1000
                       ? `${(totalKW / 1000).toFixed(2)} MW`
-                      : `${totalKW} kW`}
+                      : `${totalKW.toFixed(1)} kW`}
                   </td>
                 </tr>
               );
@@ -379,15 +305,12 @@ function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
               : `${(gesamtMW * 1000).toFixed(0)} kW`}
           </span>
         </div>
-
         <div className="h-4 border-l border-gray-600 hidden sm:block" />
-
         <div className="flex items-center gap-1.5">
           <span className="text-yellow-500">☀</span>
           <span className="text-gray-400">{tx.solarEmpfehlung}:</span>
           <span className="text-amber-300 font-bold">{solarPanels}</span>
         </div>
-
         <div className="flex items-center gap-1.5">
           <span className="text-blue-400">💨</span>
           <span className="text-gray-400">{tx.dampfEmpfehlung}:</span>
@@ -398,22 +321,16 @@ function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
   );
 }
 
-function QualityBadge({ qualitaet }) {
-  if (!qualitaet) return null;
-  return (
-    <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded border font-medium align-middle ${qualitaet.badge}`}>
-      {qualitaet.icon} {qualitaet.name}
-    </span>
-  );
-}
-
 function Abschnitt({
   titel, eintraege, zeigeMaschine = false, tx, maschinenLabels,
   beitraegeMap = {}, zeigeBeitraege = false, beltFarbe,
   istQualityAktiv, sprache, onMaschinenOverrideChange = null,
+  beaconConfigs = {}, onBeaconConfigChange = null,
 }) {
   if (eintraege.length === 0) return null;
   const zeigeBaender = eintraege.some(e => e.baender !== null);
+  const zeigeBeacon  = zeigeMaschine && !!onBeaconConfigChange;
+  const [openBeaconId, setOpenBeaconId] = useState(null);
 
   return (
     <div>
@@ -434,14 +351,18 @@ function Abschnitt({
               {zeigeMaschine && (
                 <th className="px-4 py-3 text-right">{tx.anzahl}</th>
               )}
+              {zeigeBeacon && (
+                <th className="px-2 py-3 text-center text-gray-600 text-base">◈</th>
+              )}
             </tr>
           </thead>
           <tbody>
             {eintraege.map((e, i) => {
-              const farbe      = MASCHINEN_FARBE[e.maschine] ?? 'text-gray-400';
-              const beitraege  = zeigeBeitraege ? (beitraegeMap[e.id] ?? []) : [];
-              const hatMehrere = beitraege.length > 1;
-              const rowBg      = i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950';
+              const maschinenFarbe = e.beaconActive ? 'text-green-400' : (MASCHINEN_FARBE[e.maschine] ?? 'text-gray-400');
+              const beitraege      = zeigeBeitraege ? (beitraegeMap[e.id] ?? []) : [];
+              const hatMehrere     = beitraege.length > 1;
+              const rowBg          = i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950';
+              const beaconOffen    = openBeaconId === e.id;
 
               return (
                 <Fragment key={e.id}>
@@ -482,11 +403,36 @@ function Abschnitt({
                       </td>
                     )}
                     {zeigeMaschine && (
-                      <td className={`px-4 py-2 text-right font-bold ${farbe}`}>
-                        {e.anzahl ?? '—'}
+                      <td className={`px-4 py-2 text-right font-bold ${maschinenFarbe}`}>
+                        <span className="inline-flex items-center justify-end gap-1.5">
+                          {e.beaconActive && (
+                            <span className="text-xs text-blue-400 font-normal">
+                              🔵{e.beaconCfg.anzahlBeacons}
+                            </span>
+                          )}
+                          {e.anzahl ?? '—'}
+                        </span>
+                      </td>
+                    )}
+                    {zeigeBeacon && (
+                      <td className="px-1 py-2 text-center">
+                        <button
+                          onClick={() => setOpenBeaconId(beaconOffen ? null : e.id)}
+                          title={tx.beaconKonfig}
+                          className={`text-sm px-1.5 py-0.5 rounded transition-colors ${
+                            beaconOffen
+                              ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                              : e.beaconActive
+                                ? 'text-blue-400 hover:text-blue-200 hover:bg-blue-900/20'
+                                : 'text-gray-600 hover:text-gray-300 hover:bg-gray-700/50'
+                          }`}
+                        >
+                          ◈
+                        </button>
                       </td>
                     )}
                   </tr>
+
                   {hatMehrere && (
                     <tr className={rowBg}>
                       <td colSpan={10} className="px-4 pb-2.5 pt-0">
@@ -503,12 +449,236 @@ function Abschnitt({
                       </td>
                     </tr>
                   )}
+
+                  {beaconOffen && zeigeBeacon && (
+                    <tr className={rowBg}>
+                      <td colSpan={10} className="px-2 pb-2 pt-0">
+                        <BeaconKonfigurator
+                          config={beaconConfigs[e.id] ?? DEFAULT_BEACON_CONFIG}
+                          onChange={cfg => onBeaconConfigChange(e.id, cfg)}
+                          baseAnzahl={e.baseAnzahl}
+                          currentAnzahl={e.anzahl}
+                          sprache={sprache}
+                          tx={tx}
+                        />
+                      </td>
+                    </tr>
+                  )}
                 </Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
+export default function ErgebnisTabelle({
+  produktion, perItem = [], foerderband = null,
+  maschinenOverrides = {}, onMaschinenOverrideChange = null,
+  beaconConfigs = {}, onBeaconConfigChange = null,
+}) {
+  const { boni }           = useForschung();
+  const { sprache }        = useSprache();
+  const { modulBoni }      = useModul();
+  const { zielQualitaet, maschinenQualitaet, gesamtQualityChance, qualityFaktorPerMaschine } = useQuality();
+  const tx = T[sprache];
+
+  const stromDaten = useMemo(
+    () => berechneStromverbrauch(produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti, maschinenOverrides, beaconConfigs),
+    [produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti, maschinenOverrides, beaconConfigs]
+  );
+
+  const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
+  const istQualityAktiv = zielQualitaet.tierIndex > 0;
+
+  const zielProduktMap = useMemo(() => {
+    const map = {};
+    for (const p of perItem) {
+      if (!p.id) continue;
+      map[p.id] = {
+        gewuenschteRateSek: p.mengeProMin / 60,
+        qualitaet:          p.qualitaet ?? zielQualitaet,
+        craftingFaktor:     p.qualityFaktor ?? 1,
+      };
+    }
+    return map;
+  }, [perItem, zielQualitaet]);
+
+  const beitraegeMap = useMemo(() => {
+    if (perItem.length <= 1) return {};
+    const result = {};
+    for (let i = 0; i < perItem.length; i++) {
+      const item = perItem[i];
+      const name = sprache === 'de'
+        ? (REZEPTE_MAP[item.id]?.name   ?? item.id)
+        : (REZEPTE_MAP[item.id]?.nameEn ?? item.id);
+      for (const [rid, rate] of Object.entries(item.produktion)) {
+        if (!result[rid]) result[rid] = [];
+        result[rid].push({ id: item.id, name, rateProMin: rate * 60, colorIdx: i % ITEM_FARBEN.length });
+      }
+    }
+    return result;
+  }, [perItem, sprache]);
+
+  const zeigeBeitraege = perItem.length > 1;
+
+  if (!produktion || Object.keys(produktion).length === 0) return null;
+
+  const mQMulti = maschinenQualitaet.maschinenMulti;
+
+  const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
+    const rezept      = REZEPTE_MAP[id];
+    const istRohstoff = !rezept || rezept.zeit === 0;
+
+    const zielInfo    = zielProduktMap[id];
+    const istZiel     = !!zielInfo;
+    const displayRate = istZiel ? zielInfo.gewuenschteRateSek : rateProSek;
+    const craftingRate = rateProSek;
+
+    const overrideId   = istRohstoff ? null : (maschinenOverrides[id] ?? null);
+    const beaconCfg    = istRohstoff ? null : (beaconConfigs[id] ?? null);
+    const beaconActive = beaconCfg?.anzahlBeacons > 0;
+    const baseAnzahl   = istRohstoff ? null : maschinenAnzahl(id, craftingRate, boni, modulBoni, mQMulti, overrideId, null);
+    const anzahl       = beaconActive
+      ? maschinenAnzahl(id, craftingRate, boni, modulBoni, mQMulti, overrideId, beaconCfg)
+      : baseAnzahl;
+
+    const baender = foerderband?.durchsatz ? Math.ceil(displayRate / foerderband.durchsatz) : null;
+    const qualitaet = istZiel ? (zielInfo.qualitaet ?? zielQualitaet) : null;
+
+    const verfuegbareMaschinen = istRohstoff ? [] : getVerfuegbareMaschinen(id);
+    const defaultMaschinenId   = rezept ? (ABSTRACT_TO_MACHINE_ID[rezept.maschine] ?? null) : null;
+
+    return {
+      id,
+      name:                sprache === 'de' ? (rezept?.name ?? getItemName(id, 'de')) : (rezept?.nameEn ?? getItemName(id, 'en')),
+      rateProSek:          displayRate,
+      rateProMin:          displayRate * 60,
+      craftingRate,
+      istRohstoff,
+      istZiel,
+      qualitaet,
+      anzahl,
+      baseAnzahl,
+      beaconCfg,
+      beaconActive,
+      maschine:            rezept?.maschine ?? null,
+      verfuegbareMaschinen,
+      selectedMaschinenId: overrideId,
+      defaultMaschinenId,
+      baender,
+    };
+  });
+
+  const herstellung = eintraege.filter(e => !e.istRohstoff);
+  const rohstoffe   = eintraege.filter(e =>  e.istRohstoff);
+
+  const bonusHinweis = boni.miningBonus > 0 || boni.assemblerBonus > 0;
+  const aktiveModulBoni = Object.entries(modulBoni).filter(
+    ([, b]) => b.speedBonus !== 0 || b.produktivitaet > 0
+  );
+  const beltFarbe = foerderband ? (BELT_FARBE[foerderband.id] ?? 'text-gray-300') : 'text-gray-300';
+  const maxCraftingFaktor = Math.max(...Object.values(qualityFaktorPerMaschine), 1);
+
+  return (
+    <div className="flex flex-col gap-6 mt-6">
+
+      {bonusHinweis && (
+        <div className="flex gap-4 text-xs text-gray-500 bg-gray-800/50 rounded-lg px-3 py-2">
+          <span className="text-amber-400 font-semibold">{tx.boniAktiv}</span>
+          {boni.miningBonus > 0 && (
+            <span>{tx.bergbauBonus((boni.miningBonus * 100).toFixed(0))}</span>
+          )}
+          {boni.assemblerBonus > 0 && (
+            <span>{tx.assemblerBonus((boni.assemblerBonus * 100).toFixed(0))}</span>
+          )}
+        </div>
+      )}
+
+      {aktiveModulBoni.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-xs bg-gray-800/50 rounded-lg px-3 py-2">
+          <span className="text-green-400 font-semibold shrink-0">
+            {sprache === 'de' ? 'Module aktiv:' : 'Modules active:'}
+          </span>
+          {aktiveModulBoni.map(([maschinenType, b]) => (
+            <span key={maschinenType} className="text-gray-400">
+              {maschinenLabels[maschinenType]}:
+              {b.speedBonus  !== 0 && ` ⚡${b.speedBonus > 0 ? '+' : ''}${(b.speedBonus * 100).toFixed(0)}%`}
+              {b.produktivitaet > 0 && ` 📦+${(b.produktivitaet * 100).toFixed(0)}%`}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {istQualityAktiv && (
+        <div className="flex flex-wrap items-center gap-3 text-xs bg-gray-800/50 rounded-lg px-3 py-2">
+          <span className={zielQualitaet.farbe}>★ {tx.qualitaetAktiv}</span>
+          <span className={`px-2 py-0.5 rounded border font-medium ${zielQualitaet.badge}`}>
+            {tx.zielQualitaet}: {zielQualitaet.icon} {sprache === 'de' ? zielQualitaet.name : zielQualitaet.nameEn}
+          </span>
+          <span className={`px-2 py-0.5 rounded border font-medium ${maschinenQualitaet.badge}`}>
+            {tx.maschinenQ}: {maschinenQualitaet.icon} {sprache === 'de' ? maschinenQualitaet.name : maschinenQualitaet.nameEn}
+            {maschinenQualitaet.maschinenMulti !== 1 && ` (⚡×${maschinenQualitaet.maschinenMulti})`}
+          </span>
+          {gesamtQualityChance > 0 && (
+            <>
+              <span className="text-gray-400">
+                {tx.craftingFaktor}: <span className="text-amber-300 font-bold">{formatQualityFaktor(maxCraftingFaktor)}</span>
+              </span>
+              <span className="text-gray-500">
+                ({(gesamtQualityChance * 100).toFixed(1)}% {sprache === 'de' ? 'Chance' : 'chance'})
+              </span>
+            </>
+          )}
+          {gesamtQualityChance === 0 && (
+            <span className="text-amber-300">
+              {sprache === 'de'
+                ? '⚠ Keine Qualitätsmodule → Zutaten werden nicht angepasst'
+                : '⚠ No quality modules → ingredients not adjusted'}
+            </span>
+          )}
+        </div>
+      )}
+
+      <Abschnitt
+        titel={tx.herstellung}
+        eintraege={herstellung}
+        zeigeMaschine
+        tx={tx}
+        maschinenLabels={maschinenLabels}
+        beitraegeMap={beitraegeMap}
+        zeigeBeitraege={zeigeBeitraege}
+        beltFarbe={beltFarbe}
+        istQualityAktiv={istQualityAktiv}
+        sprache={sprache}
+        onMaschinenOverrideChange={onMaschinenOverrideChange}
+        beaconConfigs={beaconConfigs}
+        onBeaconConfigChange={onBeaconConfigChange}
+      />
+      <Abschnitt
+        titel={tx.rohstoffe}
+        eintraege={rohstoffe}
+        tx={tx}
+        maschinenLabels={maschinenLabels}
+        beitraegeMap={beitraegeMap}
+        zeigeBeitraege={zeigeBeitraege}
+        beltFarbe={beltFarbe}
+        istQualityAktiv={istQualityAktiv}
+        sprache={sprache}
+      />
+
+      {stromDaten.gesamtKW > 0 && (
+        <StromverbrauchAbschnitt
+          stromDaten={stromDaten}
+          tx={tx}
+          sprache={sprache}
+          maschinenLabels={maschinenLabels}
+        />
+      )}
     </div>
   );
 }

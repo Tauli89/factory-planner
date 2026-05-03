@@ -109,6 +109,18 @@ function ladeInitialMaschinenOverrides() {
   } catch { return {}; }
 }
 
+function ladeInitialBeaconConfigs() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return {};
+    return typeof parsed.beaconConfigs === 'object' && parsed.beaconConfigs !== null
+      ? parsed.beaconConfigs
+      : {};
+  } catch { return {}; }
+}
+
 function ladeInitialItems() {
   const param = new URLSearchParams(window.location.search).get('plan');
   if (param) {
@@ -124,6 +136,7 @@ function ladeInitialItems() {
 function RechnerTab({ sprache }) {
   const [items, setItems]                           = useState(ladeInitialItems);
   const [maschinenOverrides, setMaschinenOverrides] = useState(ladeInitialMaschinenOverrides);
+  const [beaconConfigs, setBeaconConfigs]           = useState(ladeInitialBeaconConfigs);
   const [bandId, setBandId]                         = useState('keins');
   const [zeigeModule, setZeigeModule]               = useState(false);
   const [linkKopiert, setLinkKopiert]               = useState(false);
@@ -136,8 +149,9 @@ function RechnerTab({ sprache }) {
     localStorage.setItem(LS_KEY, JSON.stringify({
       items: items.map(i => ({ id: i.id, mengeProMin: i.mengeProMin, rezeptOverride: i.rezeptOverride })),
       maschinenOverrides,
+      beaconConfigs,
     }));
-  }, [items, maschinenOverrides]);
+  }, [items, maschinenOverrides, beaconConfigs]);
 
   useEffect(() => {
     try { localStorage.setItem(LS_ANSICHT, ansicht); } catch {}
@@ -161,6 +175,9 @@ function RechnerTab({ sprache }) {
   const resetAll   = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60, rezeptOverride: null }]);
   const updateMaschinenOverride = (rezeptId, maschinenId) =>
     setMaschinenOverrides(prev => ({ ...prev, [rezeptId]: maschinenId }));
+
+  const updateBeaconConfig = (itemId, config) =>
+    setBeaconConfigs(prev => ({ ...prev, [itemId]: config }));
 
   const teilePlan  = () => {
     const encoded = encodePlan(items);
@@ -226,7 +243,7 @@ function RechnerTab({ sprache }) {
           name:       r.name,
           nameEn:     r.nameEn,
           maschine:   r.maschine,
-          anzahl:     maschinenAnzahl(id, rateProSek, boni, modulBoni, mQMulti, maschinenOverrides[id] ?? null),
+          anzahl:     maschinenAnzahl(id, rateProSek, boni, modulBoni, mQMulti, maschinenOverrides[id] ?? null, beaconConfigs[id] ?? null),
           rateProMin: rateProSek * 60,
           rateProSek,
         };
@@ -402,6 +419,8 @@ function RechnerTab({ sprache }) {
               foerderband={foerderband?.id !== 'keins' ? foerderband : null}
               maschinenOverrides={maschinenOverrides}
               onMaschinenOverrideChange={updateMaschinenOverride}
+              beaconConfigs={beaconConfigs}
+              onBeaconConfigChange={updateBeaconConfig}
             />
           ) : (
             <ProduktionsBaum
