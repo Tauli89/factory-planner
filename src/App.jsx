@@ -14,6 +14,7 @@ import { ModulProvider, useModul } from './context/ModulContext';
 import { QualityProvider, useQuality } from './context/QualityContext';
 import { BerechnungProvider, useBerechnung } from './context/BerechnungContext';
 import { berechneProduktion, maschinenAnzahl, getVerfuegbareRezepte } from './utils/berechnung';
+import { encodePlan, decodePlan } from './utils/planShare';
 import { REZEPTE_MAP } from './data/recipes';
 import { FOERDERBAENDER, FOERDERBAENDER_MAP } from './data/belts';
 
@@ -44,6 +45,8 @@ const TX = {
     foerderband:   'Förderband',
     module:        'Module',
     rezept:        'Rezept',
+    teilenBtn:     '🔗 Plan teilen',
+    teilenKopiert: '✓ Link kopiert!',
   },
   en: {
     konfigurieren: 'Configure production',
@@ -54,6 +57,8 @@ const TX = {
     foerderband:   'Belt type',
     module:        'Modules',
     rezept:        'Recipe',
+    teilenBtn:     '🔗 Share plan',
+    teilenKopiert: '✓ Copied!',
   },
 };
 
@@ -79,10 +84,23 @@ function ladeGespeicherteItems() {
   }
 }
 
+function ladeInitialItems() {
+  const param = new URLSearchParams(window.location.search).get('plan');
+  if (param) {
+    const decoded = decodePlan(param);
+    if (decoded?.length) {
+      window.history.replaceState({}, '', window.location.pathname);
+      return decoded;
+    }
+  }
+  return ladeGespeicherteItems() ?? [{ key: 1, id: '', mengeProMin: 60, rezeptOverride: null }];
+}
+
 function RechnerTab({ sprache }) {
-  const [items, setItems]             = useState(() => ladeGespeicherteItems() ?? [{ key: 1, id: '', mengeProMin: 60, rezeptOverride: null }]);
+  const [items, setItems]             = useState(ladeInitialItems);
   const [bandId, setBandId]           = useState('keins');
   const [zeigeModule, setZeigeModule] = useState(false);
+  const [linkKopiert, setLinkKopiert] = useState(false);
   const keyRef = useRef(1000);
 
   useEffect(() => {
@@ -102,6 +120,16 @@ function RechnerTab({ sprache }) {
   const updateMenge= (key, menge) => setItems(prev => prev.map(i => i.key === key ? { ...i, mengeProMin: menge } : i));
   const updateRezeptOverride = (key, rezeptId) => setItems(prev => prev.map(i => i.key === key ? { ...i, rezeptOverride: rezeptId } : i));
   const resetAll   = () => setItems([{ key: keyRef.current++, id: '', mengeProMin: 60, rezeptOverride: null }]);
+
+  const teilePlan  = () => {
+    const encoded = encodePlan(items);
+    if (!encoded) return;
+    const url = window.location.origin + '?plan=' + encoded;
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkKopiert(true);
+      setTimeout(() => setLinkKopiert(false), 1500);
+    });
+  };
 
   const rezeptOverrides = useMemo(() => {
     const map = {};
@@ -190,6 +218,14 @@ function RechnerTab({ sprache }) {
             {tx.konfigurieren}
           </h2>
           <div className="flex gap-2">
+            {hasSelected && (
+              <button
+                onClick={teilePlan}
+                className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors"
+              >
+                {linkKopiert ? tx.teilenKopiert : tx.teilenBtn}
+              </button>
+            )}
             {hasSelected && (
               <button
                 onClick={resetAll}
