@@ -1,5 +1,6 @@
 import { useMemo, Fragment, useState } from 'react';
 import { REZEPTE_MAP, MASCHINEN, KATEGORIEN } from '../data/recipes';
+import WithTooltip from './WithTooltip';
 import {
   maschinenAnzahl, berechneStromverbrauch, analysiereProduktion,
   MASCHINEN_LABEL, MASCHINEN_LABEL_EN, getVerfuegbareMaschinen, BEACON_MODUL_EFFEKTE,
@@ -435,10 +436,12 @@ function Abschnitt({
                 <Fragment key={e.id}>
                   <tr className={`${rowBg}${istBottleneck ? ' border-l-4 border-red-500' : ''}`}>
                     <td className={`py-2 text-white font-medium ${istBottleneck ? 'pl-3 pr-4' : 'px-4'}`}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Icon id={e.id} size={20} />
-                        <span>{e.name}</span>
-                      </span>
+                      <WithTooltip itemId={e.id}>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Icon id={e.id} size={20} />
+                          <span>{e.name}</span>
+                        </span>
+                      </WithTooltip>
                       {istQualityAktiv && e.qualitaet && (
                         <QualityBadge qualitaet={e.qualitaet} />
                       )}

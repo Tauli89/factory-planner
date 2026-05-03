@@ -8,6 +8,7 @@ import { useQuality } from '../context/QualityContext';
 import { getItemName } from '../data/gamedata-adapter';
 import gamedata from '../data/gamedata.json';
 import Icon from './Icon';
+import WithTooltip from './WithTooltip';
 
 const T = {
   de: { alleAuf: 'Alle aufklappen', alleEin: 'Alle einklappen', rohstoff: 'Rohstoff', fluid: 'Fluid' },
@@ -96,8 +97,10 @@ function BaumZeile({ knoten, sprache, maschinenLabels, eingeklappt, onToggle, tx
         <span className="w-3.5 text-center text-gray-500 flex-shrink-0 text-xs leading-none">
           {hatKinder ? (istEingeklappt ? '▶' : '▼') : '●'}
         </span>
-        <Icon id={knoten.id} size={16} className="flex-shrink-0" />
-        <span className={`font-medium ${nameColor}`}>{itemName(knoten.id, sprache)}</span>
+        <WithTooltip itemId={knoten.id}>
+          <Icon id={knoten.id} size={16} className="flex-shrink-0" />
+          <span className={`font-medium ${nameColor}`}>{itemName(knoten.id, sprache)}</span>
+        </WithTooltip>
         <span className="text-gray-600 flex-shrink-0 mx-0.5">—</span>
         <span className="text-gray-300 flex-shrink-0 tabular-nums">
           {knoten.rateProMin.toFixed(2)}/min

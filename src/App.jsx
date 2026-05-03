@@ -15,6 +15,8 @@ import { SprachProvider, useSprache } from './context/SprachContext';
 import { ModulProvider, useModul } from './context/ModulContext';
 import { QualityProvider, useQuality } from './context/QualityContext';
 import { BerechnungProvider, useBerechnung } from './context/BerechnungContext';
+import { TooltipProvider } from './context/TooltipContext';
+import ItemTooltip from './components/ItemTooltip';
 import { berechneProduktion, maschinenAnzahl, getVerfuegbareRezepte } from './utils/berechnung';
 import { encodePlan, decodePlan } from './utils/planShare';
 import { REZEPTE_MAP } from './data/recipes';
@@ -473,6 +475,7 @@ function AppInner() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white font-sans">
+      <ItemTooltip />
       <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center gap-6">
         <div className="flex items-center gap-3">
           <div className="text-3xl">⚙️</div>
@@ -584,7 +587,9 @@ export default function App() {
         <ModulProvider>
           <QualityProvider>
             <BerechnungProvider>
-              <AppInner />
+              <TooltipProvider>
+                <AppInner />
+              </TooltipProvider>
             </BerechnungProvider>
           </QualityProvider>
         </ModulProvider>

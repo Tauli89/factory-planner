@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { REZEPTE, KATEGORIEN, KATEGORIEN_EN_LABEL, DURCH_TECH_GESPERRTE_REZEPTE } from '../data/gamedata-adapter';
 import Icon from './Icon';
+import WithTooltip from './WithTooltip';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 
@@ -188,17 +189,19 @@ export default function ProduktAuswahl({ ausgewaehltId, onAuswahl }) {
 function DropdownOption({ r, sprache, onSelect, selected }) {
   const name = sprache === 'de' ? r.name : r.nameEn;
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(r.id)}
-      title={name}
-      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm text-left transition-colors
-        ${selected
-          ? 'bg-amber-500/20 text-amber-300'
-          : 'text-gray-300 hover:bg-gray-700/60 hover:text-white'}`}
-    >
-      <Icon id={r.id} size={20} />
-      <span className="truncate">{name}</span>
-    </button>
+    <WithTooltip itemId={r.id}>
+      <button
+        type="button"
+        onClick={() => onSelect(r.id)}
+        title={name}
+        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm text-left transition-colors
+          ${selected
+            ? 'bg-amber-500/20 text-amber-300'
+            : 'text-gray-300 hover:bg-gray-700/60 hover:text-white'}`}
+      >
+        <Icon id={r.id} size={20} />
+        <span className="truncate">{name}</span>
+      </button>
+    </WithTooltip>
   );
 }
