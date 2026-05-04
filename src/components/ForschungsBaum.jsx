@@ -20,6 +20,7 @@ import gamedata from '../data/gamedata.json';
 import Icon from './Icon';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
+import { berechneDagreLayout } from '../utils/dagreLayout';
 
 class BaumFehlerGrenze extends Component {
   state = { fehler: null };
@@ -52,8 +53,6 @@ const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'milit
 const KARTE_B     = 310;
 const KARTE_H     = 100;
 const KARTE_H_LVL = 120;
-const ABSTAND_X   = 370;  // KARTE_B (310) + 60px Luft
-const ABSTAND_Y   = 200;  // KARTE_H_LVL (120) + 80px Luft
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -80,57 +79,6 @@ const TECH_LAYOUT = TECH.filter(t =>
 );
 const TECH_LAYOUT_MAP = Object.fromEntries(TECH_LAYOUT.map(t => [t.id, t]));
 
-function berechnePositionen() {
-  const nachfolger = {};
-  for (const t of TECH_LAYOUT) nachfolger[t.id] = [];
-  for (const t of TECH_LAYOUT) {
-    for (const pre of t.prerequisites) {
-      if (TECH_LAYOUT_MAP[pre]) nachfolger[pre].push(t.id);
-    }
-  }
-
-  const tiefe = {};
-  const rootIds = TECH_LAYOUT
-    .filter(t => t.prerequisites.every(p => !TECH_LAYOUT_MAP[p]))
-    .map(t => t.id);
-  for (const id of rootIds) tiefe[id] = 0;
-
-  const besucht = new Set();
-  let queue = [...rootIds];
-  while (queue.length) {
-    const next = [];
-    for (const id of queue) {
-      if (besucht.has(id)) continue;
-      besucht.add(id);
-      for (const nf of nachfolger[id]) {
-        tiefe[nf] = Math.max(tiefe[nf] ?? 0, (tiefe[id] ?? 0) + 1);
-        next.push(nf);
-      }
-    }
-    queue = next;
-  }
-
-  const ebenen = {};
-  for (const t of TECH_LAYOUT) {
-    const e = tiefe[t.id] ?? 0;
-    if (!ebenen[e]) ebenen[e] = [];
-    ebenen[e].push(t.id);
-  }
-
-  const maxProEbene = Math.max(...Object.values(ebenen).map(ids => ids.length));
-
-  const pos = {};
-  for (const [e, ids] of Object.entries(ebenen)) {
-    const offsetX = ((maxProEbene - ids.length) / 2) * ABSTAND_X;
-    ids.forEach((id, i) => {
-      pos[id] = {
-        x: offsetX + i * ABSTAND_X,
-        y: parseInt(e) * ABSTAND_Y,
-      };
-    });
-  }
-  return pos;
-}
 
 const HANDLE_STYLE = { background: 'transparent', border: 'none', width: 0, height: 0 };
 
@@ -404,8 +352,6 @@ const LevelNode = memo(({ data }) => {
 
 const nodeTypes = { techNode: TechNode, levelNode: LevelNode };
 
-const POSITIONEN = berechnePositionen();
-
 // ── Hauptkomponente ───────────────────────────────────────────────────────────
 export default function ForschungsBaum() {
   const { erforscht, infiniteLevels, toggle, setzePreset, allesZuruecksetzen, setzeLevel, boni } = useForschung();
@@ -440,9 +386,6 @@ export default function ForschungsBaum() {
     const edges = [];
 
     for (const tech of TECH_LAYOUT) {
-      const pos = POSITIONEN[tech.id];
-      if (!pos) continue;
-
       const dimmed      = gefilterteTech !== null && !gefilterteTech.has(tech.id);
       const highlighted = sucheAktiv && gefilterteTech !== null && gefilterteTech.has(tech.id);
       const gruppenInfo = LEVEL_GRUPPE_VON_TECH[tech.id];
@@ -460,7 +403,7 @@ export default function ForschungsBaum() {
         nodes.push({
           id: tech.id,
           type: 'levelNode',
-          position: pos,
+          position: { x: 0, y: 0 },
           data: { gruppe, aktuellesLevel, onSetzeLevel: handleSetzeLevel, sprache, dimmed, highlighted, techId: tech.id },
         });
       } else {
@@ -469,7 +412,7 @@ export default function ForschungsBaum() {
         nodes.push({
           id: tech.id,
           type: 'techNode',
-          position: pos,
+          position: { x: 0, y: 0 },
           data: { tech, istErforscht, depsFehlen, onToggle: handleToggle, sprache, dimmed, highlighted },
         });
       }
@@ -495,6 +438,11 @@ export default function ForschungsBaum() {
 
     return { nodes, edges };
   }, [erforscht, infiniteLevels, sprache, gefilterteTech, sucheAktiv, handleToggle, handleSetzeLevel]);
+
+  const positionierteNodes = useMemo(
+    () => berechneDagreLayout(nodes, edges, KARTE_B, KARTE_H_LVL),
+    [nodes, edges],
+  );
 
   // Summe aller Stufen: Level-Gruppen zählen als aktuellesLevel, reguläre Techs als 0 oder 1
   const anzahlErforscht = useMemo(() => {
@@ -617,7 +565,7 @@ export default function ForschungsBaum() {
       <BaumFehlerGrenze>
         <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden">
           <ReactFlow
-            nodes={nodes}
+            nodes={positionierteNodes}
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
