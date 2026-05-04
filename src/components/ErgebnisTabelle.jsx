@@ -392,7 +392,7 @@ function Abschnitt({
   beitraegeMap = {}, zeigeBeitraege = false, beltFarbe,
   istQualityAktiv, sprache, onMaschinenOverrideChange = null,
   beaconConfigs = {}, onBeaconConfigChange = null,
-  bottleneckId = null,
+  bottleneckId = null, diffMap = null,
 }) {
   if (eintraege.length === 0) return null;
   const zeigeBaender = eintraege.some(e => e.baender !== null);
@@ -474,13 +474,24 @@ function Abschnitt({
                     )}
                     {zeigeMaschine && (
                       <td className={`px-4 py-2 text-right font-bold ${maschinenFarbe}`}>
-                        <span className="inline-flex items-center justify-end gap-1.5">
+                        <span className="inline-flex items-center justify-end gap-1.5 flex-wrap">
                           {e.beaconActive && (
                             <span className="text-xs text-blue-400 font-normal">
                               🔵{e.beaconCfg.anzahlBeacons}
                             </span>
                           )}
                           {e.anzahl ?? '—'}
+                          {diffMap != null && e.anzahl != null && diffMap[e.id] != null && (() => {
+                            const other = diffMap[e.id];
+                            const diff = e.anzahl - other;
+                            if (diff === 0) return null;
+                            const pct = Math.round(Math.abs(diff) / other * 100);
+                            return (
+                              <span className={`text-xs font-normal ${diff < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {diff < 0 ? `▼ −${pct}%` : `▲ +${pct}%`}
+                              </span>
+                            );
+                          })()}
                         </span>
                       </td>
                     )}
@@ -550,6 +561,7 @@ export default function ErgebnisTabelle({
   produktion, perItem = [], foerderband = null,
   maschinenOverrides = {}, onMaschinenOverrideChange = null,
   beaconConfigs = {}, onBeaconConfigChange = null,
+  diffMap = null,
 }) {
   const { boni }           = useForschung();
   const { sprache }        = useSprache();
@@ -735,6 +747,7 @@ export default function ErgebnisTabelle({
         beaconConfigs={beaconConfigs}
         onBeaconConfigChange={onBeaconConfigChange}
         bottleneckId={bottleneckId}
+        diffMap={diffMap}
       />
       <Abschnitt
         titel={tx.rohstoffe}

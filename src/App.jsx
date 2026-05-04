@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import VergleichsAnsicht from './components/Vergleich';
 import ProduktAuswahl from './components/ProduktAuswahl';
 import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
@@ -145,6 +146,8 @@ function RechnerTab({ sprache }) {
   const [ansicht, setAnsicht] = useState(() => {
     try { return localStorage.getItem(LS_ANSICHT) ?? 'tabelle'; } catch { return 'tabelle'; }
   });
+  const [vergleichModus, setVergleichModus]         = useState(false);
+  const vergleichInitialARef                        = useRef(null);
   const keyRef = useRef(1000);
 
   useEffect(() => {
@@ -270,6 +273,33 @@ function RechnerTab({ sprache }) {
   const hasSelected = items.some(i => i.id);
   const tx          = TX[sprache];
 
+  const aktiviereVergleich = () => {
+    vergleichInitialARef.current = {
+      items:              items.map(i => ({ ...i })),
+      maschinenOverrides: { ...maschinenOverrides },
+      beaconConfigs:      JSON.parse(JSON.stringify(beaconConfigs)),
+    };
+    setVergleichModus(true);
+  };
+
+  const handleSetupBUebernehmen = ({ items: newItems, maschinenOverrides: newMO, beaconConfigs: newBC }) => {
+    setItems(newItems.map((it, i) => ({ ...it, key: keyRef.current + i + 1 })));
+    keyRef.current += newItems.length + 1;
+    setMaschinenOverrides(newMO);
+    setBeaconConfigs(newBC);
+    setVergleichModus(false);
+  };
+
+  if (vergleichModus && vergleichInitialARef.current) {
+    return (
+      <VergleichsAnsicht
+        initialA={vergleichInitialARef.current}
+        onBeenden={() => setVergleichModus(false)}
+        onSetupBUebernehmen={handleSetupBUebernehmen}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <PlanManager
@@ -284,6 +314,13 @@ function RechnerTab({ sprache }) {
             {tx.konfigurieren}
           </h2>
           <div className="flex gap-2">
+            <button
+              onClick={aktiviereVergleich}
+              className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors border border-gray-600"
+              title={sprache === 'de' ? 'Zwei Setups nebeneinander vergleichen' : 'Compare two setups side by side'}
+            >
+              ⚖️ {sprache === 'de' ? 'Vergleichen' : 'Compare'}
+            </button>
             {hasSelected && (
               <button
                 onClick={teilePlan}
