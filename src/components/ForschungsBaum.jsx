@@ -15,12 +15,14 @@ import {
   LEVEL_GRUPPE_NICHT_ERSTE,
   KATEGORIEN,
   TECH_KATEGORIEN,
+  PACK_META,
 } from '../data/research';
 import gamedata from '../data/gamedata.json';
 import Icon from './Icon';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 import { berechneDagreLayout } from '../utils/dagreLayout';
+import { berechnePfad } from '../utils/forschungsPfad';
 
 class BaumFehlerGrenze extends Component {
   state = { fehler: null };
@@ -79,12 +81,61 @@ const TECH_LAYOUT = TECH.filter(t =>
 );
 const TECH_LAYOUT_MAP = Object.fromEntries(TECH_LAYOUT.map(t => [t.id, t]));
 
+// Dagre-Positionen einmalig berechnen (Topologie ist statisch)
+const _DAGRE_POS = Object.fromEntries(
+  berechneDagreLayout(
+    TECH_LAYOUT.map(t => ({ id: t.id })),
+    TECH_LAYOUT.flatMap(t =>
+      t.prerequisites.filter(p => TECH_LAYOUT_MAP[p]).map(p => ({ source: p, target: t.id }))
+    ),
+    KARTE_B,
+    KARTE_H_LVL,
+  ).map(n => [n.id, n.position])
+);
 
 const HANDLE_STYLE = { background: 'transparent', border: 'none', width: 0, height: 0 };
 
 function hoverBorder(color) {
   const map = { '#5dbf3c': '#7ddf5c', '#f0b070': '#ffd090', '#5a5a5a': '#7a7a7a', '#f59e0b': '#f0b070' };
   return map[color] ?? color;
+}
+
+// ── Pfad-Badge ────────────────────────────────────────────────────────────────
+function PfadBadge({ nummer, istZiel, istVoraussetzung }) {
+  if (istZiel) {
+    return (
+      <div style={{ position: 'absolute', top: -12, left: -12, fontSize: 18, zIndex: 10, lineHeight: 1 }}>
+        🎯
+      </div>
+    );
+  }
+  if (nummer != null) {
+    return (
+      <div style={{
+        position: 'absolute', top: -8, left: -8,
+        width: 20, height: 20, borderRadius: '50%',
+        background: '#2563eb', border: '1.5px solid #60a5fa',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 10, fontWeight: 700, color: '#fff', zIndex: 10,
+      }}>
+        {nummer}
+      </div>
+    );
+  }
+  if (istVoraussetzung) {
+    return (
+      <div style={{
+        position: 'absolute', top: -8, right: -8,
+        width: 18, height: 18, borderRadius: '50%',
+        background: '#5dbf3c', border: '1.5px solid #7ddf5c',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 9, color: '#fff', zIndex: 10,
+      }}>
+        ✓
+      </div>
+    );
+  }
+  return null;
 }
 
 // ── TechNode ──────────────────────────────────────────────────────────────────
@@ -152,10 +203,18 @@ function TechTooltip({ tech, sprache }) {
 }
 
 const TechNode = memo(({ data }) => {
-  const { tech, istErforscht, depsFehlen, onToggle, sprache, dimmed, highlighted } = data;
+  const {
+    tech, istErforscht, depsFehlen, onToggle, sprache, dimmed, highlighted,
+    pfadNummer, istZiel, istPfadVoraussetzung, pfadPlanModus, onPfadKlick,
+  } = data;
   const [hovered, setHovered] = useState(false);
 
-  const borderColor = highlighted
+  const istImPfad    = pfadNummer != null || istZiel;
+  const borderColor  = istZiel
+    ? '#f59e0b'
+    : istImPfad
+    ? '#3b82f6'
+    : highlighted
     ? '#f0b070'
     : istErforscht
     ? '#5dbf3c'
@@ -163,15 +222,25 @@ const TechNode = memo(({ data }) => {
     ? '#5a5a5a'
     : '#c8903c';
 
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    if (pfadPlanModus) {
+      if (!istErforscht) onPfadKlick(tech.id);
+    } else {
+      onToggle(tech.id);
+    }
+  }, [pfadPlanModus, istErforscht, onPfadKlick, onToggle, tech.id]);
+
   const costEntries = Object.entries(tech.cost).filter(([, v]) => v > 0 || v === '∞');
   const techTime    = gamedata.technologies[tech.id]?.cost?.time;
 
   return (
     <div
       onMouseDown={(e) => e.stopPropagation()}
-      onClick={(e) => { e.stopPropagation(); onToggle(tech.id); }}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className={istImPfad && !istZiel ? 'pfad-puls' : undefined}
       style={{
         width: KARTE_B,
         height: KARTE_H,
@@ -180,7 +249,7 @@ const TechNode = memo(({ data }) => {
         borderRadius: 6,
         padding: 8,
         opacity: dimmed ? 0.15 : 1,
-        cursor: 'pointer',
+        cursor: pfadPlanModus && !istErforscht ? 'crosshair' : 'pointer',
         display: 'flex',
         alignItems: 'center',
         gap: 8,
@@ -194,6 +263,7 @@ const TechNode = memo(({ data }) => {
       }}
     >
       <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
       <Icon id={tech.id} type="technologies" size={48} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div
@@ -235,14 +305,26 @@ const TechNode = memo(({ data }) => {
 
 // ── LevelNode ─────────────────────────────────────────────────────────────────
 const LevelNode = memo(({ data }) => {
-  const { gruppe, aktuellesLevel, onSetzeLevel, sprache, dimmed, highlighted, techId } = data;
+  const {
+    gruppe, aktuellesLevel, onSetzeLevel, sprache, dimmed, highlighted, techId,
+    pfadNummer, istZiel, istPfadVoraussetzung, pfadPlanModus, onPfadKlick,
+  } = data;
   const maxDiscrete = gruppe.ids.length;
   const isInfinite  = gruppe.isInfinite ?? false;
   const name        = gruppe.label[sprache] ?? gruppe.label.de;
   const maxDisplay  = isInfinite ? '∞' : maxDiscrete;
   const aktiv       = aktuellesLevel > 0;
 
-  const borderColor = highlighted ? '#f0b070' : aktiv ? '#5dbf3c' : '#5a5a5a';
+  const istImPfad   = pfadNummer != null || istZiel;
+  const borderColor = istZiel
+    ? '#f59e0b'
+    : istImPfad
+    ? '#3b82f6'
+    : highlighted
+    ? '#f0b070'
+    : aktiv
+    ? '#5dbf3c'
+    : '#5a5a5a';
 
   const firstTech   = TECH_MAP[gruppe.ids[0]];
   const costEntries = firstTech
@@ -267,8 +349,17 @@ const LevelNode = memo(({ data }) => {
     flexShrink: 0,
   });
 
+  const handleCardClick = useCallback((e) => {
+    if (pfadPlanModus && aktuellesLevel === 0) {
+      e.stopPropagation();
+      onPfadKlick(techId);
+    }
+  }, [pfadPlanModus, aktuellesLevel, onPfadKlick, techId]);
+
   return (
     <div
+      onClick={handleCardClick}
+      className={istImPfad && !istZiel ? 'pfad-puls' : undefined}
       style={{
         width: KARTE_B,
         height: KARTE_H_LVL,
@@ -277,7 +368,7 @@ const LevelNode = memo(({ data }) => {
         borderRadius: 6,
         padding: 8,
         opacity: dimmed ? 0.15 : 1,
-        cursor: 'default',
+        cursor: pfadPlanModus && aktuellesLevel === 0 ? 'crosshair' : 'default',
         display: 'flex',
         alignItems: 'center',
         gap: 8,
@@ -286,9 +377,12 @@ const LevelNode = memo(({ data }) => {
         transition: 'opacity 0.2s',
         userSelect: 'none',
         pointerEvents: 'all',
+        position: 'relative',
+        overflow: 'visible',
       }}
     >
       <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
       <Icon id={techId} type="technologies" size={48} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div
@@ -352,15 +446,181 @@ const LevelNode = memo(({ data }) => {
 
 const nodeTypes = { techNode: TechNode, levelNode: LevelNode };
 
+// ── Pfad-Seitenleiste ─────────────────────────────────────────────────────────
+function PfadSeitenleiste({ pfad, zielTechId, sprache, onSchliessen }) {
+  const [kopiert, setKopiert] = useState(false);
+
+  const zielGruppenInfo = LEVEL_GRUPPE_VON_TECH[zielTechId];
+  const zielName = zielGruppenInfo
+    ? (zielGruppenInfo.gruppe.label[sprache] ?? zielGruppenInfo.gruppe.label.de)
+    : (TECH_MAP[zielTechId]?.name[sprache] ?? zielTechId);
+
+  const getTechName = (id) => {
+    const gruppenInfo = LEVEL_GRUPPE_VON_TECH[id];
+    return gruppenInfo
+      ? (gruppenInfo.gruppe.label[sprache] ?? gruppenInfo.gruppe.label.de)
+      : (TECH_MAP[id]?.name[sprache] ?? id);
+  };
+
+  const kopieren = () => {
+    const text = pfad.reihenfolge
+      .map((id, i) => `${i + 1}. ${getTechName(id)}`)
+      .join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setKopiert(true);
+      setTimeout(() => setKopiert(false), 1500);
+    });
+  };
+
+  const btnBase = {
+    padding: '5px 10px', borderRadius: 5, fontSize: 11, fontWeight: 600,
+    cursor: 'pointer', border: '1px solid', transition: 'background 0.12s',
+  };
+
+  return (
+    <div style={{
+      position: 'absolute', right: 0, top: 0, bottom: 0, width: 300,
+      background: '#1a1a1a', borderLeft: '1px solid #3d3d3d',
+      display: 'flex', flexDirection: 'column', zIndex: 20,
+    }}>
+      {/* Header */}
+      <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #3d3d3d', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#f0b070', letterSpacing: '0.03em' }}>
+              {sprache === 'de' ? 'Forschungsplan' : 'Research Plan'}
+            </div>
+            <div style={{ fontSize: 12, color: '#e8d8b0', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ color: '#8a8278' }}>→</span>
+              <span style={{ fontWeight: 600 }}>{zielName}</span>
+              <span>🎯</span>
+            </div>
+          </div>
+          <button
+            onClick={onSchliessen}
+            style={{ ...btnBase, background: 'transparent', borderColor: '#5a5a5a', color: '#8a8278', padding: '3px 7px', fontSize: 13 }}
+          >✕</button>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 10, color: '#706860' }}>
+          {pfad.reihenfolge.length} {sprache === 'de' ? 'Technologien zu erforschen' : 'technologies to research'}
+        </div>
+      </div>
+
+      {/* Techs to research */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+        {pfad.reihenfolge.length === 0 ? (
+          <div style={{ padding: '16px 12px', textAlign: 'center', color: '#5dbf3c', fontSize: 12 }}>
+            {sprache === 'de' ? '✓ Bereits vollständig erforscht!' : '✓ Already fully researched!'}
+          </div>
+        ) : (
+          pfad.reihenfolge.map((id, i) => (
+            <div key={id} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '5px 12px',
+              background: id === zielTechId ? 'rgba(245,158,11,0.08)' : 'transparent',
+              borderLeft: id === zielTechId ? '2px solid #f59e0b' : '2px solid transparent',
+            }}>
+              <span style={{ fontSize: 10, color: '#3b82f6', fontWeight: 700, minWidth: 20, textAlign: 'right' }}>
+                {i + 1}.
+              </span>
+              <Icon id={id} type="technologies" size={22} />
+              <span style={{ fontSize: 11, color: id === zielTechId ? '#fbbf24' : '#e8d8b0', flex: 1, lineHeight: 1.3 }}>
+                {getTechName(id)}
+              </span>
+              {id === zielTechId && <span style={{ fontSize: 13 }}>🎯</span>}
+            </div>
+          ))
+        )}
+
+        {/* Bereits erforschte Voraussetzungen */}
+        {pfad.bereitsErforscht.size > 0 && (
+          <>
+            <div style={{
+              padding: '6px 12px', fontSize: 10, fontWeight: 600,
+              color: '#5dbf3c', borderTop: '1px solid #2a2a2a', marginTop: 4,
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}>
+              <span>✓</span>
+              <span>{sprache === 'de' ? 'Bereits erforscht' : 'Already researched'}</span>
+            </div>
+            {[...pfad.bereitsErforscht].map(id => (
+              <div key={id} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '3px 12px', opacity: 0.5,
+              }}>
+                <span style={{ fontSize: 10, color: '#5dbf3c', minWidth: 20, textAlign: 'right' }}>✓</span>
+                <Icon id={id} type="technologies" size={16} />
+                <span style={{ fontSize: 10, color: '#8a8278', flex: 1 }}>{getTechName(id)}</span>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Wissenschaftskosten */}
+      {Object.keys(pfad.wissenschaftskosten).length > 0 && (
+        <div style={{ borderTop: '1px solid #3d3d3d', padding: '10px 12px', flexShrink: 0 }}>
+          <div style={{ fontSize: 10, color: '#8a8278', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+            {sprache === 'de' ? 'Pakete gesamt' : 'Total packages'}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {Object.entries(pfad.wissenschaftskosten).map(([pack, count]) => (
+              <div key={pack} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={18} />
+                <span style={{ fontSize: 11, color: '#c8b898', minWidth: 50 }}>
+                  ×{count.toLocaleString()}
+                </span>
+                <span style={{ fontSize: 10, color: '#706860' }}>
+                  {PACK_META[pack]?.label ?? pack}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Aktions-Buttons */}
+      <div style={{ borderTop: '1px solid #3d3d3d', padding: '8px 12px', display: 'flex', gap: 6, flexShrink: 0 }}>
+        <button
+          onClick={kopieren}
+          style={{
+            ...btnBase, flex: 1,
+            background: kopiert ? '#166534' : '#1e3a5f',
+            borderColor: kopiert ? '#4ade80' : '#3b82f6',
+            color: kopiert ? '#4ade80' : '#93c5fd',
+          }}
+        >
+          {kopiert ? '✓ Kopiert!' : `📋 ${sprache === 'de' ? 'Reihenfolge kopieren' : 'Copy order'}`}
+        </button>
+        <button
+          onClick={onSchliessen}
+          style={{ ...btnBase, background: '#2a1a1a', borderColor: '#5a3a3a', color: '#c87070' }}
+        >
+          {sprache === 'de' ? 'Aufheben' : 'Cancel'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Hauptkomponente ───────────────────────────────────────────────────────────
 export default function ForschungsBaum() {
   const { erforscht, infiniteLevels, toggle, setzePreset, allesZuruecksetzen, setzeLevel, boni } = useForschung();
   const { sprache } = useSprache();
   const [suchbegriff, setSuchbegriff] = useState('');
   const [aktivKategorie, setAktivKategorie] = useState(null);
+  const [pfadPlanModus, setPfadPlanModus] = useState(false);
+  const [zielTechId, setZielTechId] = useState(null);
 
   const handleToggle     = useCallback((id)           => toggle(id),            [toggle]);
   const handleSetzeLevel = useCallback((gruppe, level) => setzeLevel(gruppe, level), [setzeLevel]);
+  const handlePfadKlick  = useCallback((id) => {
+    setZielTechId(prev => prev === id ? null : id);
+  }, []);
+  const handlePfadSchliessen = useCallback(() => {
+    setZielTechId(null);
+    setPfadPlanModus(false);
+  }, []);
 
   const sucheAktiv = suchbegriff.trim() !== '';
 
@@ -381,14 +641,30 @@ export default function ForschungsBaum() {
     );
   }, [suchbegriff, aktivKategorie]);
 
+  // Pfad berechnen
+  const pfad = useMemo(() => {
+    if (!zielTechId) return null;
+    return berechnePfad(zielTechId, erforscht);
+  }, [zielTechId, erforscht]);
+
+  const pfadIndex = useMemo(() => {
+    if (!pfad) return new Map();
+    return new Map(pfad.reihenfolge.map((id, i) => [id, i + 1]));
+  }, [pfad]);
+
   const { nodes, edges } = useMemo(() => {
     const nodes = [];
     const edges = [];
 
     for (const tech of TECH_LAYOUT) {
+      const pos         = _DAGRE_POS[tech.id] ?? { x: 0, y: 0 };
       const dimmed      = gefilterteTech !== null && !gefilterteTech.has(tech.id);
       const highlighted = sucheAktiv && gefilterteTech !== null && gefilterteTech.has(tech.id);
       const gruppenInfo = LEVEL_GRUPPE_VON_TECH[tech.id];
+
+      const pfadNummer         = pfadIndex.get(tech.id) ?? null;
+      const istZiel            = tech.id === zielTechId;
+      const istPfadVoraussetzung = pfad?.bereitsErforscht.has(tech.id) ?? false;
 
       if (gruppenInfo && gruppenInfo.index === 0) {
         const gruppe = gruppenInfo.gruppe;
@@ -403,8 +679,11 @@ export default function ForschungsBaum() {
         nodes.push({
           id: tech.id,
           type: 'levelNode',
-          position: { x: 0, y: 0 },
-          data: { gruppe, aktuellesLevel, onSetzeLevel: handleSetzeLevel, sprache, dimmed, highlighted, techId: tech.id },
+          position: pos,
+          data: {
+            gruppe, aktuellesLevel, onSetzeLevel: handleSetzeLevel, sprache, dimmed, highlighted, techId: tech.id,
+            pfadNummer, istZiel, istPfadVoraussetzung, pfadPlanModus, onPfadKlick: handlePfadKlick,
+          },
         });
       } else {
         const istErforscht = erforscht.has(tech.id);
@@ -412,8 +691,11 @@ export default function ForschungsBaum() {
         nodes.push({
           id: tech.id,
           type: 'techNode',
-          position: { x: 0, y: 0 },
-          data: { tech, istErforscht, depsFehlen, onToggle: handleToggle, sprache, dimmed, highlighted },
+          position: pos,
+          data: {
+            tech, istErforscht, depsFehlen, onToggle: handleToggle, sprache, dimmed, highlighted,
+            pfadNummer, istZiel, istPfadVoraussetzung, pfadPlanModus, onPfadKlick: handlePfadKlick,
+          },
         });
       }
 
@@ -437,12 +719,11 @@ export default function ForschungsBaum() {
     }
 
     return { nodes, edges };
-  }, [erforscht, infiniteLevels, sprache, gefilterteTech, sucheAktiv, handleToggle, handleSetzeLevel]);
-
-  const positionierteNodes = useMemo(
-    () => berechneDagreLayout(nodes, edges, KARTE_B, KARTE_H_LVL),
-    [nodes, edges],
-  );
+  }, [
+    erforscht, infiniteLevels, sprache, gefilterteTech, sucheAktiv,
+    handleToggle, handleSetzeLevel, pfadIndex, pfad, zielTechId,
+    pfadPlanModus, handlePfadKlick,
+  ]);
 
   // Summe aller Stufen: Level-Gruppen zählen als aktuellesLevel, reguläre Techs als 0 oder 1
   const anzahlErforscht = useMemo(() => {
@@ -491,6 +772,27 @@ export default function ForschungsBaum() {
             className="px-3 py-1.5 rounded-lg bg-red-950/70 hover:bg-red-800/80 text-red-400 hover:text-red-200 text-xs font-medium transition-colors border border-red-900/60"
           >
             {allesReset}
+          </button>
+
+          {/* Pfad-Planer Toggle */}
+          <button
+            onClick={() => {
+              if (pfadPlanModus) {
+                setPfadPlanModus(false);
+              } else {
+                setPfadPlanModus(true);
+              }
+            }}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border"
+            style={pfadPlanModus
+              ? { background: '#92400e', borderColor: '#f59e0b', color: '#fbbf24' }
+              : { background: '#1e293b', borderColor: '#334155', color: '#94a3b8' }
+            }
+            title={sprache === 'de' ? 'Klicke auf eine Technologie um den optimalen Forschungspfad zu planen' : 'Click a technology to plan the optimal research path'}
+          >
+            📍 {sprache === 'de'
+              ? (pfadPlanModus ? 'Ziel wählen…' : 'Pfad planen')
+              : (pfadPlanModus ? 'Select goal…' : 'Plan path')}
           </button>
         </div>
 
@@ -563,9 +865,9 @@ export default function ForschungsBaum() {
 
       {/* ── Flow-Canvas ── */}
       <BaumFehlerGrenze>
-        <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden">
+        <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden" style={{ position: 'relative' }}>
           <ReactFlow
-            nodes={positionierteNodes}
+            nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
@@ -580,6 +882,16 @@ export default function ForschungsBaum() {
             <Background variant={BackgroundVariant.Dots} color="#333333" gap={24} size={1.2} />
             <Controls className="rf-controls-dark" showInteractive={false} />
           </ReactFlow>
+
+          {/* Pfad-Seitenleiste */}
+          {pfad && (
+            <PfadSeitenleiste
+              pfad={pfad}
+              zielTechId={zielTechId}
+              sprache={sprache}
+              onSchliessen={handlePfadSchliessen}
+            />
+          )}
         </div>
       </BaumFehlerGrenze>
 
@@ -597,6 +909,11 @@ export default function ForschungsBaum() {
           <span style={{ width: 12, height: 12, borderRadius: 2, border: '2px solid #5a5a5a', background: '#1e1e1e', display: 'inline-block', opacity: 0.6 }} />
           {sprache === 'de' ? 'Gesperrt' : 'Locked'}
         </span>
+        {pfadPlanModus && (
+          <span className="flex items-center gap-1.5" style={{ color: '#f0b070' }}>
+            📍 {sprache === 'de' ? 'Klicke auf dein Ziel' : 'Click your target'}
+          </span>
+        )}
         <span className="text-gray-700 ml-1">
           {sprache === 'de' ? 'Scrollen = Zoom · Ziehen = Pan · Klick = Erforschen/Sperren' : 'Scroll = Zoom · Drag = Pan · Click = Research/Lock'}
         </span>
