@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import VergleichsAnsicht from './components/Vergleich';
+import ExportModal from './components/ExportModal';
 import ProduktAuswahl from './components/ProduktAuswahl';
 import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
@@ -148,6 +149,7 @@ function RechnerTab({ sprache }) {
   });
   const [vergleichModus, setVergleichModus]         = useState(false);
   const vergleichInitialARef                        = useRef(null);
+  const [zeigeExport, setZeigeExport]               = useState(false);
   const keyRef = useRef(1000);
 
   useEffect(() => {
@@ -313,7 +315,7 @@ function RechnerTab({ sprache }) {
           <h2 className="text-amber-400 font-bold text-base uppercase tracking-wide">
             {tx.konfigurieren}
           </h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={aktiviereVergleich}
               className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors border border-gray-600"
@@ -321,6 +323,15 @@ function RechnerTab({ sprache }) {
             >
               ⚖️ {sprache === 'de' ? 'Vergleichen' : 'Compare'}
             </button>
+            {hasResult && (
+              <button
+                onClick={() => setZeigeExport(true)}
+                className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors border border-gray-600"
+                title={sprache === 'de' ? 'Plan exportieren' : 'Export plan'}
+              >
+                📤 {sprache === 'de' ? 'Exportieren' : 'Export'}
+              </button>
+            )}
             {hasSelected && (
               <button
                 onClick={teilePlan}
@@ -471,6 +482,17 @@ function RechnerTab({ sprache }) {
         </section>
       ) : (
         <div className="text-center text-gray-600 mt-16 text-lg">{tx.hinweis}</div>
+      )}
+
+      {zeigeExport && (
+        <ExportModal
+          combined={combined}
+          maschinenOverrides={maschinenOverrides}
+          beaconConfigs={beaconConfigs}
+          items={items}
+          onClose={() => setZeigeExport(false)}
+          sprache={sprache}
+        />
       )}
     </div>
   );
