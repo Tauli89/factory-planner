@@ -52,9 +52,9 @@ class BaumFehlerGrenze extends Component {
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
-const KARTE_B     = 310;
-const KARTE_H     = 100;
-const KARTE_H_LVL = 120;
+const KARTE_B     = 200;
+const KARTE_H     = 80;
+const KARTE_H_LVL = 95;
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -871,7 +871,7 @@ export default function ForschungsBaum() {
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
+            fitViewOptions={{ padding: 0.1, maxZoom: 1 }}
             minZoom={0.05}
             maxZoom={2}
             nodesDraggable={false}

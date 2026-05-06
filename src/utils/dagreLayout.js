@@ -5,10 +5,10 @@ export function berechneDagreLayout(nodes, edges, nodeWidth, nodeHeight) {
   g.setDefaultEdgeLabel(() => ({}));
   g.setGraph({
     rankdir: 'TB',
-    ranksep: 80,
-    nodesep: 50,
-    marginx: 20,
-    marginy: 20,
+    ranksep: 40,
+    nodesep: 15,
+    marginx: 10,
+    marginy: 10,
   });
   nodes.forEach(node => g.setNode(node.id, { width: nodeWidth, height: nodeHeight }));
   edges.forEach(edge => g.setEdge(edge.source, edge.target));
