@@ -13,7 +13,7 @@ export async function berechneElkLayout(nodes, edges, nodeWidth, nodeHeight) {
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-      'elk.padding': '[top=20, left=20, bottom=20, right=20]',
+      'elk.padding': '[top=0, left=0, bottom=0, right=0]',
     },
     children: nodes.map(node => ({
       id: node.id,

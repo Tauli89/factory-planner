@@ -1,11 +1,14 @@
 import { Component, useMemo, useCallback, memo, useState, useEffect } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   Handle,
   Position,
   BackgroundVariant,
+  useReactFlow,
+  useNodesInitialized,
 } from '@xyflow/react';
 import {
   TECH,
@@ -606,6 +609,59 @@ function PfadSeitenleiste({ pfad, zielTechId, sprache, onSchliessen }) {
   );
 }
 
+// ── Innere Flow-Komponente (braucht ReactFlowProvider-Kontext) ────────────────
+// Hier laufen useReactFlow und useNodesInitialized — beide brauchen den
+// ReactFlow-Store-Kontext, der erst durch ReactFlowProvider verfügbar ist.
+function ForschungsBaumFlow({ nodes, edges, elkReady, sprache, pfad, zielTechId, onPfadSchliessen }) {
+  const { fitView } = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
+
+  // fitView genau dann wenn ELK fertig UND ReactFlow alle Nodes gemessen hat
+  useEffect(() => {
+    if (!nodesInitialized || !elkReady) return;
+    const t = setTimeout(() => fitView({ padding: 0.08, duration: 400 }), 50);
+    return () => clearTimeout(t);
+  }, [nodesInitialized, elkReady, fitView]);
+
+  return (
+    <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden" style={{ position: 'relative' }}>
+      {!elkReady && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', background: '#111111', zIndex: 10,
+        }}>
+          <span style={{ fontSize: 13, color: '#706860' }}>
+            {sprache === 'de' ? 'Layout wird berechnet…' : 'Calculating layout…'}
+          </span>
+        </div>
+      )}
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        minZoom={0.05}
+        maxZoom={2}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+        style={{ background: '#111111' }}
+      >
+        <Background variant={BackgroundVariant.Dots} color="#333333" gap={24} size={1.2} />
+        <Controls className="rf-controls-dark" showInteractive={false} />
+      </ReactFlow>
+
+      {pfad && (
+        <PfadSeitenleiste
+          pfad={pfad}
+          zielTechId={zielTechId}
+          sprache={sprache}
+          onSchliessen={onPfadSchliessen}
+        />
+      )}
+    </div>
+  );
+}
+
 // ── Hauptkomponente ───────────────────────────────────────────────────────────
 export default function ForschungsBaum() {
   const { erforscht, infiniteLevels, toggle, setzePreset, allesZuruecksetzen, setzeLevel, boni } = useForschung();
@@ -617,7 +673,6 @@ export default function ForschungsBaum() {
 
   // ELK-Positionen: null = noch am Berechnen
   const [elkPosMap, setElkPosMap] = useState(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   // ELK-Layout einmalig beim Mounten berechnen
   useEffect(() => {
@@ -625,16 +680,6 @@ export default function ForschungsBaum() {
       setElkPosMap(new Map(result.map(n => [n.id, n.position])));
     });
   }, []);
-
-  // fitView sobald Layout fertig UND ReactFlow initialisiert — deckt beide Race-Conditions ab:
-  // ELK zuerst fertig (wartet auf onInit) und ReactFlow zuerst bereit (wartet auf ELK)
-  useEffect(() => {
-    if (!elkPosMap || !reactFlowInstance) return;
-    const timer = setTimeout(() => {
-      reactFlowInstance.fitView({ padding: 0.08, duration: 400 });
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [elkPosMap, reactFlowInstance]);
 
   const handleToggle     = useCallback((id)           => toggle(id),            [toggle]);
   const handleSetzeLevel = useCallback((gruppe, level) => setzeLevel(gruppe, level), [setzeLevel]);
@@ -883,43 +928,17 @@ export default function ForschungsBaum() {
 
       {/* ── Flow-Canvas ── */}
       <BaumFehlerGrenze>
-        <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden" style={{ position: 'relative' }}>
-          {!elkPosMap && (
-            <div style={{
-              position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', background: '#111111', zIndex: 10,
-            }}>
-              <span style={{ fontSize: 13, color: '#706860' }}>
-                {sprache === 'de' ? 'Layout wird berechnet…' : 'Calculating layout…'}
-              </span>
-            </div>
-          )}
-          <ReactFlow
+        <ReactFlowProvider>
+          <ForschungsBaumFlow
             nodes={nodes}
             edges={edges}
-            nodeTypes={nodeTypes}
-            onInit={(instance) => setReactFlowInstance(instance)}
-            minZoom={0.05}
-            maxZoom={2}
-            nodesDraggable={false}
-            nodesConnectable={false}
-            elementsSelectable={false}
-            style={{ background: '#111111' }}
-          >
-            <Background variant={BackgroundVariant.Dots} color="#333333" gap={24} size={1.2} />
-            <Controls className="rf-controls-dark" showInteractive={false} />
-          </ReactFlow>
-
-          {/* Pfad-Seitenleiste */}
-          {pfad && (
-            <PfadSeitenleiste
-              pfad={pfad}
-              zielTechId={zielTechId}
-              sprache={sprache}
-              onSchliessen={handlePfadSchliessen}
-            />
-          )}
-        </div>
+            elkReady={elkPosMap !== null}
+            sprache={sprache}
+            pfad={pfad}
+            zielTechId={zielTechId}
+            onPfadSchliessen={handlePfadSchliessen}
+          />
+        </ReactFlowProvider>
       </BaumFehlerGrenze>
 
       {/* ── Legende ── */}
