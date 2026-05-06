@@ -4,10 +4,7 @@ import {
   TECH_MAP,
   LEVEL_GRUPPE_VON_TECH,
   LEVEL_GRUPPE_NICHT_ERSTE,
-  KATEGORIEN,
-  TECH_KATEGORIEN,
 } from '../data/research';
-import gamedata from '../data/gamedata.json';
 import Icon from './Icon';
 
 const PACK_KEY_TO_ITEM_ID = {
@@ -25,6 +22,37 @@ const PACK_KEY_TO_ITEM_ID = {
   promethium: 'promethium-science-pack',
 };
 
+const PACK_REIHENFOLGE = [
+  { id: 'automation-science-pack',      farbe: '#d42000', name: '🔴 Automatisierung' },
+  { id: 'logistic-science-pack',        farbe: '#2d9900', name: '🟢 Logistik' },
+  { id: 'military-science-pack',        farbe: '#6e4e00', name: '⚔️ Militär' },
+  { id: 'chemical-science-pack',        farbe: '#006fa0', name: '🔵 Chemie' },
+  { id: 'production-science-pack',      farbe: '#7a0099', name: '🟣 Produktion' },
+  { id: 'utility-science-pack',         farbe: '#b89600', name: '🟡 Zubehör' },
+  { id: 'space-science-pack',           farbe: '#e0e0e0', name: '⚪ Weltraum' },
+  { id: 'electromagnetic-science-pack', farbe: '#00b4d8', name: '💠 Elektromagnet' },
+  { id: 'metallurgic-science-pack',     farbe: '#ff6b35', name: '🟠 Metallurgie' },
+  { id: 'agricultural-science-pack',    farbe: '#80b918', name: '🌿 Agrikultur' },
+  { id: 'cryogenic-science-pack',       farbe: '#90e0ef', name: '❄️ Kryogen' },
+  { id: 'promethium-science-pack',      farbe: '#ff006e', name: '✨ Promethium' },
+];
+
+const PACK_INDEX = new Map(PACK_REIHENFOLGE.map((p, i) => [p.id, i]));
+
+function getHoechstePack(tech) {
+  let maxIdx = -1;
+  for (const [key, val] of Object.entries(tech.cost)) {
+    if (val > 0 || val === '∞') {
+      const packId = PACK_KEY_TO_ITEM_ID[key];
+      if (packId !== undefined) {
+        const idx = PACK_INDEX.get(packId) ?? -1;
+        if (idx > maxIdx) maxIdx = idx;
+      }
+    }
+  }
+  return maxIdx; // -1 = Basis
+}
+
 const _MIT_NACHFOLGER = new Set(TECH.flatMap(t => t.prerequisites));
 
 const TECH_LAYOUT = TECH.filter(t =>
@@ -32,11 +60,7 @@ const TECH_LAYOUT = TECH.filter(t =>
   (t.prerequisites.length > 0 || _MIT_NACHFOLGER.has(t.id))
 );
 
-const TECH_LAYOUT_SORTED = [...TECH_LAYOUT].sort((a, b) => {
-  const oa = gamedata.technologies[a.id]?.order ?? `z-${a.id}`;
-  const ob = gamedata.technologies[b.id]?.order ?? `z-${b.id}`;
-  return oa < ob ? -1 : oa > ob ? 1 : 0;
-});
+const TECH_PACK_IDX = new Map(TECH_LAYOUT.map(t => [t.id, getHoechstePack(t)]));
 
 const FILTER_AKTIV   = { background: '#2a2218', borderColor: '#c8a84b', color: '#c8a84b', borderRadius: 4, padding: '3px 10px', fontSize: 11, fontWeight: 700, border: '1px solid', cursor: 'pointer' };
 const FILTER_INAKTIV = { background: '#1e1e1e', borderColor: '#3a3a3a', color: '#5a5a5a', borderRadius: 4, padding: '3px 10px', fontSize: 11, border: '1px solid', cursor: 'pointer' };
@@ -45,7 +69,7 @@ const FILTER_INAKTIV = { background: '#1e1e1e', borderColor: '#3a3a3a', color: '
 const TechGridKachel = memo(({ tech, erforscht, onToggle, sprache }) => {
   const istErforscht = erforscht.has(tech.id);
   const depsFehlen   = tech.prerequisites.some(p => !erforscht.has(p));
-  const borderColor  = istErforscht ? '#5dbf3c' : depsFehlen ? '#5a5a5a' : '#c8903c';
+  const borderColor  = istErforscht ? '#5dbf3c' : depsFehlen ? '#3a3a3a' : '#c8a84b';
   const costEntries  = Object.entries(tech.cost).filter(([, v]) => v > 0 || v === '∞');
 
   return (
@@ -53,7 +77,7 @@ const TechGridKachel = memo(({ tech, erforscht, onToggle, sprache }) => {
       onClick={() => onToggle(tech.id)}
       title={tech.name[sprache] ?? tech.name.de}
       style={{
-        height: 90,
+        width: 160, height: 80,
         background: '#1e1e1e',
         border: `2px solid ${borderColor}`,
         borderRadius: 5,
@@ -68,12 +92,13 @@ const TechGridKachel = memo(({ tech, erforscht, onToggle, sprache }) => {
         boxShadow: istErforscht ? '0 0 8px rgba(93,191,60,0.25)' : 'none',
         transition: 'border-color 0.1s, opacity 0.15s',
         userSelect: 'none',
+        flexShrink: 0,
       }}
     >
-      <Icon id={tech.id} type="technologies" size={32} />
+      <Icon id={tech.id} type="technologies" size={28} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div style={{
-          fontSize: 11, fontWeight: 600, color: '#e8d8b0',
+          fontSize: 10, fontWeight: 600, color: '#e8d8b0',
           lineHeight: 1.25, overflow: 'hidden',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
           whiteSpace: 'normal',
@@ -83,7 +108,7 @@ const TechGridKachel = memo(({ tech, erforscht, onToggle, sprache }) => {
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
           {costEntries.map(([pack, count]) => (
             <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={14} />
+              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={12} />
               <span style={{ fontSize: 9, color: '#8a8278' }}>×{count}</span>
             </span>
           ))}
@@ -109,7 +134,7 @@ const LevelGridKachel = memo(({ gruppe, techId, tech, erforscht, infiniteLevels,
   const aktuellesLevel = aktuellesDiscreteLevel + extraLevel;
   const aktiv          = aktuellesLevel > 0;
   const depsFehlen     = tech.prerequisites.some(p => !erforscht.has(p));
-  const borderColor    = aktiv ? '#5dbf3c' : depsFehlen ? '#5a5a5a' : '#c8903c';
+  const borderColor    = aktiv ? '#5dbf3c' : depsFehlen ? '#3a3a3a' : '#c8a84b';
 
   const firstTech   = TECH_MAP[gruppe.ids[0]];
   const costEntries = firstTech
@@ -130,7 +155,7 @@ const LevelGridKachel = memo(({ gruppe, techId, tech, erforscht, infiniteLevels,
     <div
       title={name}
       style={{
-        height: 90,
+        width: 160, height: 80,
         background: '#1e1e1e',
         border: `2px solid ${borderColor}`,
         borderRadius: 5,
@@ -143,12 +168,13 @@ const LevelGridKachel = memo(({ gruppe, techId, tech, erforscht, infiniteLevels,
         boxShadow: aktiv ? '0 0 8px rgba(93,191,60,0.25)' : 'none',
         transition: 'border-color 0.1s',
         userSelect: 'none',
+        flexShrink: 0,
       }}
     >
-      <Icon id={techId} type="technologies" size={32} />
+      <Icon id={techId} type="technologies" size={28} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <div style={{
-          fontSize: 11, fontWeight: 600, color: '#e8d8b0',
+          fontSize: 10, fontWeight: 600, color: '#e8d8b0',
           lineHeight: 1.25, overflow: 'hidden',
           display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
           whiteSpace: 'normal',
@@ -158,7 +184,7 @@ const LevelGridKachel = memo(({ gruppe, techId, tech, erforscht, infiniteLevels,
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
           {costEntries.map(([pack, count]) => (
             <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={14} />
+              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={12} />
               <span style={{ fontSize: 9, color: '#8a8278' }}>×{count}</span>
             </span>
           ))}
@@ -191,11 +217,20 @@ export default function ForschungsGrid({
   const [versteckeErforscht, setVersteckeErforscht] = useState(false);
   const [versteckeGesperrt,  setVersteckeGesperrt]  = useState(false);
 
-  const kategorienGruppen = useMemo(() =>
-    Object.keys(KATEGORIEN)
-      .map(k => ({ key: k, meta: KATEGORIEN[k], techs: TECH_LAYOUT_SORTED.filter(t => TECH_KATEGORIEN[t.id] === k) }))
-      .filter(g => g.techs.length > 0),
-  []);
+  const gruppen = useMemo(() => {
+    const map = new Map();
+    for (const tech of TECH_LAYOUT) {
+      const idx = TECH_PACK_IDX.get(tech.id) ?? -1;
+      if (!map.has(idx)) map.set(idx, []);
+      map.get(idx).push(tech);
+    }
+    const result = [];
+    for (let i = 0; i < PACK_REIHENFOLGE.length; i++) {
+      if (map.has(i)) result.push({ packIdx: i, meta: PACK_REIHENFOLGE[i], techs: map.get(i) });
+    }
+    if (map.has(-1)) result.push({ packIdx: -1, meta: { id: 'basis', farbe: '#6a6a6a', name: '⚙️ Basis' }, techs: map.get(-1) });
+    return result;
+  }, []);
 
   const stats = useMemo(() => {
     let verfuegbar = 0, erforschteCount = 0, gesperrt = 0;
@@ -218,18 +253,18 @@ export default function ForschungsGrid({
   }, [erforscht, infiniteLevels]);
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, height: '100%', overflow: 'hidden' }}>
 
       {/* Filter-Toolbar */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
         <button onClick={() => setVersteckeErforscht(v => !v)} style={versteckeErforscht ? FILTER_AKTIV : FILTER_INAKTIV}>
-          {sprache === 'de' ? '✓ Erforscht ausblenden' : '✓ Hide researched'}
+          {sprache === 'de' ? '✅ Erforscht ausblenden' : '✅ Hide researched'}
         </button>
         <button onClick={() => setVersteckeGesperrt(v => !v)} style={versteckeGesperrt ? FILTER_AKTIV : FILTER_INAKTIV}>
           {sprache === 'de' ? '🔒 Gesperrte ausblenden' : '🔒 Hide locked'}
         </button>
         <span style={{ fontSize: 11, color: '#706860', marginLeft: 'auto' }}>
-          <span style={{ color: '#c8903c', fontWeight: 600 }}>{stats.verfuegbar}</span>
+          <span style={{ color: '#c8a84b', fontWeight: 600 }}>{stats.verfuegbar}</span>
           {' '}{sprache === 'de' ? 'verfügbar' : 'available'}
           {' · '}
           <span style={{ color: '#5dbf3c', fontWeight: 600 }}>{stats.erforschteCount}</span>
@@ -242,7 +277,7 @@ export default function ForschungsGrid({
 
       {/* Scrollbarer Grid-Bereich */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
-        {kategorienGruppen.map(({ key, meta, techs }) => {
+        {gruppen.map(({ packIdx, meta, techs }) => {
           const visible = techs.filter(tech => {
             if (gefilterteTech !== null && !gefilterteTech.has(tech.id)) return false;
             const gi = LEVEL_GRUPPE_VON_TECH[tech.id];
@@ -263,21 +298,17 @@ export default function ForschungsGrid({
           if (visible.length === 0) return null;
 
           return (
-            <div key={key} style={{ marginBottom: 16 }}>
+            <div key={packIdx} style={{ marginBottom: 14 }}>
               <div style={{
-                fontSize: 11, fontWeight: 700, color: meta.color,
-                marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5,
-                paddingBottom: 4, borderBottom: `1px solid ${meta.color}33`,
+                fontSize: 11, fontWeight: 700, color: meta.farbe,
+                marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6,
+                paddingBottom: 4, paddingLeft: 8,
+                borderLeft: `3px solid ${meta.farbe}`,
               }}>
-                <span>{meta.icon}</span>
-                <span>{meta.label[sprache]}</span>
+                <span>{meta.name}</span>
                 <span style={{ fontSize: 10, color: '#4a4a4a', fontWeight: 400 }}>({visible.length})</span>
               </div>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-                gap: 6,
-              }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {visible.map(tech => {
                   const gi = LEVEL_GRUPPE_VON_TECH[tech.id];
                   if (gi && gi.index === 0) {

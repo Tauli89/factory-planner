@@ -450,9 +450,6 @@ const LevelNode = memo(({ data }) => {
 
 const nodeTypes = { techNode: TechNode, levelNode: LevelNode };
 
-const TAB_AKTIV   = { background: '#c8a84b', color: '#1a1a1a', border: '1px solid #c8a84b', borderRadius: 6, padding: '4px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' };
-const TAB_INAKTIV = { background: '#2a2a2a', color: '#8a8278', border: '1px solid #4a4a4a', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer' };
-
 // ── Pfad-Seitenleiste ─────────────────────────────────────────────────────────
 function PfadSeitenleiste({ pfad, zielTechId, sprache, onSchliessen }) {
   const [kopiert, setKopiert] = useState(false);
@@ -676,15 +673,6 @@ export default function ForschungsBaum() {
 
   // ELK-Positionen: null = noch am Berechnen
   const [elkPosMap, setElkPosMap] = useState(null);
-
-  const [ansicht, setAnsicht] = useState(() => {
-    try { return localStorage.getItem('factoryplanner_ansicht_v1') ?? 'grid'; }
-    catch { return 'grid'; }
-  });
-  const setzeAnsicht = useCallback((a) => {
-    setAnsicht(a);
-    try { localStorage.setItem('factoryplanner_ansicht_v1', a); } catch {}
-  }, []);
 
   // ELK-Layout einmalig beim Mounten berechnen
   useEffect(() => {
@@ -938,47 +926,36 @@ export default function ForschungsBaum() {
         })}
       </div>
 
-      {/* ── Ansichts-Tabs ── */}
-      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <button onClick={() => setzeAnsicht('grid')} style={ansicht === 'grid' ? TAB_AKTIV : TAB_INAKTIV}>
-          📋 {sprache === 'de' ? 'Übersicht' : 'Overview'}
-        </button>
-        <button onClick={() => setzeAnsicht('baum')} style={ansicht === 'baum' ? TAB_AKTIV : TAB_INAKTIV}>
-          🔗 {sprache === 'de' ? 'Baum' : 'Tree'}
-        </button>
+      {/* ── Split-View: Grid links, Baum rechts ── */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 0 }}>
+        {/* Links: Grid (42%) */}
+        <div style={{ width: '42%', flexShrink: 0, borderRight: '1px solid #3a3a3a', display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingRight: 8 }}>
+          <ForschungsGrid
+            erforscht={erforscht}
+            sprache={sprache}
+            onToggle={handleToggle}
+            gefilterteTech={gefilterteTech}
+            infiniteLevels={infiniteLevels}
+            onSetzeLevel={handleSetzeLevel}
+          />
+        </div>
+        {/* Rechts: Baum (58%) */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingLeft: 8 }}>
+          <BaumFehlerGrenze>
+            <ReactFlowProvider>
+              <ForschungsBaumFlow
+                nodes={nodes}
+                edges={edges}
+                elkReady={elkPosMap !== null}
+                sprache={sprache}
+                pfad={pfad}
+                zielTechId={zielTechId}
+                onPfadSchliessen={handlePfadSchliessen}
+              />
+            </ReactFlowProvider>
+          </BaumFehlerGrenze>
+        </div>
       </div>
-
-      {/* ── Grid-Übersicht ── */}
-      {ansicht === 'grid' && (
-        <ForschungsGrid
-          erforscht={erforscht}
-          sprache={sprache}
-          onToggle={handleToggle}
-          gefilterteTech={gefilterteTech}
-          sucheAktiv={sucheAktiv}
-          aktivKategorie={aktivKategorie}
-          infiniteLevels={infiniteLevels}
-          onSetzeLevel={handleSetzeLevel}
-          boni={boni}
-        />
-      )}
-
-      {/* ── Baumansicht ── */}
-      {ansicht === 'baum' && (
-        <BaumFehlerGrenze>
-          <ReactFlowProvider>
-            <ForschungsBaumFlow
-              nodes={nodes}
-              edges={edges}
-              elkReady={elkPosMap !== null}
-              sprache={sprache}
-              pfad={pfad}
-              zielTechId={zielTechId}
-              onPfadSchliessen={handlePfadSchliessen}
-            />
-          </ReactFlowProvider>
-        </BaumFehlerGrenze>
-      )}
 
       {/* ── Legende ── */}
       <div className="flex-shrink-0 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
