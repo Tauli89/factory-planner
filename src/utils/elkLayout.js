@@ -8,11 +8,12 @@ export async function berechneElkLayout(nodes, edges, nodeWidth, nodeHeight) {
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '60',
-      'elk.spacing.nodeNode': '10',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '40',
+      'elk.spacing.nodeNode': '8',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+      'elk.layered.compactness': 'NONE',
       'elk.padding': '[top=0, left=0, bottom=0, right=0]',
     },
     children: nodes.map(node => ({
@@ -29,13 +30,16 @@ export async function berechneElkLayout(nodes, edges, nodeWidth, nodeHeight) {
 
   const layouted = await elk.layout(elkGraph);
 
+  const minX = Math.min(...layouted.children.map(n => n.x));
+  const minY = Math.min(...layouted.children.map(n => n.y));
+
   return nodes.map(node => {
     const elkNode = layouted.children.find(n => n.id === node.id);
     return {
       ...node,
       position: {
-        x: elkNode.x,
-        y: elkNode.y,
+        x: elkNode.x - minX,
+        y: elkNode.y - minY,
       },
     };
   });

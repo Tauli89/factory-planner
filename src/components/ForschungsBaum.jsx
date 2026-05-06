@@ -1,4 +1,4 @@
-import { Component, useMemo, useCallback, memo, useState, useEffect } from 'react';
+import { Component, useMemo, useCallback, memo, useState, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -55,8 +55,8 @@ const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'milit
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
 const KARTE_B     = 220;
-const KARTE_H     = 90;
-const KARTE_H_LVL = 105;
+const KARTE_H     = 95;
+const KARTE_H_LVL = 115;
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -613,23 +613,15 @@ function PfadSeitenleiste({ pfad, zielTechId, sprache, onSchliessen }) {
 // ReactFlow-Store-Kontext, der erst durch ReactFlowProvider verfügbar ist.
 function ForschungsBaumFlow({ nodes, edges, elkReady, sprache, pfad, zielTechId, onPfadSchliessen }) {
   const { fitView } = useReactFlow();
+  const fitDoneRef = useRef(false);
 
-  // Zwei requestAnimationFrames stellen sicher dass React Flow sein internes
-  // Layout abgeschlossen hat bevor fitView die Bounding Box berechnet.
-  useEffect(() => {
-    if (!elkReady) return;
-    let frame1;
-    let frame2;
-    frame1 = requestAnimationFrame(() => {
-      frame2 = requestAnimationFrame(() => {
-        fitView({ padding: 0.08, duration: 300 });
-      });
+  const handleNodesChange = useCallback(() => {
+    if (fitDoneRef.current || !elkReady) return;
+    fitDoneRef.current = true;
+    requestAnimationFrame(() => {
+      fitView({ padding: 0.06, duration: 400 });
     });
-    return () => {
-      cancelAnimationFrame(frame1);
-      cancelAnimationFrame(frame2);
-    };
-  }, [elkReady, fitView, nodes.length]);
+  }, [elkReady, fitView]);
 
   return (
     <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden" style={{ position: 'relative' }}>
@@ -647,6 +639,7 @@ function ForschungsBaumFlow({ nodes, edges, elkReady, sprache, pfad, zielTechId,
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodesChange={handleNodesChange}
         minZoom={0.05}
         maxZoom={2}
         nodesDraggable={false}
