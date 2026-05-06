@@ -8,7 +8,6 @@ import {
   Position,
   BackgroundVariant,
   useReactFlow,
-  useNodesInitialized,
 } from '@xyflow/react';
 import {
   TECH,
@@ -614,14 +613,23 @@ function PfadSeitenleiste({ pfad, zielTechId, sprache, onSchliessen }) {
 // ReactFlow-Store-Kontext, der erst durch ReactFlowProvider verfügbar ist.
 function ForschungsBaumFlow({ nodes, edges, elkReady, sprache, pfad, zielTechId, onPfadSchliessen }) {
   const { fitView } = useReactFlow();
-  const nodesInitialized = useNodesInitialized();
 
-  // fitView genau dann wenn ELK fertig UND ReactFlow alle Nodes gemessen hat
+  // Zwei requestAnimationFrames stellen sicher dass React Flow sein internes
+  // Layout abgeschlossen hat bevor fitView die Bounding Box berechnet.
   useEffect(() => {
-    if (!nodesInitialized || !elkReady) return;
-    const t = setTimeout(() => fitView({ padding: 0.08, duration: 400 }), 50);
-    return () => clearTimeout(t);
-  }, [nodesInitialized, elkReady, fitView]);
+    if (!elkReady) return;
+    let frame1;
+    let frame2;
+    frame1 = requestAnimationFrame(() => {
+      frame2 = requestAnimationFrame(() => {
+        fitView({ padding: 0.08, duration: 300 });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame1);
+      cancelAnimationFrame(frame2);
+    };
+  }, [elkReady, fitView, nodes.length]);
 
   return (
     <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden" style={{ position: 'relative' }}>
