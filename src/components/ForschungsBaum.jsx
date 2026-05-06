@@ -1,4 +1,4 @@
-import { Component, useMemo, useCallback, memo, useState, useEffect, useRef } from 'react';
+import { Component, useMemo, useCallback, memo, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -617,15 +617,24 @@ export default function ForschungsBaum() {
 
   // ELK-Positionen: null = noch am Berechnen
   const [elkPosMap, setElkPosMap] = useState(null);
-  const rfInstanceRef = useRef(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   // ELK-Layout einmalig beim Mounten berechnen
   useEffect(() => {
     berechneElkLayout(ELK_NODES_RAW, ELK_EDGES_RAW, KARTE_B, KARTE_H_LVL).then(result => {
       setElkPosMap(new Map(result.map(n => [n.id, n.position])));
-      setTimeout(() => rfInstanceRef.current?.fitView({ padding: 0.05 }), 100);
     });
   }, []);
+
+  // fitView sobald Layout fertig UND ReactFlow initialisiert — deckt beide Race-Conditions ab:
+  // ELK zuerst fertig (wartet auf onInit) und ReactFlow zuerst bereit (wartet auf ELK)
+  useEffect(() => {
+    if (!elkPosMap || !reactFlowInstance) return;
+    const timer = setTimeout(() => {
+      reactFlowInstance.fitView({ padding: 0.08, duration: 400 });
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [elkPosMap, reactFlowInstance]);
 
   const handleToggle     = useCallback((id)           => toggle(id),            [toggle]);
   const handleSetzeLevel = useCallback((gruppe, level) => setzeLevel(gruppe, level), [setzeLevel]);
@@ -889,7 +898,7 @@ export default function ForschungsBaum() {
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
-            onInit={inst => { rfInstanceRef.current = inst; }}
+            onInit={(instance) => setReactFlowInstance(instance)}
             minZoom={0.05}
             maxZoom={2}
             nodesDraggable={false}
