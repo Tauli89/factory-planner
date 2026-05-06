@@ -1,4 +1,4 @@
-import { Component, useMemo, useCallback, memo, useState } from 'react';
+import { Component, useMemo, useCallback, memo, useState, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -21,7 +21,7 @@ import gamedata from '../data/gamedata.json';
 import Icon from './Icon';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
-import { berechneDagreLayout } from '../utils/dagreLayout';
+import { berechneElkLayout } from '../utils/elkLayout';
 import { berechnePfad } from '../utils/forschungsPfad';
 
 class BaumFehlerGrenze extends Component {
@@ -52,9 +52,9 @@ class BaumFehlerGrenze extends Component {
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
-const KARTE_B     = 200;
-const KARTE_H     = 80;
-const KARTE_H_LVL = 95;
+const KARTE_B     = 220;
+const KARTE_H     = 90;
+const KARTE_H_LVL = 105;
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -81,24 +81,19 @@ const TECH_LAYOUT = TECH.filter(t =>
 );
 const TECH_LAYOUT_MAP = Object.fromEntries(TECH_LAYOUT.map(t => [t.id, t]));
 
-// Dagre-Positionen einmalig berechnen (Topologie ist statisch)
-// Nodes nach Factorio-Deklarationsreihenfolge sortieren damit verwandte Techs
-// innerhalb einer Dagre-Ebene nebeneinander landen
-const _DAGRE_POS = Object.fromEntries(
-  berechneDagreLayout(
-    [...TECH_LAYOUT]
-      .sort((a, b) => {
-        const oa = gamedata.technologies[a.id]?.order ?? `z-${a.id}`;
-        const ob = gamedata.technologies[b.id]?.order ?? `z-${b.id}`;
-        return oa < ob ? -1 : oa > ob ? 1 : 0;
-      })
-      .map(t => ({ id: t.id })),
-    TECH_LAYOUT.flatMap(t =>
-      t.prerequisites.filter(p => TECH_LAYOUT_MAP[p]).map(p => ({ source: p, target: t.id }))
-    ),
-    KARTE_B,
-    KARTE_H_LVL,
-  ).map(n => [n.id, n.position])
+// Statische Topologie für ELK — nach Factorio-Deklarationsreihenfolge sortiert
+const ELK_NODES_RAW = [...TECH_LAYOUT]
+  .sort((a, b) => {
+    const oa = gamedata.technologies[a.id]?.order ?? `z-${a.id}`;
+    const ob = gamedata.technologies[b.id]?.order ?? `z-${b.id}`;
+    return oa < ob ? -1 : oa > ob ? 1 : 0;
+  })
+  .map(t => ({ id: t.id }));
+
+const ELK_EDGES_RAW = TECH_LAYOUT.flatMap(t =>
+  t.prerequisites
+    .filter(p => TECH_LAYOUT_MAP[p])
+    .map(p => ({ id: `${p}->${t.id}`, source: p, target: t.id }))
 );
 
 const HANDLE_STYLE = { background: 'transparent', border: 'none', width: 0, height: 0 };
@@ -270,7 +265,7 @@ const TechNode = memo(({ data }) => {
         overflow: 'visible',
       }}
     >
-      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
       <Icon id={tech.id} type="technologies" size={48} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -305,7 +300,7 @@ const TechNode = memo(({ data }) => {
           )}
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
       {hovered && !dimmed && <TechTooltip tech={tech} sprache={sprache} />}
     </div>
   );
@@ -389,7 +384,7 @@ const LevelNode = memo(({ data }) => {
         overflow: 'visible',
       }}
     >
-      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
       <Icon id={techId} type="technologies" size={48} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -447,7 +442,7 @@ const LevelNode = memo(({ data }) => {
           >+</button>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
 });
@@ -620,6 +615,18 @@ export default function ForschungsBaum() {
   const [pfadPlanModus, setPfadPlanModus] = useState(false);
   const [zielTechId, setZielTechId] = useState(null);
 
+  // ELK-Positionen: null = noch am Berechnen
+  const [elkPosMap, setElkPosMap] = useState(null);
+  const rfInstanceRef = useRef(null);
+
+  // ELK-Layout einmalig beim Mounten berechnen
+  useEffect(() => {
+    berechneElkLayout(ELK_NODES_RAW, ELK_EDGES_RAW, KARTE_B, KARTE_H_LVL).then(result => {
+      setElkPosMap(new Map(result.map(n => [n.id, n.position])));
+      setTimeout(() => rfInstanceRef.current?.fitView({ padding: 0.05 }), 100);
+    });
+  }, []);
+
   const handleToggle     = useCallback((id)           => toggle(id),            [toggle]);
   const handleSetzeLevel = useCallback((gruppe, level) => setzeLevel(gruppe, level), [setzeLevel]);
   const handlePfadKlick  = useCallback((id) => {
@@ -665,13 +672,13 @@ export default function ForschungsBaum() {
     const edges = [];
 
     for (const tech of TECH_LAYOUT) {
-      const pos         = _DAGRE_POS[tech.id] ?? { x: 0, y: 0 };
+      const pos         = elkPosMap?.get(tech.id) ?? { x: 0, y: 0 };
       const dimmed      = gefilterteTech !== null && !gefilterteTech.has(tech.id);
       const highlighted = sucheAktiv && gefilterteTech !== null && gefilterteTech.has(tech.id);
       const gruppenInfo = LEVEL_GRUPPE_VON_TECH[tech.id];
 
-      const pfadNummer         = pfadIndex.get(tech.id) ?? null;
-      const istZiel            = tech.id === zielTechId;
+      const pfadNummer           = pfadIndex.get(tech.id) ?? null;
+      const istZiel              = tech.id === zielTechId;
       const istPfadVoraussetzung = pfad?.bereitsErforscht.has(tech.id) ?? false;
 
       if (gruppenInfo && gruppenInfo.index === 0) {
@@ -728,7 +735,7 @@ export default function ForschungsBaum() {
 
     return { nodes, edges };
   }, [
-    erforscht, infiniteLevels, sprache, gefilterteTech, sucheAktiv,
+    elkPosMap, erforscht, infiniteLevels, sprache, gefilterteTech, sucheAktiv,
     handleToggle, handleSetzeLevel, pfadIndex, pfad, zielTechId,
     pfadPlanModus, handlePfadKlick,
   ]);
@@ -784,13 +791,7 @@ export default function ForschungsBaum() {
 
           {/* Pfad-Planer Toggle */}
           <button
-            onClick={() => {
-              if (pfadPlanModus) {
-                setPfadPlanModus(false);
-              } else {
-                setPfadPlanModus(true);
-              }
-            }}
+            onClick={() => setPfadPlanModus(m => !m)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border"
             style={pfadPlanModus
               ? { background: '#92400e', borderColor: '#f59e0b', color: '#fbbf24' }
@@ -874,12 +875,21 @@ export default function ForschungsBaum() {
       {/* ── Flow-Canvas ── */}
       <BaumFehlerGrenze>
         <div className="flex-1 min-h-0 rounded-xl border border-gray-700/80 overflow-hidden" style={{ position: 'relative' }}>
+          {!elkPosMap && (
+            <div style={{
+              position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', background: '#111111', zIndex: 10,
+            }}>
+              <span style={{ fontSize: 13, color: '#706860' }}>
+                {sprache === 'de' ? 'Layout wird berechnet…' : 'Calculating layout…'}
+              </span>
+            </div>
+          )}
           <ReactFlow
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.1, maxZoom: 1 }}
+            onInit={inst => { rfInstanceRef.current = inst; }}
             minZoom={0.05}
             maxZoom={2}
             nodesDraggable={false}
