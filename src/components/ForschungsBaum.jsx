@@ -82,9 +82,17 @@ const TECH_LAYOUT = TECH.filter(t =>
 const TECH_LAYOUT_MAP = Object.fromEntries(TECH_LAYOUT.map(t => [t.id, t]));
 
 // Dagre-Positionen einmalig berechnen (Topologie ist statisch)
+// Nodes nach Factorio-Deklarationsreihenfolge sortieren damit verwandte Techs
+// innerhalb einer Dagre-Ebene nebeneinander landen
 const _DAGRE_POS = Object.fromEntries(
   berechneDagreLayout(
-    TECH_LAYOUT.map(t => ({ id: t.id })),
+    [...TECH_LAYOUT]
+      .sort((a, b) => {
+        const oa = gamedata.technologies[a.id]?.order ?? `z-${a.id}`;
+        const ob = gamedata.technologies[b.id]?.order ?? `z-${b.id}`;
+        return oa < ob ? -1 : oa > ob ? 1 : 0;
+      })
+      .map(t => ({ id: t.id })),
     TECH_LAYOUT.flatMap(t =>
       t.prerequisites.filter(p => TECH_LAYOUT_MAP[p]).map(p => ({ source: p, target: t.id }))
     ),

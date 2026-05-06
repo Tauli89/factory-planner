@@ -16508,7 +16508,8 @@
           "type": "unlock-recipe",
           "recipe": "steam-engine"
         }
-      ]
+      ],
+      "order": "0-0000"
     },
     "electronics": {
       "id": "electronics",
@@ -16549,7 +16550,8 @@
           "type": "unlock-recipe",
           "recipe": "small-electric-pole"
         }
-      ]
+      ],
+      "order": "0-0001"
     },
     "automation-science-pack": {
       "id": "automation-science-pack",
@@ -16573,7 +16575,8 @@
           "type": "unlock-recipe",
           "recipe": "automation-science-pack"
         }
-      ]
+      ],
+      "order": "0-0002"
     },
     "electric-mining-drill": {
       "id": "electric-mining-drill",
@@ -16607,7 +16610,8 @@
           "type": "unlock-recipe",
           "recipe": "electric-mining-drill"
         }
-      ]
+      ],
+      "order": "0-0003"
     },
     "repair-pack": {
       "id": "repair-pack",
@@ -16641,7 +16645,8 @@
           "type": "unlock-recipe",
           "recipe": "repair-pack"
         }
-      ]
+      ],
+      "order": "0-0004"
     },
     "radar": {
       "id": "radar",
@@ -16675,7 +16680,8 @@
           "type": "unlock-recipe",
           "recipe": "radar"
         }
-      ]
+      ],
+      "order": "0-0005"
     },
     "physical-projectile-damage-1": {
       "id": "physical-projectile-damage-1",
@@ -16715,7 +16721,8 @@
           "type": "ammo-damage",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0006"
     },
     "physical-projectile-damage-2": {
       "id": "physical-projectile-damage-2",
@@ -16761,7 +16768,8 @@
           "type": "ammo-damage",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0007"
     },
     "weapon-shooting-speed-1": {
       "id": "weapon-shooting-speed-1",
@@ -16797,7 +16805,8 @@
           "type": "gun-speed",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0008"
     },
     "weapon-shooting-speed-2": {
       "id": "weapon-shooting-speed-2",
@@ -16839,7 +16848,8 @@
           "type": "gun-speed",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0009"
     },
     "stronger-explosives-1": {
       "id": "stronger-explosives-1",
@@ -16876,7 +16886,8 @@
           "type": "ammo-damage",
           "modifier": 0.25
         }
-      ]
+      ],
+      "order": "0-0010"
     },
     "physical-projectile-damage-3": {
       "id": "physical-projectile-damage-3",
@@ -16927,7 +16938,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0011"
     },
     "physical-projectile-damage-4": {
       "id": "physical-projectile-damage-4",
@@ -16977,7 +16989,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0012"
     },
     "physical-projectile-damage-5": {
       "id": "physical-projectile-damage-5",
@@ -17037,7 +17050,8 @@
           "type": "ammo-damage",
           "modifier": 0.9
         }
-      ]
+      ],
+      "order": "0-0013"
     },
     "physical-projectile-damage-6": {
       "id": "physical-projectile-damage-6",
@@ -17102,7 +17116,8 @@
           "type": "ammo-damage",
           "modifier": 1.3
         }
-      ]
+      ],
+      "order": "0-0014"
     },
     "physical-projectile-damage-7": {
       "id": "physical-projectile-damage-7",
@@ -17172,7 +17187,8 @@
           "type": "ammo-damage",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0015"
     },
     "stronger-explosives-2": {
       "id": "stronger-explosives-2",
@@ -17219,7 +17235,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0016"
     },
     "stronger-explosives-3": {
       "id": "stronger-explosives-3",
@@ -17275,7 +17292,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0017"
     },
     "stronger-explosives-4": {
       "id": "stronger-explosives-4",
@@ -17336,7 +17354,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0018"
     },
     "stronger-explosives-5": {
       "id": "stronger-explosives-5",
@@ -17396,7 +17415,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0019"
     },
     "stronger-explosives-6": {
       "id": "stronger-explosives-6",
@@ -17456,7 +17476,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0020"
     },
     "stronger-explosives-7": {
       "id": "stronger-explosives-7",
@@ -17522,7 +17543,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0021"
     },
     "refined-flammables-1": {
       "id": "refined-flammables-1",
@@ -17568,7 +17590,8 @@
           "type": "turret-attack",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0022"
     },
     "refined-flammables-2": {
       "id": "refined-flammables-2",
@@ -17614,7 +17637,8 @@
           "type": "turret-attack",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0023"
     },
     "refined-flammables-3": {
       "id": "refined-flammables-3",
@@ -17666,7 +17690,8 @@
           "type": "turret-attack",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0024"
     },
     "refined-flammables-4": {
       "id": "refined-flammables-4",
@@ -17723,7 +17748,8 @@
           "type": "turret-attack",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "0-0025"
     },
     "refined-flammables-5": {
       "id": "refined-flammables-5",
@@ -17779,7 +17805,8 @@
           "type": "turret-attack",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "0-0026"
     },
     "refined-flammables-6": {
       "id": "refined-flammables-6",
@@ -17835,7 +17862,8 @@
           "type": "turret-attack",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "0-0027"
     },
     "refined-flammables-7": {
       "id": "refined-flammables-7",
@@ -17897,7 +17925,8 @@
           "type": "turret-attack",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0028"
     },
     "laser-weapons-damage-1": {
       "id": "laser-weapons-damage-1",
@@ -17945,7 +17974,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0029"
     },
     "laser-weapons-damage-2": {
       "id": "laser-weapons-damage-2",
@@ -17992,7 +18022,8 @@
           "type": "ammo-damage",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0030"
     },
     "laser-weapons-damage-3": {
       "id": "laser-weapons-damage-3",
@@ -18039,7 +18070,8 @@
           "type": "ammo-damage",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "0-0031"
     },
     "laser-weapons-damage-4": {
       "id": "laser-weapons-damage-4",
@@ -18086,7 +18118,8 @@
           "type": "ammo-damage",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "0-0032"
     },
     "laser-weapons-damage-5": {
       "id": "laser-weapons-damage-5",
@@ -18143,7 +18176,8 @@
           "type": "ammo-damage",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "0-0033"
     },
     "laser-weapons-damage-6": {
       "id": "laser-weapons-damage-6",
@@ -18203,7 +18237,8 @@
           "type": "ammo-damage",
           "modifier": 0.6
         }
-      ]
+      ],
+      "order": "0-0034"
     },
     "laser-weapons-damage-7": {
       "id": "laser-weapons-damage-7",
@@ -18269,7 +18304,8 @@
           "type": "ammo-damage",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "0-0035"
     },
     "weapon-shooting-speed-3": {
       "id": "weapon-shooting-speed-3",
@@ -18320,7 +18356,8 @@
           "type": "gun-speed",
           "modifier": 0.5
         }
-      ]
+      ],
+      "order": "0-0036"
     },
     "weapon-shooting-speed-4": {
       "id": "weapon-shooting-speed-4",
@@ -18370,7 +18407,8 @@
           "type": "gun-speed",
           "modifier": 0.7
         }
-      ]
+      ],
+      "order": "0-0037"
     },
     "weapon-shooting-speed-5": {
       "id": "weapon-shooting-speed-5",
@@ -18430,7 +18468,8 @@
           "type": "gun-speed",
           "modifier": 0.9
         }
-      ]
+      ],
+      "order": "0-0038"
     },
     "weapon-shooting-speed-6": {
       "id": "weapon-shooting-speed-6",
@@ -18495,7 +18534,8 @@
           "type": "gun-speed",
           "modifier": 1.3
         }
-      ]
+      ],
+      "order": "0-0039"
     },
     "laser-shooting-speed-1": {
       "id": "laser-shooting-speed-1",
@@ -18543,7 +18583,8 @@
           "type": "gun-speed",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0040"
     },
     "laser-shooting-speed-2": {
       "id": "laser-shooting-speed-2",
@@ -18590,7 +18631,8 @@
           "type": "gun-speed",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0041"
     },
     "laser-shooting-speed-3": {
       "id": "laser-shooting-speed-3",
@@ -18637,7 +18679,8 @@
           "type": "gun-speed",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "0-0042"
     },
     "laser-shooting-speed-4": {
       "id": "laser-shooting-speed-4",
@@ -18684,7 +18727,8 @@
           "type": "gun-speed",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "0-0043"
     },
     "laser-shooting-speed-5": {
       "id": "laser-shooting-speed-5",
@@ -18737,7 +18781,8 @@
           "type": "gun-speed",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "0-0044"
     },
     "laser-shooting-speed-6": {
       "id": "laser-shooting-speed-6",
@@ -18789,7 +18834,8 @@
           "type": "gun-speed",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "0-0045"
     },
     "laser-shooting-speed-7": {
       "id": "laser-shooting-speed-7",
@@ -18841,7 +18887,8 @@
           "type": "gun-speed",
           "modifier": 0.5
         }
-      ]
+      ],
+      "order": "0-0046"
     },
     "artillery-shell-range-1": {
       "id": "artillery-shell-range-1",
@@ -18899,7 +18946,8 @@
           "type": "artillery-range",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "0-0047"
     },
     "artillery-shell-speed-1": {
       "id": "artillery-shell-speed-1",
@@ -18957,7 +19005,8 @@
           "type": "gun-speed",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0048"
     },
     "follower-robot-count-5": {
       "id": "follower-robot-count-5",
@@ -19020,7 +19069,8 @@
           "type": "maximum-following-robots-count",
           "modifier": 25
         }
-      ]
+      ],
+      "order": "0-0049"
     },
     "bulk-inserter": {
       "id": "bulk-inserter",
@@ -19065,7 +19115,8 @@
           "type": "bulk-inserter-capacity-bonus",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0050"
     },
     "inserter-capacity-bonus-1": {
       "id": "inserter-capacity-bonus-1",
@@ -19102,7 +19153,8 @@
           "type": "bulk-inserter-capacity-bonus",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0051"
     },
     "inserter-capacity-bonus-2": {
       "id": "inserter-capacity-bonus-2",
@@ -19143,7 +19195,8 @@
           "type": "bulk-inserter-capacity-bonus",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0052"
     },
     "inserter-capacity-bonus-3": {
       "id": "inserter-capacity-bonus-3",
@@ -19186,7 +19239,8 @@
           "type": "bulk-inserter-capacity-bonus",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0053"
     },
     "inserter-capacity-bonus-4": {
       "id": "inserter-capacity-bonus-4",
@@ -19234,7 +19288,8 @@
           "type": "bulk-inserter-capacity-bonus",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0054"
     },
     "inserter-capacity-bonus-5": {
       "id": "inserter-capacity-bonus-5",
@@ -19281,7 +19336,8 @@
           "type": "bulk-inserter-capacity-bonus",
           "modifier": 2
         }
-      ]
+      ],
+      "order": "0-0055"
     },
     "inserter-capacity-bonus-6": {
       "id": "inserter-capacity-bonus-6",
@@ -19328,7 +19384,8 @@
           "type": "bulk-inserter-capacity-bonus",
           "modifier": 2
         }
-      ]
+      ],
+      "order": "0-0056"
     },
     "inserter-capacity-bonus-7": {
       "id": "inserter-capacity-bonus-7",
@@ -19385,7 +19442,8 @@
           "type": "bulk-inserter-capacity-bonus",
           "modifier": 2
         }
-      ]
+      ],
+      "order": "0-0057"
     },
     "automation": {
       "id": "automation",
@@ -19424,7 +19482,8 @@
           "type": "unlock-recipe",
           "recipe": "long-handed-inserter"
         }
-      ]
+      ],
+      "order": "0-0058"
     },
     "automation-2": {
       "id": "automation-2",
@@ -19465,7 +19524,8 @@
           "type": "unlock-recipe",
           "recipe": "assembling-machine-2"
         }
-      ]
+      ],
+      "order": "0-0059"
     },
     "logistic-science-pack": {
       "id": "logistic-science-pack",
@@ -19499,7 +19559,8 @@
           "type": "unlock-recipe",
           "recipe": "logistic-science-pack"
         }
-      ]
+      ],
+      "order": "0-0060"
     },
     "steel-processing": {
       "id": "steel-processing",
@@ -19538,7 +19599,8 @@
           "type": "unlock-recipe",
           "recipe": "steel-chest"
         }
-      ]
+      ],
+      "order": "0-0061"
     },
     "steel-axe": {
       "id": "steel-axe",
@@ -19559,7 +19621,8 @@
           "type": "character-mining-speed",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0062"
     },
     "military": {
       "id": "military",
@@ -19603,7 +19666,8 @@
           "type": "unlock-recipe",
           "recipe": "shotgun-shell"
         }
-      ]
+      ],
+      "order": "0-0063"
     },
     "military-2": {
       "id": "military-2",
@@ -19649,7 +19713,8 @@
           "type": "unlock-recipe",
           "recipe": "grenade"
         }
-      ]
+      ],
+      "order": "0-0064"
     },
     "fast-inserter": {
       "id": "fast-inserter",
@@ -19683,7 +19748,8 @@
           "type": "unlock-recipe",
           "recipe": "fast-inserter"
         }
-      ]
+      ],
+      "order": "0-0065"
     },
     "logistics": {
       "id": "logistics",
@@ -19722,7 +19788,8 @@
           "type": "unlock-recipe",
           "recipe": "splitter"
         }
-      ]
+      ],
+      "order": "0-0066"
     },
     "railway": {
       "id": "railway",
@@ -19777,7 +19844,8 @@
           "type": "unlock-recipe",
           "recipe": "iron-stick"
         }
-      ]
+      ],
+      "order": "0-0067"
     },
     "automated-rail-transportation": {
       "id": "automated-rail-transportation",
@@ -19826,7 +19894,8 @@
           "type": "unlock-recipe",
           "recipe": "rail-chain-signal"
         }
-      ]
+      ],
+      "order": "0-0068"
     },
     "automobilism": {
       "id": "automobilism",
@@ -19866,7 +19935,8 @@
           "type": "unlock-recipe",
           "recipe": "car"
         }
-      ]
+      ],
+      "order": "0-0069"
     },
     "lamp": {
       "id": "lamp",
@@ -19900,7 +19970,8 @@
           "type": "unlock-recipe",
           "recipe": "small-lamp"
         }
-      ]
+      ],
+      "order": "0-0070"
     },
     "solar-energy": {
       "id": "solar-energy",
@@ -19940,7 +20011,8 @@
           "type": "unlock-recipe",
           "recipe": "solar-panel"
         }
-      ]
+      ],
+      "order": "0-0071"
     },
     "heavy-armor": {
       "id": "heavy-armor",
@@ -19975,7 +20047,8 @@
           "type": "unlock-recipe",
           "recipe": "heavy-armor"
         }
-      ]
+      ],
+      "order": "0-0072"
     },
     "gun-turret": {
       "id": "gun-turret",
@@ -20009,7 +20082,8 @@
           "type": "unlock-recipe",
           "recipe": "gun-turret"
         }
-      ]
+      ],
+      "order": "0-0073"
     },
     "research-speed-1": {
       "id": "research-speed-1",
@@ -20046,7 +20120,8 @@
           "type": "laboratory-speed",
           "modifier": 0.2
         }
-      ]
+      ],
+      "order": "0-0074"
     },
     "research-speed-2": {
       "id": "research-speed-2",
@@ -20083,7 +20158,8 @@
           "type": "laboratory-speed",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "0-0075"
     },
     "electric-energy-distribution-1": {
       "id": "electric-energy-distribution-1",
@@ -20133,7 +20209,8 @@
           "type": "unlock-recipe",
           "recipe": "iron-stick"
         }
-      ]
+      ],
+      "order": "0-0076"
     },
     "advanced-material-processing": {
       "id": "advanced-material-processing",
@@ -20173,7 +20250,8 @@
           "type": "unlock-recipe",
           "recipe": "steel-furnace"
         }
-      ]
+      ],
+      "order": "0-0077"
     },
     "concrete": {
       "id": "concrete",
@@ -20233,7 +20311,8 @@
           "type": "unlock-recipe",
           "recipe": "iron-stick"
         }
-      ]
+      ],
+      "order": "0-0078"
     },
     "engine": {
       "id": "engine",
@@ -20273,7 +20352,8 @@
           "type": "unlock-recipe",
           "recipe": "engine-unit"
         }
-      ]
+      ],
+      "order": "0-0079"
     },
     "landfill": {
       "id": "landfill",
@@ -20312,7 +20392,8 @@
           "type": "unlock-recipe",
           "recipe": "landfill"
         }
-      ]
+      ],
+      "order": "0-0080"
     },
     "logistics-2": {
       "id": "logistics-2",
@@ -20362,7 +20443,8 @@
           "type": "unlock-recipe",
           "recipe": "fast-splitter"
         }
-      ]
+      ],
+      "order": "0-0081"
     },
     "toolbelt": {
       "id": "toolbelt",
@@ -20399,7 +20481,8 @@
           "type": "character-inventory-slots-bonus",
           "modifier": 10
         }
-      ]
+      ],
+      "order": "0-0082"
     },
     "stone-wall": {
       "id": "stone-wall",
@@ -20433,7 +20516,8 @@
           "type": "unlock-recipe",
           "recipe": "stone-wall"
         }
-      ]
+      ],
+      "order": "0-0083"
     },
     "gate": {
       "id": "gate",
@@ -20473,7 +20557,8 @@
           "type": "unlock-recipe",
           "recipe": "gate"
         }
-      ]
+      ],
+      "order": "0-0084"
     },
     "chemical-science-pack": {
       "id": "chemical-science-pack",
@@ -20513,7 +20598,8 @@
           "type": "unlock-recipe",
           "recipe": "chemical-science-pack"
         }
-      ]
+      ],
+      "order": "0-0085"
     },
     "military-science-pack": {
       "id": "military-science-pack",
@@ -20553,7 +20639,8 @@
           "type": "unlock-recipe",
           "recipe": "military-science-pack"
         }
-      ]
+      ],
+      "order": "0-0086"
     },
     "production-science-pack": {
       "id": "production-science-pack",
@@ -20599,7 +20686,8 @@
           "type": "unlock-recipe",
           "recipe": "production-science-pack"
         }
-      ]
+      ],
+      "order": "0-0087"
     },
     "utility-science-pack": {
       "id": "utility-science-pack",
@@ -20645,7 +20733,8 @@
           "type": "unlock-recipe",
           "recipe": "utility-science-pack"
         }
-      ]
+      ],
+      "order": "0-0088"
     },
     "space-science-pack": {
       "id": "space-science-pack",
@@ -20661,7 +20750,8 @@
       ],
       "unlocks_recipes": [],
       "cost": null,
-      "effects": []
+      "effects": [],
+      "order": "0-0089"
     },
     "military-3": {
       "id": "military-3",
@@ -20721,7 +20811,8 @@
           "type": "unlock-recipe",
           "recipe": "combat-shotgun"
         }
-      ]
+      ],
+      "order": "0-0090"
     },
     "military-4": {
       "id": "military-4",
@@ -20782,7 +20873,8 @@
           "type": "unlock-recipe",
           "recipe": "cluster-grenade"
         }
-      ]
+      ],
+      "order": "0-0091"
     },
     "uranium-ammo": {
       "id": "uranium-ammo",
@@ -20848,7 +20940,8 @@
           "type": "unlock-recipe",
           "recipe": "explosive-uranium-cannon-shell"
         }
-      ]
+      ],
+      "order": "0-0092"
     },
     "atomic-bomb": {
       "id": "atomic-bomb",
@@ -20909,7 +21002,8 @@
           "type": "unlock-recipe",
           "recipe": "atomic-bomb"
         }
-      ]
+      ],
+      "order": "0-0093"
     },
     "automation-3": {
       "id": "automation-3",
@@ -20960,7 +21054,8 @@
           "type": "unlock-recipe",
           "recipe": "assembling-machine-3"
         }
-      ]
+      ],
+      "order": "0-0094"
     },
     "explosives": {
       "id": "explosives",
@@ -20999,7 +21094,8 @@
           "type": "unlock-recipe",
           "recipe": "explosives"
         }
-      ]
+      ],
+      "order": "0-0095"
     },
     "cliff-explosives": {
       "id": "cliff-explosives",
@@ -21042,7 +21138,8 @@
         {
           "type": "cliff-deconstruction-enabled"
         }
-      ]
+      ],
+      "order": "0-0096"
     },
     "flammables": {
       "id": "flammables",
@@ -21074,7 +21171,8 @@
         ],
         "time": 30
       },
-      "effects": []
+      "effects": [],
+      "order": "0-0097"
     },
     "land-mine": {
       "id": "land-mine",
@@ -21119,7 +21217,8 @@
           "type": "unlock-recipe",
           "recipe": "land-mine"
         }
-      ]
+      ],
+      "order": "0-0098"
     },
     "flamethrower": {
       "id": "flamethrower",
@@ -21174,7 +21273,8 @@
           "type": "unlock-recipe",
           "recipe": "flamethrower-turret"
         }
-      ]
+      ],
+      "order": "0-0099"
     },
     "advanced-circuit": {
       "id": "advanced-circuit",
@@ -21213,7 +21313,8 @@
           "type": "unlock-recipe",
           "recipe": "advanced-circuit"
         }
-      ]
+      ],
+      "order": "0-0100"
     },
     "processing-unit": {
       "id": "processing-unit",
@@ -21257,7 +21358,8 @@
           "type": "unlock-recipe",
           "recipe": "processing-unit"
         }
-      ]
+      ],
+      "order": "0-0101"
     },
     "fluid-wagon": {
       "id": "fluid-wagon",
@@ -21297,7 +21399,8 @@
           "type": "unlock-recipe",
           "recipe": "fluid-wagon"
         }
-      ]
+      ],
+      "order": "0-0102"
     },
     "braking-force-1": {
       "id": "braking-force-1",
@@ -21340,7 +21443,8 @@
           "type": "train-braking-force-bonus",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0103"
     },
     "braking-force-2": {
       "id": "braking-force-2",
@@ -21382,7 +21486,8 @@
           "type": "train-braking-force-bonus",
           "modifier": 0.15
         }
-      ]
+      ],
+      "order": "0-0104"
     },
     "braking-force-3": {
       "id": "braking-force-3",
@@ -21430,7 +21535,8 @@
           "type": "train-braking-force-bonus",
           "modifier": 0.15
         }
-      ]
+      ],
+      "order": "0-0105"
     },
     "braking-force-4": {
       "id": "braking-force-4",
@@ -21477,7 +21583,8 @@
           "type": "train-braking-force-bonus",
           "modifier": 0.15
         }
-      ]
+      ],
+      "order": "0-0106"
     },
     "braking-force-5": {
       "id": "braking-force-5",
@@ -21524,7 +21631,8 @@
           "type": "train-braking-force-bonus",
           "modifier": 0.15
         }
-      ]
+      ],
+      "order": "0-0107"
     },
     "braking-force-6": {
       "id": "braking-force-6",
@@ -21577,7 +21685,8 @@
           "type": "train-braking-force-bonus",
           "modifier": 0.15
         }
-      ]
+      ],
+      "order": "0-0108"
     },
     "braking-force-7": {
       "id": "braking-force-7",
@@ -21629,7 +21738,8 @@
           "type": "train-braking-force-bonus",
           "modifier": 0.15
         }
-      ]
+      ],
+      "order": "0-0109"
     },
     "tank": {
       "id": "tank",
@@ -21690,7 +21800,8 @@
           "type": "unlock-recipe",
           "recipe": "explosive-cannon-shell"
         }
-      ]
+      ],
+      "order": "0-0110"
     },
     "logistics-3": {
       "id": "logistics-3",
@@ -21750,7 +21861,8 @@
           "type": "unlock-recipe",
           "recipe": "express-splitter"
         }
-      ]
+      ],
+      "order": "0-0111"
     },
     "laser": {
       "id": "laser",
@@ -21788,7 +21900,8 @@
         ],
         "time": 30
       },
-      "effects": []
+      "effects": [],
+      "order": "0-0112"
     },
     "rocketry": {
       "id": "rocketry",
@@ -21839,7 +21952,8 @@
           "type": "unlock-recipe",
           "recipe": "rocket"
         }
-      ]
+      ],
+      "order": "0-0113"
     },
     "explosive-rocketry": {
       "id": "explosive-rocketry",
@@ -21889,7 +22003,8 @@
           "type": "unlock-recipe",
           "recipe": "explosive-rocket"
         }
-      ]
+      ],
+      "order": "0-0114"
     },
     "modular-armor": {
       "id": "modular-armor",
@@ -21929,7 +22044,8 @@
           "type": "unlock-recipe",
           "recipe": "modular-armor"
         }
-      ]
+      ],
+      "order": "0-0115"
     },
     "power-armor": {
       "id": "power-armor",
@@ -21975,7 +22091,8 @@
           "type": "unlock-recipe",
           "recipe": "power-armor"
         }
-      ]
+      ],
+      "order": "0-0116"
     },
     "power-armor-mk2": {
       "id": "power-armor-mk2",
@@ -22032,7 +22149,8 @@
           "type": "unlock-recipe",
           "recipe": "power-armor-mk2"
         }
-      ]
+      ],
+      "order": "0-0117"
     },
     "laser-turret": {
       "id": "laser-turret",
@@ -22082,7 +22200,8 @@
           "type": "unlock-recipe",
           "recipe": "laser-turret"
         }
-      ]
+      ],
+      "order": "0-0118"
     },
     "robotics": {
       "id": "robotics",
@@ -22127,7 +22246,8 @@
           "type": "unlock-recipe",
           "recipe": "flying-robot-frame"
         }
-      ]
+      ],
+      "order": "0-0119"
     },
     "rocket-fuel": {
       "id": "rocket-fuel",
@@ -22172,7 +22292,8 @@
           "type": "unlock-recipe",
           "recipe": "rocket-fuel"
         }
-      ]
+      ],
+      "order": "0-0120"
     },
     "low-density-structure": {
       "id": "low-density-structure",
@@ -22217,7 +22338,8 @@
           "type": "unlock-recipe",
           "recipe": "low-density-structure"
         }
-      ]
+      ],
+      "order": "0-0121"
     },
     "rocket-silo": {
       "id": "rocket-silo",
@@ -22293,7 +22415,8 @@
           "type": "unlock-recipe",
           "recipe": "satellite"
         }
-      ]
+      ],
+      "order": "0-0122"
     },
     "research-speed-3": {
       "id": "research-speed-3",
@@ -22336,7 +22459,8 @@
           "type": "laboratory-speed",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "0-0123"
     },
     "research-speed-4": {
       "id": "research-speed-4",
@@ -22378,7 +22502,8 @@
           "type": "laboratory-speed",
           "modifier": 0.5
         }
-      ]
+      ],
+      "order": "0-0124"
     },
     "research-speed-5": {
       "id": "research-speed-5",
@@ -22426,7 +22551,8 @@
           "type": "laboratory-speed",
           "modifier": 0.5
         }
-      ]
+      ],
+      "order": "0-0125"
     },
     "research-speed-6": {
       "id": "research-speed-6",
@@ -22479,7 +22605,8 @@
           "type": "laboratory-speed",
           "modifier": 0.6
         }
-      ]
+      ],
+      "order": "0-0126"
     },
     "electric-energy-distribution-2": {
       "id": "electric-energy-distribution-2",
@@ -22524,7 +22651,8 @@
           "type": "unlock-recipe",
           "recipe": "substation"
         }
-      ]
+      ],
+      "order": "0-0127"
     },
     "electric-energy-accumulators": {
       "id": "electric-energy-accumulators",
@@ -22564,7 +22692,8 @@
           "type": "unlock-recipe",
           "recipe": "accumulator"
         }
-      ]
+      ],
+      "order": "0-0128"
     },
     "advanced-material-processing-2": {
       "id": "advanced-material-processing-2",
@@ -22609,7 +22738,8 @@
           "type": "unlock-recipe",
           "recipe": "electric-furnace"
         }
-      ]
+      ],
+      "order": "0-0129"
     },
     "effect-transmission": {
       "id": "effect-transmission",
@@ -22659,7 +22789,8 @@
           "type": "unlock-recipe",
           "recipe": "beacon"
         }
-      ]
+      ],
+      "order": "0-0130"
     },
     "lubricant": {
       "id": "lubricant",
@@ -22703,7 +22834,8 @@
           "type": "unlock-recipe",
           "recipe": "lubricant"
         }
-      ]
+      ],
+      "order": "0-0131"
     },
     "electric-engine": {
       "id": "electric-engine",
@@ -22747,7 +22879,8 @@
           "type": "unlock-recipe",
           "recipe": "electric-engine-unit"
         }
-      ]
+      ],
+      "order": "0-0132"
     },
     "battery": {
       "id": "battery",
@@ -22786,7 +22919,8 @@
           "type": "unlock-recipe",
           "recipe": "battery"
         }
-      ]
+      ],
+      "order": "0-0133"
     },
     "construction-robotics": {
       "id": "construction-robotics",
@@ -22848,7 +22982,8 @@
         {
           "type": "create-ghost-on-entity-death"
         }
-      ]
+      ],
+      "order": "0-0134"
     },
     "logistic-robotics": {
       "id": "logistic-robotics",
@@ -22914,7 +23049,8 @@
           "type": "character-logistic-trash-slots",
           "modifier": 30
         }
-      ]
+      ],
+      "order": "0-0135"
     },
     "logistic-system": {
       "id": "logistic-system",
@@ -22977,7 +23113,8 @@
         {
           "type": "vehicle-logistics"
         }
-      ]
+      ],
+      "order": "0-0136"
     },
     "worker-robots-speed-1": {
       "id": "worker-robots-speed-1",
@@ -23019,7 +23156,8 @@
           "type": "worker-robot-speed",
           "modifier": 0.35
         }
-      ]
+      ],
+      "order": "0-0137"
     },
     "worker-robots-speed-2": {
       "id": "worker-robots-speed-2",
@@ -23061,7 +23199,8 @@
           "type": "worker-robot-speed",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "0-0138"
     },
     "worker-robots-speed-3": {
       "id": "worker-robots-speed-3",
@@ -23109,7 +23248,8 @@
           "type": "worker-robot-speed",
           "modifier": 0.45
         }
-      ]
+      ],
+      "order": "0-0139"
     },
     "worker-robots-speed-4": {
       "id": "worker-robots-speed-4",
@@ -23156,7 +23296,8 @@
           "type": "worker-robot-speed",
           "modifier": 0.55
         }
-      ]
+      ],
+      "order": "0-0140"
     },
     "worker-robots-speed-5": {
       "id": "worker-robots-speed-5",
@@ -23209,7 +23350,8 @@
           "type": "worker-robot-speed",
           "modifier": 0.65
         }
-      ]
+      ],
+      "order": "0-0141"
     },
     "worker-robots-speed-6": {
       "id": "worker-robots-speed-6",
@@ -23267,7 +23409,8 @@
           "type": "worker-robot-speed",
           "modifier": 0.65
         }
-      ]
+      ],
+      "order": "0-0142"
     },
     "worker-robots-storage-1": {
       "id": "worker-robots-storage-1",
@@ -23309,7 +23452,8 @@
           "type": "worker-robot-storage",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0143"
     },
     "worker-robots-storage-2": {
       "id": "worker-robots-storage-2",
@@ -23357,7 +23501,8 @@
           "type": "worker-robot-storage",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0144"
     },
     "worker-robots-storage-3": {
       "id": "worker-robots-storage-3",
@@ -23410,7 +23555,8 @@
           "type": "worker-robot-storage",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "0-0145"
     },
     "energy-shield-equipment": {
       "id": "energy-shield-equipment",
@@ -23455,7 +23601,8 @@
           "type": "unlock-recipe",
           "recipe": "energy-shield-equipment"
         }
-      ]
+      ],
+      "order": "0-0146"
     },
     "night-vision-equipment": {
       "id": "night-vision-equipment",
@@ -23494,7 +23641,8 @@
           "type": "unlock-recipe",
           "recipe": "night-vision-equipment"
         }
-      ]
+      ],
+      "order": "0-0147"
     },
     "belt-immunity-equipment": {
       "id": "belt-immunity-equipment",
@@ -23533,7 +23681,8 @@
           "type": "unlock-recipe",
           "recipe": "belt-immunity-equipment"
         }
-      ]
+      ],
+      "order": "0-0148"
     },
     "energy-shield-mk2-equipment": {
       "id": "energy-shield-mk2-equipment",
@@ -23585,7 +23734,8 @@
           "type": "unlock-recipe",
           "recipe": "energy-shield-mk2-equipment"
         }
-      ]
+      ],
+      "order": "0-0149"
     },
     "battery-equipment": {
       "id": "battery-equipment",
@@ -23625,7 +23775,8 @@
           "type": "unlock-recipe",
           "recipe": "battery-equipment"
         }
-      ]
+      ],
+      "order": "0-0150"
     },
     "battery-mk2-equipment": {
       "id": "battery-mk2-equipment",
@@ -23671,7 +23822,8 @@
           "type": "unlock-recipe",
           "recipe": "battery-mk2-equipment"
         }
-      ]
+      ],
+      "order": "0-0151"
     },
     "solar-panel-equipment": {
       "id": "solar-panel-equipment",
@@ -23711,7 +23863,8 @@
           "type": "unlock-recipe",
           "recipe": "solar-panel-equipment"
         }
-      ]
+      ],
+      "order": "0-0152"
     },
     "personal-laser-defense-equipment": {
       "id": "personal-laser-defense-equipment",
@@ -23764,7 +23917,8 @@
           "type": "unlock-recipe",
           "recipe": "personal-laser-defense-equipment"
         }
-      ]
+      ],
+      "order": "0-0153"
     },
     "discharge-defense-equipment": {
       "id": "discharge-defense-equipment",
@@ -23816,7 +23970,8 @@
           "type": "unlock-recipe",
           "recipe": "discharge-defense-equipment"
         }
-      ]
+      ],
+      "order": "0-0154"
     },
     "fission-reactor-equipment": {
       "id": "fission-reactor-equipment",
@@ -23873,7 +24028,8 @@
           "type": "unlock-recipe",
           "recipe": "fission-reactor-equipment"
         }
-      ]
+      ],
+      "order": "0-0155"
     },
     "exoskeleton-equipment": {
       "id": "exoskeleton-equipment",
@@ -23919,7 +24075,8 @@
           "type": "unlock-recipe",
           "recipe": "exoskeleton-equipment"
         }
-      ]
+      ],
+      "order": "0-0156"
     },
     "personal-roboport-equipment": {
       "id": "personal-roboport-equipment",
@@ -23964,7 +24121,8 @@
           "type": "unlock-recipe",
           "recipe": "personal-roboport-equipment"
         }
-      ]
+      ],
+      "order": "0-0157"
     },
     "personal-roboport-mk2-equipment": {
       "id": "personal-roboport-mk2-equipment",
@@ -24014,7 +24172,8 @@
           "type": "unlock-recipe",
           "recipe": "personal-roboport-mk2-equipment"
         }
-      ]
+      ],
+      "order": "0-0158"
     },
     "fluid-handling": {
       "id": "fluid-handling",
@@ -24064,7 +24223,8 @@
           "type": "unlock-recipe",
           "recipe": "barrel"
         }
-      ]
+      ],
+      "order": "0-0159"
     },
     "oil-gathering": {
       "id": "oil-gathering",
@@ -24103,7 +24263,8 @@
           "type": "unlock-recipe",
           "recipe": "pumpjack"
         }
-      ]
+      ],
+      "order": "0-0160"
     },
     "oil-processing": {
       "id": "oil-processing",
@@ -24141,7 +24302,8 @@
           "type": "unlock-recipe",
           "recipe": "solid-fuel-from-petroleum-gas"
         }
-      ]
+      ],
+      "order": "0-0161"
     },
     "advanced-oil-processing": {
       "id": "advanced-oil-processing",
@@ -24205,7 +24367,8 @@
           "type": "unlock-recipe",
           "recipe": "solid-fuel-from-light-oil"
         }
-      ]
+      ],
+      "order": "0-0162"
     },
     "coal-liquefaction": {
       "id": "coal-liquefaction",
@@ -24255,7 +24418,8 @@
           "type": "unlock-recipe",
           "recipe": "coal-liquefaction"
         }
-      ]
+      ],
+      "order": "0-0163"
     },
     "sulfur-processing": {
       "id": "sulfur-processing",
@@ -24299,7 +24463,8 @@
           "type": "unlock-recipe",
           "recipe": "sulfur"
         }
-      ]
+      ],
+      "order": "0-0164"
     },
     "plastics": {
       "id": "plastics",
@@ -24338,7 +24503,8 @@
           "type": "unlock-recipe",
           "recipe": "plastic-bar"
         }
-      ]
+      ],
+      "order": "0-0165"
     },
     "modules": {
       "id": "modules",
@@ -24370,7 +24536,8 @@
         ],
         "time": 30
       },
-      "effects": []
+      "effects": [],
+      "order": "0-0166"
     },
     "speed-module": {
       "id": "speed-module",
@@ -24409,7 +24576,8 @@
           "type": "unlock-recipe",
           "recipe": "speed-module"
         }
-      ]
+      ],
+      "order": "0-0167"
     },
     "speed-module-2": {
       "id": "speed-module-2",
@@ -24454,7 +24622,8 @@
           "type": "unlock-recipe",
           "recipe": "speed-module-2"
         }
-      ]
+      ],
+      "order": "0-0168"
     },
     "speed-module-3": {
       "id": "speed-module-3",
@@ -24504,7 +24673,8 @@
           "type": "unlock-recipe",
           "recipe": "speed-module-3"
         }
-      ]
+      ],
+      "order": "0-0169"
     },
     "productivity-module": {
       "id": "productivity-module",
@@ -24543,7 +24713,8 @@
           "type": "unlock-recipe",
           "recipe": "productivity-module"
         }
-      ]
+      ],
+      "order": "0-0170"
     },
     "productivity-module-2": {
       "id": "productivity-module-2",
@@ -24588,7 +24759,8 @@
           "type": "unlock-recipe",
           "recipe": "productivity-module-2"
         }
-      ]
+      ],
+      "order": "0-0171"
     },
     "productivity-module-3": {
       "id": "productivity-module-3",
@@ -24638,7 +24810,8 @@
           "type": "unlock-recipe",
           "recipe": "productivity-module-3"
         }
-      ]
+      ],
+      "order": "0-0172"
     },
     "efficiency-module": {
       "id": "efficiency-module",
@@ -24677,7 +24850,8 @@
           "type": "unlock-recipe",
           "recipe": "efficiency-module"
         }
-      ]
+      ],
+      "order": "0-0173"
     },
     "efficiency-module-2": {
       "id": "efficiency-module-2",
@@ -24722,7 +24896,8 @@
           "type": "unlock-recipe",
           "recipe": "efficiency-module-2"
         }
-      ]
+      ],
+      "order": "0-0174"
     },
     "efficiency-module-3": {
       "id": "efficiency-module-3",
@@ -24772,7 +24947,8 @@
           "type": "unlock-recipe",
           "recipe": "efficiency-module-3"
         }
-      ]
+      ],
+      "order": "0-0175"
     },
     "defender": {
       "id": "defender",
@@ -24820,7 +24996,8 @@
           "type": "maximum-following-robots-count",
           "modifier": 4
         }
-      ]
+      ],
+      "order": "0-0176"
     },
     "distractor": {
       "id": "distractor",
@@ -24871,7 +25048,8 @@
           "type": "unlock-recipe",
           "recipe": "distractor-capsule"
         }
-      ]
+      ],
+      "order": "0-0177"
     },
     "destroyer": {
       "id": "destroyer",
@@ -24927,7 +25105,8 @@
           "type": "unlock-recipe",
           "recipe": "destroyer-capsule"
         }
-      ]
+      ],
+      "order": "0-0178"
     },
     "uranium-mining": {
       "id": "uranium-mining",
@@ -24969,7 +25148,8 @@
         {
           "type": "mining-with-fluid"
         }
-      ]
+      ],
+      "order": "0-0179"
     },
     "uranium-processing": {
       "id": "uranium-processing",
@@ -24997,7 +25177,8 @@
           "type": "unlock-recipe",
           "recipe": "uranium-processing"
         }
-      ]
+      ],
+      "order": "0-0180"
     },
     "nuclear-power": {
       "id": "nuclear-power",
@@ -25061,7 +25242,8 @@
           "type": "unlock-recipe",
           "recipe": "uranium-fuel-cell"
         }
-      ]
+      ],
+      "order": "0-0181"
     },
     "kovarex-enrichment-process": {
       "id": "kovarex-enrichment-process",
@@ -25117,7 +25299,8 @@
           "type": "unlock-recipe",
           "recipe": "nuclear-fuel"
         }
-      ]
+      ],
+      "order": "0-0182"
     },
     "nuclear-fuel-reprocessing": {
       "id": "nuclear-fuel-reprocessing",
@@ -25167,7 +25350,8 @@
           "type": "unlock-recipe",
           "recipe": "nuclear-fuel-reprocessing"
         }
-      ]
+      ],
+      "order": "0-0183"
     },
     "mining-productivity-1": {
       "id": "mining-productivity-1",
@@ -25204,7 +25388,8 @@
           "type": "mining-drill-productivity-bonus",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0184"
     },
     "mining-productivity-2": {
       "id": "mining-productivity-2",
@@ -25247,7 +25432,8 @@
           "type": "mining-drill-productivity-bonus",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0185"
     },
     "mining-productivity-3": {
       "id": "mining-productivity-3",
@@ -25301,7 +25487,8 @@
           "type": "mining-drill-productivity-bonus",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0186"
     },
     "mining-productivity-4": {
       "id": "mining-productivity-4",
@@ -25359,7 +25546,8 @@
           "type": "mining-drill-productivity-bonus",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "0-0187"
     },
     "artillery": {
       "id": "artillery",
@@ -25426,7 +25614,8 @@
           "type": "unlock-recipe",
           "recipe": "artillery-shell"
         }
-      ]
+      ],
+      "order": "0-0188"
     },
     "spidertron": {
       "id": "spidertron",
@@ -25490,7 +25679,8 @@
           "type": "unlock-recipe",
           "recipe": "spidertron"
         }
-      ]
+      ],
+      "order": "0-0189"
     },
     "circuit-network": {
       "id": "circuit-network",
@@ -25562,7 +25752,8 @@
           "type": "unlock-recipe",
           "recipe": "iron-stick"
         }
-      ]
+      ],
+      "order": "0-0190"
     },
     "advanced-combinators": {
       "id": "advanced-combinators",
@@ -25607,7 +25798,8 @@
           "type": "unlock-recipe",
           "recipe": "selector-combinator"
         }
-      ]
+      ],
+      "order": "0-0191"
     },
     "space-platform": {
       "id": "space-platform",
@@ -25655,7 +25847,8 @@
           "type": "unlock-recipe",
           "recipe": "cargo-bay"
         }
-      ]
+      ],
+      "order": "1-0000"
     },
     "electric-weapons-damage-1": {
       "id": "electric-weapons-damage-1",
@@ -25707,7 +25900,8 @@
           "type": "ammo-damage",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "1-0001"
     },
     "electric-weapons-damage-2": {
       "id": "electric-weapons-damage-2",
@@ -25765,7 +25959,8 @@
           "type": "ammo-damage",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "1-0002"
     },
     "electric-weapons-damage-3": {
       "id": "electric-weapons-damage-3",
@@ -25836,7 +26031,8 @@
           "type": "ammo-damage",
           "modifier": 0.6
         }
-      ]
+      ],
+      "order": "1-0003"
     },
     "electric-weapons-damage-4": {
       "id": "electric-weapons-damage-4",
@@ -25906,7 +26102,8 @@
           "type": "ammo-damage",
           "modifier": 0.3
         }
-      ]
+      ],
+      "order": "1-0004"
     },
     "artillery-shell-damage-1": {
       "id": "artillery-shell-damage-1",
@@ -25968,7 +26165,8 @@
           "type": "ammo-damage",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "1-0005"
     },
     "railgun-shooting-speed-1": {
       "id": "railgun-shooting-speed-1",
@@ -26035,7 +26233,8 @@
           "type": "gun-speed",
           "modifier": 0.15
         }
-      ]
+      ],
+      "order": "1-0006"
     },
     "railgun-damage-1": {
       "id": "railgun-damage-1",
@@ -26102,7 +26301,8 @@
           "type": "ammo-damage",
           "modifier": 0.4
         }
-      ]
+      ],
+      "order": "1-0007"
     },
     "space-platform-thruster": {
       "id": "space-platform-thruster",
@@ -26166,7 +26366,8 @@
           "type": "unlock-recipe",
           "recipe": "thruster-oxidizer"
         }
-      ]
+      ],
+      "order": "1-0008"
     },
     "planet-discovery-vulcanus": {
       "id": "planet-discovery-vulcanus",
@@ -26212,7 +26413,8 @@
         {
           "type": "unlock-space-location"
         }
-      ]
+      ],
+      "order": "1-0009"
     },
     "planet-discovery-gleba": {
       "id": "planet-discovery-gleba",
@@ -26259,7 +26461,8 @@
         {
           "type": "unlock-space-location"
         }
-      ]
+      ],
+      "order": "1-0010"
     },
     "planet-discovery-fulgora": {
       "id": "planet-discovery-fulgora",
@@ -26312,7 +26515,8 @@
           "type": "unlock-recipe",
           "recipe": "lightning-rod"
         }
-      ]
+      ],
+      "order": "1-0011"
     },
     "planet-discovery-aquilo": {
       "id": "planet-discovery-aquilo",
@@ -26408,7 +26612,8 @@
           "type": "unlock-recipe",
           "recipe": "ice-platform"
         }
-      ]
+      ],
+      "order": "1-0012"
     },
     "worker-robots-speed-7": {
       "id": "worker-robots-speed-7",
@@ -26471,7 +26676,8 @@
           "type": "worker-robot-speed",
           "modifier": 0.65
         }
-      ]
+      ],
+      "order": "1-0013"
     },
     "battery-mk3-equipment": {
       "id": "battery-mk3-equipment",
@@ -26531,7 +26737,8 @@
           "type": "unlock-recipe",
           "recipe": "battery-mk3-equipment"
         }
-      ]
+      ],
+      "order": "1-0014"
     },
     "rocket-turret": {
       "id": "rocket-turret",
@@ -26597,7 +26804,8 @@
           "type": "unlock-recipe",
           "recipe": "coal-synthesis"
         }
-      ]
+      ],
+      "order": "1-0015"
     },
     "toolbelt-equipment": {
       "id": "toolbelt-equipment",
@@ -26653,7 +26861,8 @@
           "type": "unlock-recipe",
           "recipe": "toolbelt-equipment"
         }
-      ]
+      ],
+      "order": "1-0016"
     },
     "calcite-processing": {
       "id": "calcite-processing",
@@ -26686,7 +26895,8 @@
           "type": "unlock-recipe",
           "recipe": "simple-coal-liquefaction"
         }
-      ]
+      ],
+      "order": "1-0017"
     },
     "tungsten-carbide": {
       "id": "tungsten-carbide",
@@ -26714,7 +26924,8 @@
           "type": "unlock-recipe",
           "recipe": "tungsten-carbide"
         }
-      ]
+      ],
+      "order": "1-0018"
     },
     "big-mining-drill": {
       "id": "big-mining-drill",
@@ -26738,7 +26949,8 @@
           "type": "unlock-recipe",
           "recipe": "big-mining-drill"
         }
-      ]
+      ],
+      "order": "1-0019"
     },
     "foundry": {
       "id": "foundry",
@@ -26832,7 +27044,8 @@
           "type": "unlock-recipe",
           "recipe": "casting-copper-cable"
         }
-      ]
+      ],
+      "order": "1-0020"
     },
     "tungsten-steel": {
       "id": "tungsten-steel",
@@ -26855,7 +27068,8 @@
           "type": "unlock-recipe",
           "recipe": "tungsten-plate"
         }
-      ]
+      ],
+      "order": "1-0021"
     },
     "turbo-transport-belt": {
       "id": "turbo-transport-belt",
@@ -26925,7 +27139,8 @@
           "type": "unlock-recipe",
           "recipe": "turbo-splitter"
         }
-      ]
+      ],
+      "order": "1-0022"
     },
     "metallurgic-science-pack": {
       "id": "metallurgic-science-pack",
@@ -26948,7 +27163,8 @@
           "type": "unlock-recipe",
           "recipe": "metallurgic-science-pack"
         }
-      ]
+      ],
+      "order": "1-0023"
     },
     "railgun": {
       "id": "railgun",
@@ -27037,7 +27253,8 @@
           "type": "unlock-recipe",
           "recipe": "railgun-ammo"
         }
-      ]
+      ],
+      "order": "1-0024"
     },
     "mech-armor": {
       "id": "mech-armor",
@@ -27102,7 +27319,8 @@
           "type": "unlock-recipe",
           "recipe": "mech-armor"
         }
-      ]
+      ],
+      "order": "1-0025"
     },
     "agriculture": {
       "id": "agriculture",
@@ -27130,7 +27348,8 @@
           "type": "unlock-recipe",
           "recipe": "nutrients-from-spoilage"
         }
-      ]
+      ],
+      "order": "1-0026"
     },
     "yumako": {
       "id": "yumako",
@@ -27158,7 +27377,8 @@
           "type": "unlock-recipe",
           "recipe": "copper-bacteria"
         }
-      ]
+      ],
+      "order": "1-0027"
     },
     "biochamber": {
       "id": "biochamber",
@@ -27197,7 +27417,8 @@
           "type": "unlock-recipe",
           "recipe": "pentapod-egg"
         }
-      ]
+      ],
+      "order": "1-0028"
     },
     "jellynut": {
       "id": "jellynut",
@@ -27225,7 +27446,8 @@
           "type": "unlock-recipe",
           "recipe": "iron-bacteria"
         }
-      ]
+      ],
+      "order": "1-0029"
     },
     "bioflux": {
       "id": "bioflux",
@@ -27253,7 +27475,8 @@
           "type": "unlock-recipe",
           "recipe": "nutrients-from-bioflux"
         }
-      ]
+      ],
+      "order": "1-0030"
     },
     "artificial-soil": {
       "id": "artificial-soil",
@@ -27282,7 +27505,8 @@
           "type": "unlock-recipe",
           "recipe": "artificial-jellynut-soil"
         }
-      ]
+      ],
+      "order": "1-0031"
     },
     "bacteria-cultivation": {
       "id": "bacteria-cultivation",
@@ -27310,7 +27534,8 @@
           "type": "unlock-recipe",
           "recipe": "iron-bacteria-cultivation"
         }
-      ]
+      ],
+      "order": "1-0032"
     },
     "bioflux-processing": {
       "id": "bioflux-processing",
@@ -27348,7 +27573,8 @@
           "type": "unlock-recipe",
           "recipe": "biolubricant"
         }
-      ]
+      ],
+      "order": "1-0033"
     },
     "agricultural-science-pack": {
       "id": "agricultural-science-pack",
@@ -27373,7 +27599,8 @@
           "type": "unlock-recipe",
           "recipe": "agricultural-science-pack"
         }
-      ]
+      ],
+      "order": "1-0034"
     },
     "tree-seeding": {
       "id": "tree-seeding",
@@ -27427,7 +27654,8 @@
           "type": "unlock-recipe",
           "recipe": "wood-processing"
         }
-      ]
+      ],
+      "order": "1-0035"
     },
     "stack-inserter": {
       "id": "stack-inserter",
@@ -27498,7 +27726,8 @@
           "type": "belt-stack-size-bonus",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "1-0036"
     },
     "transport-belt-capacity-1": {
       "id": "transport-belt-capacity-1",
@@ -27560,7 +27789,8 @@
           "type": "belt-stack-size-bonus",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "1-0037"
     },
     "transport-belt-capacity-2": {
       "id": "transport-belt-capacity-2",
@@ -27626,7 +27856,8 @@
           "type": "inserter-stack-size-bonus",
           "modifier": 1
         }
-      ]
+      ],
+      "order": "1-0038"
     },
     "captivity": {
       "id": "captivity",
@@ -27697,7 +27928,8 @@
           "type": "unlock-recipe",
           "recipe": "nutrients-from-biter-egg"
         }
-      ]
+      ],
+      "order": "1-0039"
     },
     "biolab": {
       "id": "biolab",
@@ -27769,7 +28001,8 @@
           "type": "unlock-recipe",
           "recipe": "biolab"
         }
-      ]
+      ],
+      "order": "1-0040"
     },
     "biter-egg-handling": {
       "id": "biter-egg-handling",
@@ -27785,7 +28018,8 @@
       ],
       "unlocks_recipes": [],
       "cost": null,
-      "effects": []
+      "effects": [],
+      "order": "1-0041"
     },
     "overgrowth-soil": {
       "id": "overgrowth-soil",
@@ -27856,7 +28090,8 @@
           "type": "unlock-recipe",
           "recipe": "overgrowth-jellynut-soil"
         }
-      ]
+      ],
+      "order": "1-0042"
     },
     "carbon-fiber": {
       "id": "carbon-fiber",
@@ -27910,7 +28145,8 @@
           "type": "unlock-recipe",
           "recipe": "carbon-fiber"
         }
-      ]
+      ],
+      "order": "1-0043"
     },
     "health": {
       "id": "health",
@@ -27954,7 +28190,8 @@
           "type": "character-health-bonus",
           "modifier": 50
         }
-      ]
+      ],
+      "order": "1-0044"
     },
     "fish-breeding": {
       "id": "fish-breeding",
@@ -27998,7 +28235,8 @@
           "type": "unlock-recipe",
           "recipe": "nutrients-from-fish"
         }
-      ]
+      ],
+      "order": "1-0045"
     },
     "holmium-processing": {
       "id": "holmium-processing",
@@ -28026,7 +28264,8 @@
           "type": "unlock-recipe",
           "recipe": "holmium-plate"
         }
-      ]
+      ],
+      "order": "1-0046"
     },
     "electromagnetic-plant": {
       "id": "electromagnetic-plant",
@@ -28064,7 +28303,8 @@
           "type": "unlock-recipe",
           "recipe": "electrolyte"
         }
-      ]
+      ],
+      "order": "1-0047"
     },
     "electromagnetic-science-pack": {
       "id": "electromagnetic-science-pack",
@@ -28087,7 +28327,8 @@
           "type": "unlock-recipe",
           "recipe": "electromagnetic-science-pack"
         }
-      ]
+      ],
+      "order": "1-0048"
     },
     "lightning-collector": {
       "id": "lightning-collector",
@@ -28141,7 +28382,8 @@
           "type": "unlock-recipe",
           "recipe": "lightning-collector"
         }
-      ]
+      ],
+      "order": "1-0049"
     },
     "rail-support-foundations": {
       "id": "rail-support-foundations",
@@ -28210,7 +28452,8 @@
         {
           "type": "rail-support-on-deep-oil-ocean"
         }
-      ]
+      ],
+      "order": "1-0050"
     },
     "tesla-weapons": {
       "id": "tesla-weapons",
@@ -28285,7 +28528,8 @@
           "type": "unlock-recipe",
           "recipe": "tesla-ammo"
         }
-      ]
+      ],
+      "order": "1-0051"
     },
     "heating-tower": {
       "id": "heating-tower",
@@ -28323,7 +28567,8 @@
           "type": "unlock-recipe",
           "recipe": "steam-turbine"
         }
-      ]
+      ],
+      "order": "1-0052"
     },
     "lithium-processing": {
       "id": "lithium-processing",
@@ -28351,7 +28596,8 @@
           "type": "unlock-recipe",
           "recipe": "lithium-plate"
         }
-      ]
+      ],
+      "order": "1-0053"
     },
     "cryogenic-plant": {
       "id": "cryogenic-plant",
@@ -28384,7 +28630,8 @@
           "type": "unlock-recipe",
           "recipe": "fluoroketone-cooling"
         }
-      ]
+      ],
+      "order": "1-0054"
     },
     "asteroid-reprocessing": {
       "id": "asteroid-reprocessing",
@@ -28448,7 +28695,8 @@
           "type": "unlock-recipe",
           "recipe": "carbonic-asteroid-reprocessing"
         }
-      ]
+      ],
+      "order": "1-0055"
     },
     "advanced-asteroid-processing": {
       "id": "advanced-asteroid-processing",
@@ -28534,7 +28782,8 @@
           "type": "unlock-recipe",
           "recipe": "advanced-thruster-oxidizer"
         }
-      ]
+      ],
+      "order": "1-0056"
     },
     "quantum-processor": {
       "id": "quantum-processor",
@@ -28613,7 +28862,8 @@
           "type": "unlock-recipe",
           "recipe": "quantum-processor"
         }
-      ]
+      ],
+      "order": "1-0057"
     },
     "cryogenic-science-pack": {
       "id": "cryogenic-science-pack",
@@ -28636,7 +28886,8 @@
           "type": "unlock-recipe",
           "recipe": "cryogenic-science-pack"
         }
-      ]
+      ],
+      "order": "1-0058"
     },
     "fusion-reactor": {
       "id": "fusion-reactor",
@@ -28725,7 +28976,8 @@
           "type": "unlock-recipe",
           "recipe": "fusion-power-cell"
         }
-      ]
+      ],
+      "order": "1-0059"
     },
     "fusion-reactor-equipment": {
       "id": "fusion-reactor-equipment",
@@ -28805,7 +29057,8 @@
           "type": "unlock-recipe",
           "recipe": "fusion-reactor-equipment"
         }
-      ]
+      ],
+      "order": "1-0060"
     },
     "captive-biter-spawner": {
       "id": "captive-biter-spawner",
@@ -28891,7 +29144,8 @@
           "type": "unlock-recipe",
           "recipe": "captive-biter-spawner"
         }
-      ]
+      ],
+      "order": "1-0061"
     },
     "promethium-science-pack": {
       "id": "promethium-science-pack",
@@ -28977,7 +29231,8 @@
           "type": "unlock-recipe",
           "recipe": "promethium-science-pack"
         }
-      ]
+      ],
+      "order": "1-0062"
     },
     "foundation": {
       "id": "foundation",
@@ -29056,7 +29311,8 @@
           "type": "unlock-recipe",
           "recipe": "foundation"
         }
-      ]
+      ],
+      "order": "1-0063"
     },
     "asteroid-productivity": {
       "id": "asteroid-productivity",
@@ -29132,7 +29388,8 @@
         {
           "type": "change-recipe-productivity"
         }
-      ]
+      ],
+      "order": "1-0064"
     },
     "research-productivity": {
       "id": "research-productivity",
@@ -29219,7 +29476,8 @@
           "type": "laboratory-productivity",
           "modifier": 0.1
         }
-      ]
+      ],
+      "order": "1-0065"
     },
     "processing-unit-productivity": {
       "id": "processing-unit-productivity",
@@ -29271,7 +29529,8 @@
         {
           "type": "change-recipe-productivity"
         }
-      ]
+      ],
+      "order": "1-0066"
     },
     "scrap-recycling-productivity": {
       "id": "scrap-recycling-productivity",
@@ -29323,7 +29582,8 @@
         {
           "type": "change-recipe-productivity"
         }
-      ]
+      ],
+      "order": "1-0067"
     },
     "steel-plate-productivity": {
       "id": "steel-plate-productivity",
@@ -29372,7 +29632,8 @@
         {
           "type": "change-recipe-productivity"
         }
-      ]
+      ],
+      "order": "1-0068"
     },
     "low-density-structure-productivity": {
       "id": "low-density-structure-productivity",
@@ -29427,7 +29688,8 @@
         {
           "type": "change-recipe-productivity"
         }
-      ]
+      ],
+      "order": "1-0069"
     },
     "plastic-bar-productivity": {
       "id": "plastic-bar-productivity",
@@ -29482,7 +29744,8 @@
         {
           "type": "change-recipe-productivity"
         }
-      ]
+      ],
+      "order": "1-0070"
     },
     "rocket-fuel-productivity": {
       "id": "rocket-fuel-productivity",
@@ -29540,7 +29803,8 @@
         {
           "type": "change-recipe-productivity"
         }
-      ]
+      ],
+      "order": "1-0071"
     },
     "rocket-part-productivity": {
       "id": "rocket-part-productivity",
@@ -29591,7 +29855,8 @@
         {
           "type": "change-recipe-productivity"
         }
-      ]
+      ],
+      "order": "1-0072"
     },
     "quality-module": {
       "id": "quality-module",
@@ -29636,7 +29901,8 @@
         {
           "type": "unlock-quality"
         }
-      ]
+      ],
+      "order": "2-0000"
     },
     "quality-module-2": {
       "id": "quality-module-2",
@@ -29681,7 +29947,8 @@
           "type": "unlock-recipe",
           "recipe": "quality-module-2"
         }
-      ]
+      ],
+      "order": "2-0001"
     },
     "quality-module-3": {
       "id": "quality-module-3",
@@ -29731,7 +29998,8 @@
           "type": "unlock-recipe",
           "recipe": "quality-module-3"
         }
-      ]
+      ],
+      "order": "2-0002"
     },
     "epic-quality": {
       "id": "epic-quality",
@@ -29784,7 +30052,8 @@
         {
           "type": "unlock-quality"
         }
-      ]
+      ],
+      "order": "2-0003"
     },
     "legendary-quality": {
       "id": "legendary-quality",
@@ -29841,7 +30110,8 @@
         {
           "type": "unlock-quality"
         }
-      ]
+      ],
+      "order": "2-0004"
     },
     "recycling": {
       "id": "recycling",
@@ -29892,7 +30162,8 @@
           "type": "unlock-recipe",
           "recipe": "recycler"
         }
-      ]
+      ],
+      "order": "2-0005"
     }
   },
   "modules": {
