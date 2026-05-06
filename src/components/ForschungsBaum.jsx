@@ -54,9 +54,9 @@ class BaumFehlerGrenze extends Component {
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
-const KARTE_B     = 304;
-const KARTE_H     = 124;
-const KARTE_H_LVL = 145;
+const KARTE_B     = 395;
+const KARTE_H     = 161;
+const KARTE_H_LVL = 189;
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -269,12 +269,12 @@ const TechNode = memo(({ data }) => {
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
-      <Icon id={tech.id} type="technologies" size={67} />
+      <Icon id={tech.id} type="technologies" size={87} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div
           title={tech.name[sprache] ?? tech.name.de}
           style={{
-            fontSize: 15,
+            fontSize: 20,
             fontWeight: 600,
             color: '#e8d8b0',
             lineHeight: 1.2,
@@ -290,14 +290,14 @@ const TechNode = memo(({ data }) => {
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
           {costEntries.map(([pack, count]) => (
             <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={25} />
-              <span style={{ fontSize: 14, color: '#8a8278' }}>×{count}</span>
+              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={33} />
+              <span style={{ fontSize: 18, color: '#8a8278' }}>×{count}</span>
             </span>
           ))}
           {techTime != null && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-              <span style={{ fontSize: 14, color: '#706860' }}>⏱</span>
-              <span style={{ fontSize: 14, color: '#706860' }}>{techTime}s</span>
+              <span style={{ fontSize: 18, color: '#706860' }}>⏱</span>
+              <span style={{ fontSize: 18, color: '#706860' }}>{techTime}s</span>
             </span>
           )}
         </div>
@@ -344,7 +344,7 @@ const LevelNode = memo(({ data }) => {
     border: '1px solid #5a5a5a',
     borderRadius: 3,
     color: '#c8b898',
-    fontSize: 14,
+    fontSize: 18,
     lineHeight: 1,
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.4 : 1,
@@ -388,12 +388,12 @@ const LevelNode = memo(({ data }) => {
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
-      <Icon id={techId} type="technologies" size={67} />
+      <Icon id={techId} type="technologies" size={87} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div
           title={name}
           style={{
-            fontSize: 15,
+            fontSize: 20,
             fontWeight: 600,
             color: '#e8d8b0',
             lineHeight: 1.2,
@@ -409,14 +409,14 @@ const LevelNode = memo(({ data }) => {
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
           {costEntries.map(([pack, count]) => (
             <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={25} />
-              <span style={{ fontSize: 14, color: '#8a8278' }}>×{count}</span>
+              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={33} />
+              <span style={{ fontSize: 18, color: '#8a8278' }}>×{count}</span>
             </span>
           ))}
           {techTime != null && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-              <span style={{ fontSize: 14, color: '#706860' }}>⏱</span>
-              <span style={{ fontSize: 14, color: '#706860' }}>{techTime}s</span>
+              <span style={{ fontSize: 18, color: '#706860' }}>⏱</span>
+              <span style={{ fontSize: 18, color: '#706860' }}>{techTime}s</span>
             </span>
           )}
         </div>
@@ -428,7 +428,7 @@ const LevelNode = memo(({ data }) => {
             style={btnStyle(aktuellesLevel === 0)}
           >−</button>
           <span style={{
-            fontSize: 15,
+            fontSize: 20,
             color: aktiv ? '#f0b070' : '#706860',
             flex: 1,
             textAlign: 'center',
