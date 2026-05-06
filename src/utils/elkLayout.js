@@ -8,8 +8,8 @@ export async function berechneElkLayout(nodes, edges, nodeWidth, nodeHeight) {
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '40',
-      'elk.spacing.nodeNode': '8',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '48',
+      'elk.spacing.nodeNode': '10',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
