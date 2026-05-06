@@ -54,9 +54,9 @@ class BaumFehlerGrenze extends Component {
 const IMMER_SICHTBAR = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 // ── Layout-Konstanten ─────────────────────────────────────────────────────────
-const KARTE_B     = 400;
-const KARTE_H     = 200;
-const KARTE_H_LVL = 230;
+const KARTE_B     = 240;
+const KARTE_H     = 100;
+const KARTE_H_LVL = 120;
 
 // Science-Pack Kurzschlüssel → vollständige Item-ID (für Icon-Komponente)
 const PACK_KEY_TO_ITEM_ID = {
@@ -246,13 +246,17 @@ const TechNode = memo(({ data }) => {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={istImPfad && !istZiel ? 'pfad-puls' : undefined}
-      style={{
-        width: KARTE_B,
-        height: KARTE_H,
+      style={{ position: 'relative', width: KARTE_B, height: KARTE_H, userSelect: 'none', pointerEvents: 'all' }}
+    >
+      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
+      <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
+      <div style={{
+        position: 'absolute', inset: 0,
         background: hovered && !dimmed ? '#2a2a2a' : '#1e1e1e',
         border: `2px solid ${hovered && !dimmed ? hoverBorder(borderColor) : borderColor}`,
         borderRadius: 6,
-        padding: 10,
+        padding: 8,
         opacity: dimmed ? 0.15 : 1,
         cursor: pfadPlanModus && !istErforscht ? 'crosshair' : 'pointer',
         display: 'flex',
@@ -261,48 +265,43 @@ const TechNode = memo(({ data }) => {
         boxSizing: 'border-box',
         boxShadow: istErforscht ? '0 0 12px rgba(93,191,60,0.3)' : 'none',
         transition: 'background 0.12s, border-color 0.12s, opacity 0.2s',
-        userSelect: 'none',
-        pointerEvents: 'all',
-        position: 'relative',
         overflow: 'hidden',
-      }}
-    >
-      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
-      <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
-      <Icon id={tech.id} type="technologies" size={48} />
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div
-          title={tech.name[sprache] ?? tech.name.de}
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: '#e8d8b0',
-            lineHeight: 1.2,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            whiteSpace: 'normal',
-          }}
-        >
-          {tech.name[sprache] ?? tech.name.de}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
-          {costEntries.map(([pack, count]) => (
-            <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={16} />
-              <span style={{ fontSize: 10, color: '#8a8278' }}>×{count}</span>
-            </span>
-          ))}
-          {techTime != null && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-              <span style={{ fontSize: 10, color: '#706860' }}>⏱</span>
-              <span style={{ fontSize: 10, color: '#706860' }}>{techTime}s</span>
-            </span>
-          )}
+      }}>
+        <Icon id={tech.id} type="technologies" size={40} />
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div
+            title={tech.name[sprache] ?? tech.name.de}
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#e8d8b0',
+              lineHeight: 1.2,
+              maxHeight: 28,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              whiteSpace: 'normal',
+            }}
+          >
+            {tech.name[sprache] ?? tech.name.de}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            {costEntries.map(([pack, count]) => (
+              <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={14} />
+                <span style={{ fontSize: 9, color: '#8a8278' }}>×{count}</span>
+              </span>
+            ))}
+            {techTime != null && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
+                <span style={{ fontSize: 9, color: '#706860' }}>⏱</span>
+                <span style={{ fontSize: 9, color: '#706860' }}>{techTime}s</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
-      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
       {hovered && !dimmed && <TechTooltip tech={tech} sprache={sprache} />}
     </div>
   );
@@ -338,13 +337,13 @@ const LevelNode = memo(({ data }) => {
   const techTime    = gamedata.technologies[gruppe.ids[0]]?.cost?.time;
 
   const btnStyle = (disabled) => ({
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     background: '#363636',
     border: '1px solid #5a5a5a',
     borderRadius: 3,
     color: '#c8b898',
-    fontSize: 14,
+    fontSize: 12,
     lineHeight: 1,
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.4 : 1,
@@ -365,13 +364,17 @@ const LevelNode = memo(({ data }) => {
     <div
       onClick={handleCardClick}
       className={istImPfad && !istZiel ? 'pfad-puls' : undefined}
-      style={{
-        width: KARTE_B,
-        height: KARTE_H_LVL,
+      style={{ position: 'relative', width: KARTE_B, height: KARTE_H_LVL, userSelect: 'none', pointerEvents: 'all' }}
+    >
+      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
+      <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
+      <div style={{
+        position: 'absolute', inset: 0,
         background: '#1e1e1e',
         border: `2px solid ${borderColor}`,
         borderRadius: 6,
-        padding: 10,
+        padding: 8,
         opacity: dimmed ? 0.15 : 1,
         cursor: pfadPlanModus && aktuellesLevel === 0 ? 'crosshair' : 'default',
         display: 'flex',
@@ -380,71 +383,66 @@ const LevelNode = memo(({ data }) => {
         boxSizing: 'border-box',
         boxShadow: aktiv ? '0 0 12px rgba(93,191,60,0.3)' : 'none',
         transition: 'opacity 0.2s',
-        userSelect: 'none',
-        pointerEvents: 'all',
-        position: 'relative',
         overflow: 'hidden',
-      }}
-    >
-      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
-      <PfadBadge nummer={pfadNummer} istZiel={istZiel} istVoraussetzung={istPfadVoraussetzung} />
-      <Icon id={techId} type="technologies" size={48} />
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div
-          title={name}
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: '#e8d8b0',
-            lineHeight: 1.2,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            whiteSpace: 'normal',
-          }}
-        >
-          {name}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
-          {costEntries.map(([pack, count]) => (
-            <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-              <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={16} />
-              <span style={{ fontSize: 10, color: '#8a8278' }}>×{count}</span>
+      }}>
+        <Icon id={techId} type="technologies" size={40} />
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div
+            title={name}
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#e8d8b0',
+              lineHeight: 1.2,
+              maxHeight: 28,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              whiteSpace: 'normal',
+            }}
+          >
+            {name}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            {costEntries.map(([pack, count]) => (
+              <span key={pack} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                <Icon id={PACK_KEY_TO_ITEM_ID[pack] ?? pack} type="items" size={14} />
+                <span style={{ fontSize: 9, color: '#8a8278' }}>×{count}</span>
+              </span>
+            ))}
+            {techTime != null && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
+                <span style={{ fontSize: 9, color: '#706860' }}>⏱</span>
+                <span style={{ fontSize: 9, color: '#706860' }}>{techTime}s</span>
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, Math.max(0, aktuellesLevel - 1)); }}
+              disabled={aktuellesLevel === 0}
+              style={btnStyle(aktuellesLevel === 0)}
+            >−</button>
+            <span style={{
+              fontSize: 11,
+              color: aktiv ? '#f0b070' : '#706860',
+              flex: 1,
+              textAlign: 'center',
+              fontWeight: 600,
+            }}>
+              {sprache === 'de' ? `Stufe ${aktuellesLevel}` : `Lvl ${aktuellesLevel}`} / {maxDisplay}
             </span>
-          ))}
-          {techTime != null && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-              <span style={{ fontSize: 10, color: '#706860' }}>⏱</span>
-              <span style={{ fontSize: 10, color: '#706860' }}>{techTime}s</span>
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button
-            onMouseDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, Math.max(0, aktuellesLevel - 1)); }}
-            disabled={aktuellesLevel === 0}
-            style={btnStyle(aktuellesLevel === 0)}
-          >−</button>
-          <span style={{
-            fontSize: 11,
-            color: aktiv ? '#f0b070' : '#706860',
-            flex: 1,
-            textAlign: 'center',
-            fontWeight: 600,
-          }}>
-            {sprache === 'de' ? `Stufe ${aktuellesLevel}` : `Lvl ${aktuellesLevel}`} / {maxDisplay}
-          </span>
-          <button
-            onMouseDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, aktuellesLevel + 1); }}
-            disabled={!isInfinite && aktuellesLevel >= maxDiscrete}
-            style={btnStyle(!isInfinite && aktuellesLevel >= maxDiscrete)}
-          >+</button>
+            <button
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); onSetzeLevel(gruppe, aktuellesLevel + 1); }}
+              disabled={!isInfinite && aktuellesLevel >= maxDiscrete}
+              style={btnStyle(!isInfinite && aktuellesLevel >= maxDiscrete)}
+            >+</button>
+          </div>
         </div>
       </div>
-      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
 });
