@@ -9,6 +9,7 @@ import { ABSTRACT_TO_MACHINE_ID } from '../data/gamedata-adapter';
 import { useForschung } from '../context/ForschungContext';
 import { useSprache } from '../context/SprachContext';
 import { useModul } from '../context/ModulContext';
+import { useEinstellungen } from '../context/EinstellungenContext';
 import { useQuality } from '../context/QualityContext';
 import { BELT_FARBE } from '../data/belts';
 import { formatQualityFaktor } from '../data/quality';
@@ -125,6 +126,7 @@ const T = {
     spalteSek:         '/ Sek',
     spalteBaender:     'Förderbänder',
     spalteWagons:      'Wagons/Min',
+    proStd:            '/ Std',
     spaltePollution:   'Pollution/Min',
     pollutionTooltip:  'Verschmutzung zieht Beißer an — je höher, desto häufiger Angriffe',
     gesamtPollution:   'Gesamt-Verschmutzung',
@@ -175,6 +177,7 @@ const T = {
     spalteSek:         '/ Sec',
     spalteBaender:     'Belts',
     spalteWagons:      'Wagons/Min',
+    proStd:            '/ Hr',
     spaltePollution:   'Pollution/Min',
     pollutionTooltip:  'Pollution attracts biters — the higher it is, the more frequent the attacks',
     gesamtPollution:   'Total Pollution',
@@ -442,7 +445,7 @@ function Abschnitt({
   beaconConfigs = {}, onBeaconConfigChange = null,
   bottleneckId = null, diffMap = null,
   onToggleItem = null, toggleTipOn = '', toggleTipOff = '',
-  spalten = DEFAULT_SPALTEN,
+  spalten = DEFAULT_SPALTEN, einheitLabel = null,
 }) {
   if (eintraege.length === 0) return null;
   const zeigeBaender   = !!(spalten.zeigeBaender) && eintraege.some(e => e.baender !== null);
@@ -461,7 +464,7 @@ function Abschnitt({
           <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
             <tr>
               <th className="px-4 py-3">{tx.produkt}</th>
-              <th className="px-4 py-3 text-right">{tx.proMin}</th>
+              <th className="px-4 py-3 text-right">{einheitLabel ?? tx.proMin}</th>
               {zeigeSek && (
                 <th className="px-4 py-3 text-right">{tx.proSek}</th>
               )}
@@ -515,7 +518,7 @@ function Abschnitt({
                       )}
                     </td>
                     <td className="px-4 py-2 text-right text-green-400 whitespace-nowrap">
-                      {e.rateProMin.toFixed(2)}
+                      {(e.rateProEinheit ?? e.rateProMin).toFixed(2)}
                       {e.prodPfeil && (
                         <span
                           className="ml-0.5 text-green-500/60 text-xs"
@@ -696,8 +699,12 @@ export default function ErgebnisTabelle({
   const { boni }           = useForschung();
   const { sprache }        = useSprache();
   const { modulBoni }      = useModul();
+  const { einstellungen }  = useEinstellungen();
   const { zielQualitaet, maschinenQualitaet, gesamtQualityChance, qualityFaktorPerMaschine } = useQuality();
   const tx = T[sprache];
+  const anzeigeEinheit = einstellungen.anzeigeEinheit ?? 'min';
+  const einheitMulti   = ({ sek: 1, min: 60, std: 3600 })[anzeigeEinheit] ?? 60;
+  const einheitLabel   = anzeigeEinheit === 'sek' ? tx.proSek : anzeigeEinheit === 'std' ? tx.proStd : tx.proMin;
 
   const [spalten, setSpalten]                     = useState(ladeSpaltenConfig);
   const [spaltenDropdownOffen, setSpaltenDropdownOffen] = useState(false);
@@ -773,7 +780,7 @@ export default function ErgebnisTabelle({
     const displayRate = istZiel ? zielInfo.gewuenschteRateSek : rateProSek;
     const craftingRate = rateProSek;
 
-    const overrideId   = istRohstoff ? null : (maschinenOverrides[id] ?? null);
+    const overrideId   = istRohstoff ? null : (maschinenOverrides[id] ?? einstellungen.defaultMaschinenPerType?.[rezept?.maschine] ?? null);
     const beaconCfg    = istRohstoff ? null : (beaconConfigs[id] ?? null);
     const beaconActive = beaconCfg?.anzahlBeacons > 0;
     const baseAnzahl   = istRohstoff ? null : maschinenAnzahl(id, craftingRate, boni, modulBoni, mQMulti, overrideId, null);
@@ -822,8 +829,9 @@ export default function ErgebnisTabelle({
           : (MASCHINEN_VERSCHMUTZUNG[rezept?.maschine] ?? 0);
         return anzahl * ppm;
       })(),
-      prodBonus: istRohstoff ? 0 : (modulBoni[rezept?.maschine]?.produktivitaet ?? 0),
-      prodPfeil: istRohstoff && hatAktiveProduktivitaet,
+      prodBonus:      istRohstoff ? 0 : (modulBoni[rezept?.maschine]?.produktivitaet ?? 0),
+      prodPfeil:      istRohstoff && hatAktiveProduktivitaet,
+      rateProEinheit: displayRate * einheitMulti,
     };
   });
 
@@ -964,6 +972,7 @@ export default function ErgebnisTabelle({
           toggleTipOn={tx.alsRohstoff}
           toggleTipOff={tx.alsMittelprodukt}
           spalten={spalten}
+          einheitLabel={einheitLabel}
         />
       </div>
 
@@ -981,6 +990,7 @@ export default function ErgebnisTabelle({
         toggleTipOn={tx.alsRohstoff}
         toggleTipOff={tx.alsMittelprodukt}
         spalten={spalten}
+        einheitLabel={einheitLabel}
       />
 
       {stromDaten.gesamtKW > 0 && (

@@ -20,6 +20,8 @@ import { QualityProvider, useQuality } from './context/QualityContext';
 import { BerechnungProvider, useBerechnung } from './context/BerechnungContext';
 import { TooltipProvider } from './context/TooltipContext';
 import ItemTooltip from './components/ItemTooltip';
+import EinstellungenModal from './components/EinstellungenModal';
+import { EinstellungenProvider, useEinstellungen } from './context/EinstellungenContext';
 import { berechneProduktion, maschinenAnzahl, getVerfuegbareRezepte } from './utils/berechnung';
 import { encodePlan, decodePlan } from './utils/planShare';
 import { REZEPTE_MAP } from './data/recipes';
@@ -141,10 +143,11 @@ function ladeInitialItems() {
 }
 
 function RechnerTab({ sprache }) {
+  const { einstellungen }                            = useEinstellungen();
   const [items, setItems]                           = useState(ladeInitialItems);
   const [maschinenOverrides, setMaschinenOverrides] = useState(ladeInitialMaschinenOverrides);
   const [beaconConfigs, setBeaconConfigs]           = useState(ladeInitialBeaconConfigs);
-  const [bandId, setBandId]                         = useState('keins');
+  const [bandId, setBandId]                         = useState(() => einstellungen.standardBandId ?? 'keins');
   const [zeigeModule, setZeigeModule]               = useState(false);
   const [linkKopiert, setLinkKopiert]               = useState(false);
   const [ansicht, setAnsicht] = useState(() => {
@@ -536,7 +539,8 @@ function FabrikPlanerTab({ sprache }) {
 const IMMER_ERFORSCHT_IDS = new Set(['automation-science-pack', 'steam-power', 'military']);
 
 function AppInner() {
-  const [aktuellerTab, setAktuellerTab] = useState('rechner');
+  const [aktuellerTab, setAktuellerTab]         = useState('rechner');
+  const [zeigeEinstellungen, setZeigeEinstellungen] = useState(false);
   const { erforscht } = useForschung();
   const { sprache, setSprache } = useSprache();
   const anzahlErforscht = [...erforscht].filter(id => !IMMER_ERFORSCHT_IDS.has(id)).length;
@@ -552,7 +556,11 @@ function AppInner() {
       <ItemTooltip />
       <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <div className="text-3xl">⚙️</div>
+          <button
+            onClick={() => setZeigeEinstellungen(true)}
+            className="text-3xl hover:opacity-75 transition-opacity cursor-pointer leading-none"
+            title={sprache === 'de' ? 'Einstellungen' : 'Settings'}
+          >⚙️</button>
           <div>
             <h1 className="text-xl font-bold text-amber-400 leading-tight">FactoryPlanner</h1>
             <p className="text-xs text-gray-500">{subtitle}</p>
@@ -650,6 +658,10 @@ function AppInner() {
           </footer>
         )}
       </main>
+
+      {zeigeEinstellungen && (
+        <EinstellungenModal onClose={() => setZeigeEinstellungen(false)} />
+      )}
     </div>
   );
 }
@@ -657,17 +669,19 @@ function AppInner() {
 export default function App() {
   return (
     <SprachProvider>
-      <ForschungProvider>
-        <ModulProvider>
-          <QualityProvider>
-            <BerechnungProvider>
-              <TooltipProvider>
-                <AppInner />
-              </TooltipProvider>
-            </BerechnungProvider>
-          </QualityProvider>
-        </ModulProvider>
-      </ForschungProvider>
+      <EinstellungenProvider>
+        <ForschungProvider>
+          <ModulProvider>
+            <QualityProvider>
+              <BerechnungProvider>
+                <TooltipProvider>
+                  <AppInner />
+                </TooltipProvider>
+              </BerechnungProvider>
+            </QualityProvider>
+          </ModulProvider>
+        </ForschungProvider>
+      </EinstellungenProvider>
     </SprachProvider>
   );
 }

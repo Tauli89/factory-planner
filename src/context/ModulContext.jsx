@@ -1,17 +1,30 @@
 import { createContext, useContext, useState, useMemo } from 'react';
 import { MODULE_MAP } from '../data/modules';
 
+const LS_MODUL = 'factoryplanner_module_v1';
+
 const ModulContext = createContext(null);
 
 export function ModulProvider({ children }) {
   // { [maschinenType]: { modulId: string, anzahl: number } }
-  const [modulConfig, setModulConfig] = useState({});
+  const [modulConfig, setModulConfig] = useState(() => {
+    try {
+      const raw = localStorage.getItem(LS_MODUL);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
 
   const setMaschinenModul = (maschinenType, modulId, anzahl) => {
-    setModulConfig(prev => ({
-      ...prev,
-      [maschinenType]: { modulId, anzahl: Number(anzahl) },
-    }));
+    setModulConfig(prev => {
+      const next = { ...prev, [maschinenType]: { modulId, anzahl: Number(anzahl) } };
+      try { localStorage.setItem(LS_MODUL, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const applyModulConfig = (config) => {
+    setModulConfig(config);
+    try { localStorage.setItem(LS_MODUL, JSON.stringify(config)); } catch {}
   };
 
   // Computed speed/productivity bonuses per machine type
@@ -41,7 +54,7 @@ export function ModulProvider({ children }) {
   }, [modulConfig]);
 
   return (
-    <ModulContext.Provider value={{ modulConfig, setMaschinenModul, modulBoni, qualityBoniPerMaschine }}>
+    <ModulContext.Provider value={{ modulConfig, setMaschinenModul, applyModulConfig, modulBoni, qualityBoniPerMaschine }}>
       {children}
     </ModulContext.Provider>
   );
