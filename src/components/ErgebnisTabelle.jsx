@@ -12,7 +12,7 @@ import { useModul } from '../context/ModulContext';
 import { useQuality } from '../context/QualityContext';
 import { BELT_FARBE } from '../data/belts';
 import { formatQualityFaktor } from '../data/quality';
-import { MASCHINEN_DETAIL_NAME } from '../data/machines';
+import { MASCHINEN_DETAIL_NAME, MASCHINEN_VERSCHMUTZUNG, MACHINE_ID_VERSCHMUTZUNG } from '../data/machines';
 import { ITEM_ICONS, getItemName, istFluid } from '../data/gamedata-adapter';
 import Icon from './Icon';
 
@@ -21,7 +21,7 @@ import Icon from './Icon';
 const DEFAULT_BEACON_CONFIG = { anzahlBeacons: 0, modulTyp: 'speed-module-3', moduleProBeacon: 2 };
 
 const LS_SPALTEN = 'factoryplanner_spalten_v1';
-const DEFAULT_SPALTEN = { zeigeSek: true, zeigeBaender: true, zeigeWagons: false };
+const DEFAULT_SPALTEN = { zeigeSek: true, zeigeBaender: true, zeigeWagons: false, zeigePollution: false };
 
 function ladeSpaltenConfig() {
   try {
@@ -125,6 +125,9 @@ const T = {
     spalteSek:         '/ Sek',
     spalteBaender:     'Förderbänder',
     spalteWagons:      'Wagons/Min',
+    spaltePollution:   'Pollution/Min',
+    pollutionTooltip:  'Verschmutzung zieht Beißer an — je höher, desto häufiger Angriffe',
+    gesamtPollution:   'Gesamt-Verschmutzung',
     analyseTitle:      '🔍 Produktionsanalyse',
     effizienzHinweis:  v => `Produktion läuft auf ${v}% Effizienz`,
     engpass:           'Engpass',
@@ -172,6 +175,9 @@ const T = {
     spalteSek:         '/ Sec',
     spalteBaender:     'Belts',
     spalteWagons:      'Wagons/Min',
+    spaltePollution:   'Pollution/Min',
+    pollutionTooltip:  'Pollution attracts biters — the higher it is, the more frequent the attacks',
+    gesamtPollution:   'Total Pollution',
     analyseTitle:      '🔍 Production Analysis',
     effizienzHinweis:  v => `Production runs at ${v}% efficiency`,
     engpass:           'Bottleneck',
@@ -340,7 +346,7 @@ function QualityBadge({ qualitaet }) {
   );
 }
 
-function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
+function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, sprache, maschinenLabels }) {
   const { perTyp, gesamtMW, solarPanels, dampfmaschinen } = stromDaten;
   const eintraege = Object.entries(perTyp);
 
@@ -409,6 +415,21 @@ function StromverbrauchAbschnitt({ stromDaten, tx, sprache, maschinenLabels }) {
           <span className="text-gray-400">{tx.dampfEmpfehlung}:</span>
           <span className="text-blue-300 font-bold">{dampfmaschinen}</span>
         </div>
+        {gesamtVerschmutzung > 0 && (
+          <>
+            <div className="h-4 border-l border-gray-600 hidden sm:block" />
+            <div
+              className="flex items-center gap-1.5"
+              title={tx.pollutionTooltip}
+            >
+              <span className="text-lime-500">☁</span>
+              <span className="text-gray-400">{tx.gesamtPollution}:</span>
+              <span className="text-lime-300 font-bold tabular-nums">
+                {gesamtVerschmutzung.toFixed(1)}/min
+              </span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -424,10 +445,11 @@ function Abschnitt({
   spalten = DEFAULT_SPALTEN,
 }) {
   if (eintraege.length === 0) return null;
-  const zeigeBaender = !!(spalten.zeigeBaender) && eintraege.some(e => e.baender !== null);
-  const zeigeSek     = !!(spalten.zeigeSek);
-  const zeigeWagons  = !!(spalten.zeigeWagons);
-  const zeigeBeacon  = zeigeMaschine && !!onBeaconConfigChange;
+  const zeigeBaender   = !!(spalten.zeigeBaender) && eintraege.some(e => e.baender !== null);
+  const zeigeSek       = !!(spalten.zeigeSek);
+  const zeigeWagons    = !!(spalten.zeigeWagons);
+  const zeigePollution = !!(spalten.zeigePollution) && zeigeMaschine;
+  const zeigeBeacon    = zeigeMaschine && !!onBeaconConfigChange;
   const zeigeToggle  = !!onToggleItem;
   const [openBeaconId, setOpenBeaconId] = useState(null);
 
@@ -448,6 +470,11 @@ function Abschnitt({
               )}
               {zeigeWagons && (
                 <th className="px-4 py-3 text-right text-amber-500/70">{tx.spalteWagons}</th>
+              )}
+              {zeigePollution && (
+                <th className="px-4 py-3 text-right text-lime-600/80" title={tx.pollutionTooltip}>
+                  {tx.spaltePollution}
+                </th>
               )}
               {zeigeMaschine && (
                 <th className="px-4 py-3 text-right hidden md:table-cell">{tx.maschine}</th>
@@ -507,6 +534,14 @@ function Abschnitt({
                     {zeigeWagons && (
                       <td className={`px-4 py-2 text-right font-bold tabular-nums ${e.wagons.istFluid ? 'text-cyan-300' : 'text-amber-300'}`}>
                         {e.wagons.anzahl}
+                      </td>
+                    )}
+                    {zeigePollution && (
+                      <td
+                        className="px-4 py-2 text-right tabular-nums text-lime-400"
+                        title={tx.pollutionTooltip}
+                      >
+                        {e.pollutionProMin > 0 ? e.pollutionProMin.toFixed(1) : '—'}
                       </td>
                     )}
                     {zeigeMaschine && (
@@ -780,6 +815,13 @@ export default function ErgebnisTabelle({
       defaultMaschinenId,
       baender,
       wagons,
+      pollutionProMin: (() => {
+        if (istRohstoff || anzahl === null) return 0;
+        const ppm = overrideId
+          ? (MACHINE_ID_VERSCHMUTZUNG[overrideId] ?? MASCHINEN_VERSCHMUTZUNG[rezept?.maschine] ?? 0)
+          : (MASCHINEN_VERSCHMUTZUNG[rezept?.maschine] ?? 0);
+        return anzahl * ppm;
+      })(),
       prodBonus: istRohstoff ? 0 : (modulBoni[rezept?.maschine]?.produktivitaet ?? 0),
       prodPfeil: istRohstoff && hatAktiveProduktivitaet,
     };
@@ -787,6 +829,7 @@ export default function ErgebnisTabelle({
 
   const herstellung = eintraege.filter(e => !e.istRohstoff);
   const rohstoffe   = eintraege.filter(e =>  e.istRohstoff);
+  const gesamtVerschmutzung = herstellung.reduce((s, e) => s + e.pollutionProMin, 0);
 
   // Analysis (computed inline — only runs when eintraege changes)
   const analyseData = herstellung.length > 0
@@ -877,9 +920,10 @@ export default function ErgebnisTabelle({
             {spaltenDropdownOffen && (
               <div className="absolute right-0 mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-3 flex flex-col gap-2.5 min-w-[180px]">
                 {[
-                  { key: 'zeigeSek',     label: tx.spalteSek,     disabled: false },
-                  { key: 'zeigeBaender', label: tx.spalteBaender, disabled: !foerderband?.durchsatz },
-                  { key: 'zeigeWagons',  label: tx.spalteWagons,  disabled: false },
+                  { key: 'zeigeSek',       label: tx.spalteSek,       disabled: false },
+                  { key: 'zeigeBaender',  label: tx.spalteBaender,  disabled: !foerderband?.durchsatz },
+                  { key: 'zeigeWagons',   label: tx.spalteWagons,   disabled: false },
+                  { key: 'zeigePollution',label: tx.spaltePollution, disabled: false },
                 ].map(({ key, label, disabled }) => (
                   <label
                     key={key}
@@ -942,6 +986,7 @@ export default function ErgebnisTabelle({
       {stromDaten.gesamtKW > 0 && (
         <StromverbrauchAbschnitt
           stromDaten={stromDaten}
+          gesamtVerschmutzung={gesamtVerschmutzung}
           tx={tx}
           sprache={sprache}
           maschinenLabels={maschinenLabels}
