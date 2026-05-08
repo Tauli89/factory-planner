@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, Fragment } from 'react';
 import VergleichsAnsicht from './components/Vergleich';
 import ExportModal from './components/ExportModal';
 import ProduktAuswahl from './components/ProduktAuswahl';
@@ -21,6 +21,7 @@ import { BerechnungProvider, useBerechnung } from './context/BerechnungContext';
 import { TooltipProvider } from './context/TooltipContext';
 import ItemTooltip from './components/ItemTooltip';
 import EinstellungenModal from './components/EinstellungenModal';
+import SnapshotManager from './components/SnapshotManager';
 import { EinstellungenProvider, useEinstellungen } from './context/EinstellungenContext';
 import { berechneProduktion, maschinenAnzahl, getVerfuegbareRezepte } from './utils/berechnung';
 import { encodePlan, decodePlan } from './utils/planShare';
@@ -142,7 +143,7 @@ function ladeInitialItems() {
   return ladeGespeicherteItems() ?? [{ key: 1, id: '', mengeProMin: 60, rezeptOverride: null }];
 }
 
-function RechnerTab({ sprache }) {
+function RechnerTab({ sprache, onReset }) {
   const { einstellungen }                            = useEinstellungen();
   const [items, setItems]                           = useState(ladeInitialItems);
   const [maschinenOverrides, setMaschinenOverrides] = useState(ladeInitialMaschinenOverrides);
@@ -310,11 +311,16 @@ function RechnerTab({ sprache }) {
 
   return (
     <div className="flex flex-col gap-8">
-      <PlanManager
-        currentItems={items}
-        onPlanLoad={onPlanLoad}
-        sprache={sprache}
-      />
+      <div className="flex items-stretch gap-2">
+        <div className="flex-1 min-w-0">
+          <PlanManager
+            currentItems={items}
+            onPlanLoad={onPlanLoad}
+            sprache={sprache}
+          />
+        </div>
+        <SnapshotManager sprache={sprache} onReset={onReset} />
+      </div>
 
       <section className="bg-gray-900 rounded-xl border border-gray-800 p-6">
         <div className="flex items-center justify-between mb-5">
@@ -538,7 +544,7 @@ function FabrikPlanerTab({ sprache }) {
 
 const IMMER_ERFORSCHT_IDS = new Set(['automation-science-pack', 'steam-power', 'military']);
 
-function AppInner() {
+function AppInner({ onReset }) {
   const [aktuellerTab, setAktuellerTab]         = useState('rechner');
   const [zeigeEinstellungen, setZeigeEinstellungen] = useState(false);
   const { erforscht } = useForschung();
@@ -614,7 +620,7 @@ function AppInner() {
             : 'overflow-auto py-8'
         }`}
       >
-        {aktuellerTab === 'rechner'      && <RechnerTab      sprache={sprache} />}
+        {aktuellerTab === 'rechner'      && <RechnerTab      sprache={sprache} onReset={onReset} />}
         {aktuellerTab === 'optimierung'  && <ModulOptimierung />}
         {aktuellerTab === 'qualitaet'   && <QualityRechner />}
         {aktuellerTab === 'forschung'    && <ForschungsTab    sprache={sprache} />}
@@ -667,21 +673,26 @@ function AppInner() {
 }
 
 export default function App() {
+  const [resetKey, setResetKey] = useState(0);
+  const doReset = () => setResetKey(k => k + 1);
+
   return (
     <SprachProvider>
-      <EinstellungenProvider>
-        <ForschungProvider>
-          <ModulProvider>
-            <QualityProvider>
-              <BerechnungProvider>
-                <TooltipProvider>
-                  <AppInner />
-                </TooltipProvider>
-              </BerechnungProvider>
-            </QualityProvider>
-          </ModulProvider>
-        </ForschungProvider>
-      </EinstellungenProvider>
+      <Fragment key={resetKey}>
+        <EinstellungenProvider>
+          <ForschungProvider>
+            <ModulProvider>
+              <QualityProvider>
+                <BerechnungProvider>
+                  <TooltipProvider>
+                    <AppInner onReset={doReset} />
+                  </TooltipProvider>
+                </BerechnungProvider>
+              </QualityProvider>
+            </ModulProvider>
+          </ForschungProvider>
+        </EinstellungenProvider>
+      </Fragment>
     </SprachProvider>
   );
 }
