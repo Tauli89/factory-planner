@@ -5,6 +5,7 @@ import ProduktAuswahl from './components/ProduktAuswahl';
 import MengenEingabe from './components/MengenEingabe';
 import ErgebnisTabelle from './components/ErgebnisTabelle';
 import ProduktionsBaum from './components/ProduktionsBaum';
+import FlowDiagramm from './components/FlowDiagramm';
 import PlanManager from './components/PlanManager';
 import ForschungsBaum from './components/ForschungsBaum';
 import ModulAuswahl from './components/ModulAuswahl';
@@ -55,6 +56,7 @@ const TX = {
     teilenKopiert: '✓ Link kopiert!',
     ansichtTabelle: '☰ Tabelle',
     ansichtBaum:    '🌿 Baum',
+    ansichtFlow:    '〰 Flow',
   },
   en: {
     konfigurieren: 'Configure production',
@@ -69,6 +71,7 @@ const TX = {
     teilenKopiert: '✓ Copied!',
     ansichtTabelle: '☰ Table',
     ansichtBaum:    '🌿 Tree',
+    ansichtFlow:    '〰 Flow',
   },
 };
 
@@ -447,6 +450,7 @@ function RechnerTab({ sprache }) {
             {[
               { id: 'tabelle', label: tx.ansichtTabelle },
               { id: 'baum',    label: tx.ansichtBaum },
+              { id: 'flow',    label: tx.ansichtFlow },
             ].map(a => (
               <button
                 key={a.id}
@@ -462,7 +466,7 @@ function RechnerTab({ sprache }) {
             ))}
           </div>
 
-          {ansicht === 'tabelle' ? (
+          {ansicht === 'tabelle' && (
             <ErgebnisTabelle
               produktion={combined}
               perItem={perItem}
@@ -474,11 +478,19 @@ function RechnerTab({ sprache }) {
               ignorierteItems={ignorierteItems}
               onToggleIgnoriertesItem={toggleIgnoriertesItem}
             />
-          ) : (
+          )}
+          {ansicht === 'baum' && (
             <ProduktionsBaum
               perItem={perItem}
               maschinenOverrides={maschinenOverrides}
               rezeptOverrides={rezeptOverrides}
+            />
+          )}
+          {ansicht === 'flow' && (
+            <FlowDiagramm
+              combined={combined}
+              perItem={perItem}
+              ignorierteItems={ignorierteItems}
             />
           )}
         </section>
