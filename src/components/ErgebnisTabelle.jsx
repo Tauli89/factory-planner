@@ -191,6 +191,14 @@ const T = {
   },
 };
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatPower(kw) {
+  if (kw >= 1_000_000) return `${(kw / 1_000_000).toFixed(2)} GW`;
+  if (kw >= 1_000)     return `${(kw / 1_000).toFixed(2)} MW`;
+  return `${kw.toFixed(1)} kW`;
+}
+
 // ── BeaconKonfigurator ────────────────────────────────────────────────────────
 
 function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprache, tx }) {
@@ -351,7 +359,37 @@ function QualityBadge({ qualitaet }) {
 
 function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, sprache, maschinenLabels }) {
   const { perTyp, gesamtMW, solarPanels, dampfmaschinen } = stromDaten;
-  const eintraege = Object.entries(perTyp);
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
+
+  const onSort = (key) => {
+    if (sortKey === key) {
+      if (sortDir === 'asc') setSortDir('desc');
+      else { setSortKey(null); setSortDir('asc'); }
+    } else { setSortKey(key); setSortDir('asc'); }
+  };
+
+  const sortIcon = (key) => (
+    sortKey === key
+      ? <span className="ml-0.5 text-amber-400">{sortDir === 'asc' ? '↑' : '↓'}</span>
+      : <span className="ml-0.5 text-gray-600 opacity-60">↕</span>
+  );
+
+  const eintraege = useMemo(() => {
+    const raw = Object.entries(perTyp);
+    if (!sortKey) return raw;
+    return [...raw].sort(([, a], [, b]) => {
+      let va, vb;
+      switch (sortKey) {
+        case 'anzahl':        va = a.anzahl;                             vb = b.anzahl;                             break;
+        case 'kwProMaschine': va = a.kwProMaschine;                     vb = b.kwProMaschine;                     break;
+        case 'totalKW':       va = a.totalKW ?? a.anzahl * a.kwProMaschine;
+                              vb = b.totalKW ?? b.anzahl * b.kwProMaschine; break;
+        default: return 0;
+      }
+      return sortDir === 'asc' ? va - vb : vb - va;
+    });
+  }, [perTyp, sortKey, sortDir]);
 
   return (
     <div>
@@ -363,9 +401,15 @@ function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, spra
           <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
             <tr>
               <th className="px-4 py-3">{tx.maschinenTyp}</th>
-              <th className="px-4 py-3 text-right">{tx.anzahl}</th>
-              <th className="px-4 py-3 text-right">{tx.kwProMaschine}</th>
-              <th className="px-4 py-3 text-right">{tx.gesamtKW}</th>
+              <th className="px-4 py-3 text-right cursor-pointer select-none hover:text-white transition-colors" onClick={() => onSort('anzahl')}>
+                <span className="inline-flex items-center justify-end">{tx.anzahl}{sortIcon('anzahl')}</span>
+              </th>
+              <th className="px-4 py-3 text-right cursor-pointer select-none hover:text-white transition-colors" onClick={() => onSort('kwProMaschine')}>
+                <span className="inline-flex items-center justify-end">{tx.kwProMaschine}{sortIcon('kwProMaschine')}</span>
+              </th>
+              <th className="px-4 py-3 text-right cursor-pointer select-none hover:text-white transition-colors" onClick={() => onSort('totalKW')}>
+                <span className="inline-flex items-center justify-end">{tx.gesamtKW}{sortIcon('totalKW')}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -387,11 +431,7 @@ function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, spra
                   <td className={`px-4 py-2 font-medium ${farbe}`}>{name}</td>
                   <td className="px-4 py-2 text-right text-gray-300">{anzahl}</td>
                   <td className="px-4 py-2 text-right text-gray-400">{kwProMaschine} kW</td>
-                  <td className="px-4 py-2 text-right font-bold text-yellow-400">
-                    {totalKW >= 1000
-                      ? `${(totalKW / 1000).toFixed(2)} MW`
-                      : `${totalKW.toFixed(1)} kW`}
-                  </td>
+                  <td className="px-4 py-2 text-right font-bold text-yellow-400">{formatPower(totalKW)}</td>
                 </tr>
               );
             })}
@@ -401,11 +441,7 @@ function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, spra
       <div className="flex flex-wrap gap-4 items-center bg-gray-800/50 rounded-lg px-4 py-3 text-sm">
         <div>
           <span className="text-gray-400">{tx.gesamtverbrauch}:</span>
-          <span className="text-yellow-300 font-bold ml-2">
-            {gesamtMW >= 1
-              ? `${gesamtMW.toFixed(2)} MW`
-              : `${(gesamtMW * 1000).toFixed(0)} kW`}
-          </span>
+          <span className="text-yellow-300 font-bold ml-2">{formatPower(gesamtMW * 1000)}</span>
         </div>
         <div className="h-4 border-l border-gray-600 hidden sm:block" />
         <div className="flex items-center gap-1.5">
@@ -421,10 +457,7 @@ function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, spra
         {gesamtVerschmutzung > 0 && (
           <>
             <div className="h-4 border-l border-gray-600 hidden sm:block" />
-            <div
-              className="flex items-center gap-1.5"
-              title={tx.pollutionTooltip}
-            >
+            <div className="flex items-center gap-1.5" title={tx.pollutionTooltip}>
               <span className="text-lime-500">☁</span>
               <span className="text-gray-400">{tx.gesamtPollution}:</span>
               <span className="text-lime-300 font-bold tabular-nums">
@@ -445,16 +478,53 @@ function Abschnitt({
   beaconConfigs = {}, onBeaconConfigChange = null,
   bottleneckId = null, diffMap = null,
   onToggleItem = null, toggleTipOn = '', toggleTipOff = '',
-  spalten = DEFAULT_SPALTEN, einheitLabel = null,
+  spalten = DEFAULT_SPALTEN, einheitLabel = null, einheitDecimals = 2,
 }) {
+  // Hooks must come before any early return
+  const [openBeaconId, setOpenBeaconId] = useState(null);
+  const [sortKey, setSortKey]           = useState(null);
+  const [sortDir, setSortDir]           = useState('asc');
+
+  const onSort = (key) => {
+    if (sortKey === key) {
+      if (sortDir === 'asc') setSortDir('desc');
+      else { setSortKey(null); setSortDir('asc'); }
+    } else { setSortKey(key); setSortDir('asc'); }
+  };
+
+  const sortiertEintraege = useMemo(() => {
+    if (!sortKey) return eintraege;
+    return [...eintraege].sort((a, b) => {
+      if (sortKey === 'name') {
+        return sortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+      }
+      let va, vb;
+      switch (sortKey) {
+        case 'rate':      va = a.rateProEinheit ?? a.rateProMin; vb = b.rateProEinheit ?? b.rateProMin; break;
+        case 'anzahl':    va = a.anzahl ?? 0;                   vb = b.anzahl ?? 0;                   break;
+        case 'baender':   va = a.baender ?? 0;                  vb = b.baender ?? 0;                  break;
+        case 'wagons':    va = a.wagons?.anzahl ?? 0;           vb = b.wagons?.anzahl ?? 0;           break;
+        case 'pollution': va = a.pollutionProMin ?? 0;          vb = b.pollutionProMin ?? 0;          break;
+        default: return 0;
+      }
+      return sortDir === 'asc' ? va - vb : vb - va;
+    });
+  }, [eintraege, sortKey, sortDir]);
+
+  const sortIcon = (key) => (
+    sortKey === key
+      ? <span className="ml-0.5 text-amber-400">{sortDir === 'asc' ? '↑' : '↓'}</span>
+      : <span className="ml-0.5 text-gray-600 opacity-60">↕</span>
+  );
+
   if (eintraege.length === 0) return null;
+
   const zeigeBaender   = !!(spalten.zeigeBaender) && eintraege.some(e => e.baender !== null);
-  const zeigeSek       = !!(spalten.zeigeSek);
+  const zeigeSek       = !!(spalten.zeigeSek) && einheitLabel !== tx.proSek;
   const zeigeWagons    = !!(spalten.zeigeWagons);
   const zeigePollution = !!(spalten.zeigePollution) && zeigeMaschine;
   const zeigeBeacon    = zeigeMaschine && !!onBeaconConfigChange;
-  const zeigeToggle  = !!onToggleItem;
-  const [openBeaconId, setOpenBeaconId] = useState(null);
+  const zeigeToggle    = !!onToggleItem;
 
   return (
     <div>
@@ -463,27 +533,37 @@ function Abschnitt({
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
             <tr>
-              <th className="px-4 py-3">{tx.produkt}</th>
-              <th className="px-4 py-3 text-right">{einheitLabel ?? tx.proMin}</th>
+              <th className="px-4 py-3 cursor-pointer select-none hover:text-white transition-colors" onClick={() => onSort('name')}>
+                <span className="inline-flex items-center">{tx.produkt}{sortIcon('name')}</span>
+              </th>
+              <th className="px-4 py-3 text-right cursor-pointer select-none hover:text-white transition-colors" onClick={() => onSort('rate')}>
+                <span className="inline-flex items-center justify-end">{einheitLabel ?? tx.proMin}{sortIcon('rate')}</span>
+              </th>
               {zeigeSek && (
                 <th className="px-4 py-3 text-right">{tx.proSek}</th>
               )}
               {zeigeBaender && (
-                <th className={`px-4 py-3 text-right ${beltFarbe}`}>{tx.baender}</th>
+                <th className={`px-4 py-3 text-right cursor-pointer select-none hover:text-white transition-colors ${beltFarbe}`} onClick={() => onSort('baender')}>
+                  <span className="inline-flex items-center justify-end">{tx.baender}{sortIcon('baender')}</span>
+                </th>
               )}
               {zeigeWagons && (
-                <th className="px-4 py-3 text-right text-amber-500/70">{tx.spalteWagons}</th>
+                <th className="px-4 py-3 text-right text-amber-500/70 cursor-pointer select-none hover:text-amber-300 transition-colors" onClick={() => onSort('wagons')}>
+                  <span className="inline-flex items-center justify-end">{tx.spalteWagons}{sortIcon('wagons')}</span>
+                </th>
               )}
               {zeigePollution && (
-                <th className="px-4 py-3 text-right text-lime-600/80" title={tx.pollutionTooltip}>
-                  {tx.spaltePollution}
+                <th className="px-4 py-3 text-right text-lime-600/80 cursor-pointer select-none hover:text-lime-400 transition-colors" title={tx.pollutionTooltip} onClick={() => onSort('pollution')}>
+                  <span className="inline-flex items-center justify-end">{tx.spaltePollution}{sortIcon('pollution')}</span>
                 </th>
               )}
               {zeigeMaschine && (
                 <th className="px-4 py-3 text-right hidden md:table-cell">{tx.maschine}</th>
               )}
               {zeigeMaschine && (
-                <th className="px-4 py-3 text-right">{tx.anzahl}</th>
+                <th className="px-4 py-3 text-right cursor-pointer select-none hover:text-white transition-colors" onClick={() => onSort('anzahl')}>
+                  <span className="inline-flex items-center justify-end">{tx.anzahl}{sortIcon('anzahl')}</span>
+                </th>
               )}
               {zeigeBeacon && (
                 <th className="px-2 py-3 text-center">{tx.beaconHeader}</th>
@@ -494,7 +574,7 @@ function Abschnitt({
             </tr>
           </thead>
           <tbody>
-            {eintraege.map((e, i) => {
+            {sortiertEintraege.map((e, i) => {
               const istBottleneck  = e.id === bottleneckId;
               const maschinenFarbe = e.beaconActive ? 'text-green-400' : (MASCHINEN_FARBE[e.maschine] ?? 'text-gray-400');
               const beitraege      = zeigeBeitraege ? (beitraegeMap[e.id] ?? []) : [];
@@ -517,8 +597,8 @@ function Abschnitt({
                         <QualityBadge qualitaet={e.qualitaet} />
                       )}
                     </td>
-                    <td className="px-4 py-2 text-right text-green-400 whitespace-nowrap">
-                      {(e.rateProEinheit ?? e.rateProMin).toFixed(2)}
+                    <td className="px-4 py-2 text-right text-green-400 whitespace-nowrap tabular-nums">
+                      {(e.rateProEinheit ?? e.rateProMin).toFixed(einheitDecimals)}
                       {e.prodPfeil && (
                         <span
                           className="ml-0.5 text-green-500/60 text-xs"
@@ -699,12 +779,13 @@ export default function ErgebnisTabelle({
   const { boni }           = useForschung();
   const { sprache }        = useSprache();
   const { modulBoni }      = useModul();
-  const { einstellungen }  = useEinstellungen();
+  const { einstellungen, setEinstellungen } = useEinstellungen();
   const { zielQualitaet, maschinenQualitaet, gesamtQualityChance, qualityFaktorPerMaschine } = useQuality();
   const tx = T[sprache];
-  const anzeigeEinheit = einstellungen.anzeigeEinheit ?? 'min';
-  const einheitMulti   = ({ sek: 1, min: 60, std: 3600 })[anzeigeEinheit] ?? 60;
-  const einheitLabel   = anzeigeEinheit === 'sek' ? tx.proSek : anzeigeEinheit === 'std' ? tx.proStd : tx.proMin;
+  const anzeigeEinheit  = einstellungen.anzeigeEinheit ?? 'min';
+  const einheitMulti    = ({ sek: 1, min: 60, std: 3600 })[anzeigeEinheit] ?? 60;
+  const einheitLabel    = anzeigeEinheit === 'sek' ? tx.proSek : anzeigeEinheit === 'std' ? tx.proStd : tx.proMin;
+  const einheitDecimals = { sek: 4, min: 2, std: 1 }[anzeigeEinheit] ?? 2;
 
   const [spalten, setSpalten]                     = useState(ladeSpaltenConfig);
   const [spaltenDropdownOffen, setSpaltenDropdownOffen] = useState(false);
@@ -913,7 +994,29 @@ export default function ErgebnisTabelle({
       )}
 
       <div className="flex flex-col gap-2">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-2">
+          {/* Unit toggle */}
+          <div className="flex rounded-lg border border-gray-700 overflow-hidden text-xs font-medium">
+            {[
+              { id: 'sek', label: tx.proSek },
+              { id: 'min', label: tx.proMin },
+              { id: 'std', label: tx.proStd },
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setEinstellungen(prev => ({ ...prev, anzeigeEinheit: id }))}
+                className={`px-2.5 py-1.5 transition-colors ${
+                  anzeigeEinheit === id
+                    ? 'bg-amber-500/20 text-amber-300'
+                    : 'text-gray-500 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Columns dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setSpaltenDropdownOffen(v => !v)}
@@ -928,7 +1031,7 @@ export default function ErgebnisTabelle({
             {spaltenDropdownOffen && (
               <div className="absolute right-0 mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-3 flex flex-col gap-2.5 min-w-[180px]">
                 {[
-                  { key: 'zeigeSek',       label: tx.spalteSek,       disabled: false },
+                  { key: 'zeigeSek',      label: tx.spalteSek,      disabled: false },
                   { key: 'zeigeBaender',  label: tx.spalteBaender,  disabled: !foerderband?.durchsatz },
                   { key: 'zeigeWagons',   label: tx.spalteWagons,   disabled: false },
                   { key: 'zeigePollution',label: tx.spaltePollution, disabled: false },
@@ -973,6 +1076,7 @@ export default function ErgebnisTabelle({
           toggleTipOff={tx.alsMittelprodukt}
           spalten={spalten}
           einheitLabel={einheitLabel}
+          einheitDecimals={einheitDecimals}
         />
       </div>
 
@@ -991,6 +1095,7 @@ export default function ErgebnisTabelle({
         toggleTipOff={tx.alsMittelprodukt}
         spalten={spalten}
         einheitLabel={einheitLabel}
+        einheitDecimals={einheitDecimals}
       />
 
       {stromDaten.gesamtKW > 0 && (
