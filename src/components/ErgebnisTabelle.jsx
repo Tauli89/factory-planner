@@ -487,7 +487,15 @@ function Abschnitt({
                         <QualityBadge qualitaet={e.qualitaet} />
                       )}
                     </td>
-                    <td className="px-4 py-2 text-right text-green-400">{e.rateProMin.toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right text-green-400 whitespace-nowrap">
+                      {e.rateProMin.toFixed(2)}
+                      {e.prodPfeil && (
+                        <span
+                          className="ml-0.5 text-green-500/60 text-xs"
+                          title={sprache === 'de' ? 'Durch Produktivitätsmodule reduziert' : 'Reduced by productivity modules'}
+                        >↓</span>
+                      )}
+                    </td>
                     {zeigeSek && (
                       <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
                     )}
@@ -527,6 +535,12 @@ function Abschnitt({
                             <span className="text-xs text-blue-400 font-normal">
                               🔵{e.beaconCfg.anzahlBeacons}
                             </span>
+                          )}
+                          {e.prodBonus > 0 && (
+                            <span
+                              title={`+${(e.prodBonus * 100).toFixed(0)}% ${sprache === 'de' ? 'Produktivität → Rohstoffe reduziert' : 'productivity → ingredients reduced'}`}
+                              className="text-xs bg-green-900/40 text-green-400 border border-green-700/40 rounded px-1 font-bold cursor-help"
+                            >P</span>
                           )}
                           {e.anzahl ?? '—'}
                           {diffMap != null && e.anzahl != null && diffMap[e.id] != null && (() => {
@@ -709,6 +723,7 @@ export default function ErgebnisTabelle({
   if (!produktion || Object.keys(produktion).length === 0) return null;
 
   const mQMulti = maschinenQualitaet.maschinenMulti;
+  const hatAktiveProduktivitaet = Object.values(modulBoni).some(b => b.produktivitaet > 0);
 
   const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
     const rezept         = REZEPTE_MAP[id];
@@ -765,6 +780,8 @@ export default function ErgebnisTabelle({
       defaultMaschinenId,
       baender,
       wagons,
+      prodBonus: istRohstoff ? 0 : (modulBoni[rezept?.maschine]?.produktivitaet ?? 0),
+      prodPfeil: istRohstoff && hatAktiveProduktivitaet,
     };
   });
 
