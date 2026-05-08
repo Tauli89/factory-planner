@@ -193,10 +193,17 @@ const T = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatPower(kw) {
-  if (kw >= 1_000_000) return `${(kw / 1_000_000).toFixed(2)} GW`;
-  if (kw >= 1_000)     return `${(kw / 1_000).toFixed(2)} MW`;
-  return `${kw.toFixed(1)} kW`;
+function fmtNum(value, decimals, sprache) {
+  return new Intl.NumberFormat(sprache === 'de' ? 'de-DE' : 'en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+}
+
+function formatPower(kw, sprache) {
+  if (kw >= 1_000_000) return `${fmtNum(kw / 1_000_000, 2, sprache)} GW`;
+  if (kw >= 1_000)     return `${fmtNum(kw / 1_000, 2, sprache)} MW`;
+  return `${fmtNum(kw, 1, sprache)} kW`;
 }
 
 // ── BeaconKonfigurator ────────────────────────────────────────────────────────
@@ -427,11 +434,11 @@ function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, spra
                   : (maschinenLabels[maschinenType] ?? maschinenType);
               }
               return (
-                <tr key={maschinenType} className={i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950'}>
+                <tr key={maschinenType} className={i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-800/30'}>
                   <td className={`px-4 py-2 font-medium ${farbe}`}>{name}</td>
-                  <td className="px-4 py-2 text-right text-gray-300">{anzahl}</td>
-                  <td className="px-4 py-2 text-right text-gray-400">{kwProMaschine} kW</td>
-                  <td className="px-4 py-2 text-right font-bold text-yellow-400">{formatPower(totalKW)}</td>
+                  <td className="px-4 py-2 text-right text-gray-300">{fmtNum(anzahl, 0, sprache)}</td>
+                  <td className="px-4 py-2 text-right text-gray-400">{fmtNum(kwProMaschine, 0, sprache)} kW</td>
+                  <td className="px-4 py-2 text-right font-bold text-yellow-400">{formatPower(totalKW, sprache)}</td>
                 </tr>
               );
             })}
@@ -441,7 +448,7 @@ function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, spra
       <div className="flex flex-wrap gap-4 items-center bg-gray-800/50 rounded-lg px-4 py-3 text-sm">
         <div>
           <span className="text-gray-400">{tx.gesamtverbrauch}:</span>
-          <span className="text-yellow-300 font-bold ml-2">{formatPower(gesamtMW * 1000)}</span>
+          <span className="text-yellow-300 font-bold ml-2">{formatPower(gesamtMW * 1000, sprache)}</span>
         </div>
         <div className="h-4 border-l border-gray-600 hidden sm:block" />
         <div className="flex items-center gap-1.5">
@@ -461,7 +468,7 @@ function StromverbrauchAbschnitt({ stromDaten, gesamtVerschmutzung = 0, tx, spra
               <span className="text-lime-500">☁</span>
               <span className="text-gray-400">{tx.gesamtPollution}:</span>
               <span className="text-lime-300 font-bold tabular-nums">
-                {gesamtVerschmutzung.toFixed(1)}/min
+                {fmtNum(gesamtVerschmutzung, 1, sprache)}/min
               </span>
             </div>
           </>
@@ -543,12 +550,12 @@ function Abschnitt({
                 <th className="px-4 py-3 text-right">{tx.proSek}</th>
               )}
               {zeigeBaender && (
-                <th className={`px-4 py-3 text-right cursor-pointer select-none hover:text-white transition-colors ${beltFarbe}`} onClick={() => onSort('baender')}>
+                <th className={`px-4 py-3 text-right cursor-pointer select-none hover:text-white transition-colors hidden sm:table-cell ${beltFarbe}`} onClick={() => onSort('baender')}>
                   <span className="inline-flex items-center justify-end">{tx.baender}{sortIcon('baender')}</span>
                 </th>
               )}
               {zeigeWagons && (
-                <th className="px-4 py-3 text-right text-amber-500/70 cursor-pointer select-none hover:text-amber-300 transition-colors" onClick={() => onSort('wagons')}>
+                <th className="px-4 py-3 text-right text-amber-500/70 cursor-pointer select-none hover:text-amber-300 transition-colors hidden sm:table-cell" onClick={() => onSort('wagons')}>
                   <span className="inline-flex items-center justify-end">{tx.spalteWagons}{sortIcon('wagons')}</span>
                 </th>
               )}
@@ -579,7 +586,7 @@ function Abschnitt({
               const maschinenFarbe = e.beaconActive ? 'text-green-400' : (MASCHINEN_FARBE[e.maschine] ?? 'text-gray-400');
               const beitraege      = zeigeBeitraege ? (beitraegeMap[e.id] ?? []) : [];
               const hatMehrere     = beitraege.length > 1;
-              const rowBg          = e.istIgnoriert ? 'bg-orange-900/10' : (i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950');
+              const rowBg          = e.istIgnoriert ? 'bg-orange-900/10' : (i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-800/30');
               const extraBorder    = istBottleneck ? ' border-l-4 border-red-500' : e.istIgnoriert ? ' border-l-4 border-orange-500/50' : '';
               const beaconOffen    = openBeaconId === e.id;
 
@@ -598,7 +605,7 @@ function Abschnitt({
                       )}
                     </td>
                     <td className="px-4 py-2 text-right text-green-400 whitespace-nowrap tabular-nums">
-                      {(e.rateProEinheit ?? e.rateProMin).toFixed(einheitDecimals)}
+                      {fmtNum(e.rateProEinheit ?? e.rateProMin, einheitDecimals, sprache)}
                       {e.prodPfeil && (
                         <span
                           className="ml-0.5 text-green-500/60 text-xs"
@@ -607,16 +614,16 @@ function Abschnitt({
                       )}
                     </td>
                     {zeigeSek && (
-                      <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
+                      <td className="px-4 py-2 text-right text-gray-400">{fmtNum(e.rateProSek, 3, sprache)}</td>
                     )}
                     {zeigeBaender && (
-                      <td className={`px-4 py-2 text-right font-bold ${e.baender !== null ? beltFarbe : 'text-gray-600'}`}>
-                        {e.baender !== null ? e.baender : '—'}
+                      <td className={`px-4 py-2 text-right font-bold hidden sm:table-cell ${e.baender !== null ? beltFarbe : 'text-gray-600'}`}>
+                        {e.baender !== null ? fmtNum(e.baender, 0, sprache) : '—'}
                       </td>
                     )}
                     {zeigeWagons && (
-                      <td className={`px-4 py-2 text-right font-bold tabular-nums ${e.wagons.istFluid ? 'text-cyan-300' : 'text-amber-300'}`}>
-                        {e.wagons.anzahl}
+                      <td className={`px-4 py-2 text-right font-bold tabular-nums hidden sm:table-cell ${e.wagons.istFluid ? 'text-cyan-300' : 'text-amber-300'}`}>
+                        {fmtNum(e.wagons.anzahl, 0, sprache)}
                       </td>
                     )}
                     {zeigePollution && (
@@ -624,7 +631,7 @@ function Abschnitt({
                         className="px-4 py-2 text-right tabular-nums text-lime-400"
                         title={tx.pollutionTooltip}
                       >
-                        {e.pollutionProMin > 0 ? e.pollutionProMin.toFixed(1) : '—'}
+                        {e.pollutionProMin > 0 ? fmtNum(e.pollutionProMin, 1, sprache) : '—'}
                       </td>
                     )}
                     {zeigeMaschine && (
@@ -660,7 +667,7 @@ function Abschnitt({
                               className="text-xs bg-green-900/40 text-green-400 border border-green-700/40 rounded px-1 font-bold cursor-help"
                             >P</span>
                           )}
-                          {e.anzahl ?? '—'}
+                          {e.anzahl != null ? fmtNum(e.anzahl, 0, sprache) : '—'}
                           {diffMap != null && e.anzahl != null && diffMap[e.id] != null && (() => {
                             const other = diffMap[e.id];
                             const diff = e.anzahl - other;
@@ -735,7 +742,7 @@ function Abschnitt({
                               key={b.id}
                               className={`text-xs px-2 py-0.5 rounded-full border ${ITEM_FARBEN[b.colorIdx]}`}
                             >
-                              {b.name}: {b.rateProMin.toFixed(1)}/min
+                              {b.name}: {fmtNum(b.rateProMin, 1, sprache)}/min
                             </span>
                           ))}
                         </div>
@@ -763,6 +770,11 @@ function Abschnitt({
           </tbody>
         </table>
       </div>
+      {(zeigeBaender || zeigeWagons) && (
+        <p className="sm:hidden text-xs text-gray-600 mt-1 text-right">
+          {sprache === 'de' ? '↳ Für alle Spalten Desktop nutzen' : '↳ For all columns use desktop'}
+        </p>
+      )}
     </div>
   );
 }

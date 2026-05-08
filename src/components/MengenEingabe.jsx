@@ -16,6 +16,7 @@ export default function MengenEingabe({ wert, onChange }) {
         step="0.1"
         value={wert}
         onChange={e => onChange(Number(e.target.value))}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
         className="bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 w-36 focus:outline-none focus:ring-2 focus:ring-amber-400"
       />
     </div>

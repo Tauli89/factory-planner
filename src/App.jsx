@@ -52,6 +52,7 @@ const TX = {
     zuruecksetzen: 'Zurücksetzen',
     entfernen:     'Entfernen',
     hinweis:       'Wähle ein Produkt, um die Produktionskette zu berechnen.',
+    leerTitel:     'Kein Produkt ausgewählt',
     foerderband:   'Förderband',
     module:        'Module',
     rezept:        'Rezept',
@@ -67,6 +68,7 @@ const TX = {
     zuruecksetzen: 'Reset',
     entfernen:     'Remove',
     hinweis:       'Select a product to calculate the production chain.',
+    leerTitel:     'No product selected',
     foerderband:   'Belt type',
     module:        'Modules',
     rezept:        'Recipe',
@@ -504,7 +506,11 @@ function RechnerTab({ sprache, onReset }) {
           )}
         </section>
       ) : (
-        <div className="text-center text-gray-600 mt-16 text-lg">{tx.hinweis}</div>
+        <div className="flex flex-col items-center gap-4 mt-16 py-12 rounded-xl border border-dashed border-gray-800">
+          <div className="text-5xl opacity-20 select-none">🏭</div>
+          <p className="text-gray-400 font-semibold text-lg">{tx.leerTitel}</p>
+          <p className="text-gray-600 text-sm">{tx.hinweis}</p>
+        </div>
       )}
 
       {zeigeExport && (
@@ -547,6 +553,13 @@ const IMMER_ERFORSCHT_IDS = new Set(['automation-science-pack', 'steam-power', '
 function AppInner({ onReset }) {
   const [aktuellerTab, setAktuellerTab]         = useState('rechner');
   const [zeigeEinstellungen, setZeigeEinstellungen] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') setZeigeEinstellungen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   const { erforscht } = useForschung();
   const { sprache, setSprache } = useSprache();
   const anzahlErforscht = [...erforscht].filter(id => !IMMER_ERFORSCHT_IDS.has(id)).length;
