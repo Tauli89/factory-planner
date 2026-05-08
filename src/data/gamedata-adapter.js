@@ -1,4 +1,5 @@
 import gamedata from './gamedata.json';
+import { CATEGORY_ZU_PLANETEN, REZEPT_PLANETEN_OVERRIDE } from './planets';
 
 // ── Abstract machine types (same constants as before) ────────────────────────
 export const MASCHINEN = {
@@ -151,6 +152,10 @@ function buildRezepte() {
       menge: ing.amount,
     }));
 
+    const planeten = Object.prototype.hasOwnProperty.call(REZEPT_PLANETEN_OVERRIDE, r.id)
+      ? REZEPT_PLANETEN_OVERRIDE[r.id]
+      : (CATEGORY_ZU_PLANETEN[r.category] ?? null);
+
     return {
       id: r.id,
       name: r.name.de,
@@ -160,6 +165,7 @@ function buildRezepte() {
       zutaten,
       kategorie,
       maschine,
+      planeten,
     };
   });
 }

@@ -22,7 +22,9 @@ import { TooltipProvider } from './context/TooltipContext';
 import ItemTooltip from './components/ItemTooltip';
 import EinstellungenModal from './components/EinstellungenModal';
 import SnapshotManager from './components/SnapshotManager';
+import PlanetenAuswahl from './components/PlanetenAuswahl';
 import { EinstellungenProvider, useEinstellungen } from './context/EinstellungenContext';
+import { PlanetenProvider } from './context/PlanetenContext';
 import { berechneProduktion, maschinenAnzahl, getVerfuegbareRezepte } from './utils/berechnung';
 import { encodePlan, decodePlan } from './utils/planShare';
 import { REZEPTE_MAP } from './data/recipes';
@@ -603,7 +605,9 @@ function AppInner({ onReset }) {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-4">
+        <div className="ml-auto flex items-center gap-3">
+          <PlanetenAuswahl />
+
           <div className="flex rounded-lg border border-gray-700 overflow-hidden text-xs font-bold">
             <button
               onClick={() => setSprache('de')}
@@ -698,7 +702,9 @@ export default function App() {
               <QualityProvider>
                 <BerechnungProvider>
                   <TooltipProvider>
-                    <AppInner onReset={doReset} />
+                    <PlanetenProvider>
+                      <AppInner onReset={doReset} />
+                    </PlanetenProvider>
                   </TooltipProvider>
                 </BerechnungProvider>
               </QualityProvider>

@@ -11,6 +11,8 @@ import { useSprache } from '../context/SprachContext';
 import { useModul } from '../context/ModulContext';
 import { useEinstellungen } from '../context/EinstellungenContext';
 import { useQuality } from '../context/QualityContext';
+import { usePlaneten } from '../context/PlanetenContext';
+import { PLANETEN_MAP } from '../data/planets';
 import { BELT_FARBE } from '../data/belts';
 import { formatQualityFaktor } from '../data/quality';
 import { MASCHINEN_DETAIL_NAME, MASCHINEN_VERSCHMUTZUNG, MACHINE_ID_VERSCHMUTZUNG } from '../data/machines';
@@ -486,6 +488,7 @@ function Abschnitt({
   bottleneckId = null, diffMap = null,
   onToggleItem = null, toggleTipOn = '', toggleTipOff = '',
   spalten = DEFAULT_SPALTEN, einheitLabel = null, einheitDecimals = 2,
+  nichtverfuegbarLabel = '',
 }) {
   // Hooks must come before any early return
   const [openBeaconId, setOpenBeaconId] = useState(null);
@@ -587,17 +590,29 @@ function Abschnitt({
               const beitraege      = zeigeBeitraege ? (beitraegeMap[e.id] ?? []) : [];
               const hatMehrere     = beitraege.length > 1;
               const rowBg          = e.istIgnoriert ? 'bg-orange-900/10' : (i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-800/30');
-              const extraBorder    = istBottleneck ? ' border-l-4 border-red-500' : e.istIgnoriert ? ' border-l-4 border-orange-500/50' : '';
+              const extraBorder    = istBottleneck
+                ? ' border-l-4 border-red-500'
+                : (e.istVerfuegbar === false)
+                  ? ' border-l-4 border-red-800/70'
+                  : e.istIgnoriert
+                    ? ' border-l-4 border-orange-500/50'
+                    : '';
               const beaconOffen    = openBeaconId === e.id;
 
               return (
                 <Fragment key={e.id}>
                   <tr className={`${rowBg}${extraBorder}`}>
-                    <td className={`py-2 text-white font-medium ${istBottleneck || e.istIgnoriert ? 'pl-3 pr-4' : 'px-4'}`}>
+                    <td className={`py-2 text-white font-medium ${istBottleneck || e.istIgnoriert || e.istVerfuegbar === false ? 'pl-3 pr-4' : 'px-4'}`}>
                       <WithTooltip itemId={e.id}>
                         <span className="inline-flex items-center gap-1.5">
                           <Icon id={e.id} size={20} />
                           <span>{e.name}</span>
+                          {e.istVerfuegbar === false && (
+                            <span
+                              className="text-xs text-red-400/90 leading-none"
+                              title={nichtverfuegbarLabel}
+                            >⚠</span>
+                          )}
                         </span>
                       </WithTooltip>
                       {istQualityAktiv && e.qualitaet && (
@@ -793,6 +808,7 @@ export default function ErgebnisTabelle({
   const { modulBoni }      = useModul();
   const { einstellungen, setEinstellungen } = useEinstellungen();
   const { zielQualitaet, maschinenQualitaet, gesamtQualityChance, qualityFaktorPerMaschine } = useQuality();
+  const { aktivePlaneten, istRezeptVerfuegbar } = usePlaneten();
   const tx = T[sprache];
   const anzeigeEinheit  = einstellungen.anzeigeEinheit ?? 'min';
   const einheitMulti    = ({ sek: 1, min: 60, std: 3600 })[anzeigeEinheit] ?? 60;
@@ -925,12 +941,23 @@ export default function ErgebnisTabelle({
       prodBonus:      istRohstoff ? 0 : (modulBoni[rezept?.maschine]?.produktivitaet ?? 0),
       prodPfeil:      istRohstoff && hatAktiveProduktivitaet,
       rateProEinheit: displayRate * einheitMulti,
+      istVerfuegbar:  istRohstoff ? true : istRezeptVerfuegbar(id),
     };
   });
 
   const herstellung = eintraege.filter(e => !e.istRohstoff);
   const rohstoffe   = eintraege.filter(e =>  e.istRohstoff);
   const gesamtVerschmutzung = herstellung.reduce((s, e) => s + e.pollutionProMin, 0);
+
+  const nichtverfuegbarLabel = (() => {
+    if (aktivePlaneten.size === 0) return '';
+    const namen = [...aktivePlaneten]
+      .map(id => sprache === 'de' ? (PLANETEN_MAP[id]?.de ?? id) : (PLANETEN_MAP[id]?.en ?? id))
+      .join(', ');
+    return sprache === 'de'
+      ? `Nicht auf ${namen} herstellbar`
+      : `Not craftable on ${namen}`;
+  })();
 
   // Analysis (computed inline — only runs when eintraege changes)
   const analyseData = herstellung.length > 0
@@ -1089,6 +1116,7 @@ export default function ErgebnisTabelle({
           spalten={spalten}
           einheitLabel={einheitLabel}
           einheitDecimals={einheitDecimals}
+          nichtverfuegbarLabel={nichtverfuegbarLabel}
         />
       </div>
 
@@ -1108,6 +1136,7 @@ export default function ErgebnisTabelle({
         spalten={spalten}
         einheitLabel={einheitLabel}
         einheitDecimals={einheitDecimals}
+        nichtverfuegbarLabel={nichtverfuegbarLabel}
       />
 
       {stromDaten.gesamtKW > 0 && (

@@ -10,6 +10,7 @@ const SNAPSHOT_KEYS = [
   'factoryplanner_rechner_v1',
   'factoryplanner_einstellungen_v1',
   'factoryplanner_module_v1',
+  'factoryplanner_planeten_v1',
 ];
 
 // ── Localisation ──────────────────────────────────────────────────────────────
