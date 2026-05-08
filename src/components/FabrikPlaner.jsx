@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -13,11 +13,18 @@ import {
   Panel,
   BackgroundVariant,
 } from '@xyflow/react';
+import { toPng } from 'html-to-image';
 import '@xyflow/react/dist/style.css';
 import MaschinenNode from './MaschinenNode';
+import Icon from './Icon';
 import { useBerechnung } from '../context/BerechnungContext';
 import { FOERDERBAENDER, FOERDERBAENDER_MAP } from '../data/belts';
 import { buildBlueprint, encodeBlueprintString, buildLayoutJSON } from '../utils/blueprintExport';
+import { berechneElkLayout } from '../utils/elkLayout';
+import { REZEPTE_MAP, REZEPT_ZU_ITEM_ID, getItemName } from '../data/gamedata-adapter';
+
+const NODE_W = 185;
+const NODE_H = 100;
 
 const nodeTypes = { maschine: MaschinenNode };
 
@@ -71,6 +78,13 @@ const TX = {
     jsonHint:       'Speichern & Teilen – enthält Positionen, Maschinentypen und Verbindungen.',
     jsonDownload:   'JSON herunterladen',
     jsonCopy:       'In Zwischenablage',
+    autoLayout:     'Auto-Layout',
+    layoutRunning:  'Berechne…',
+    vollbild:       'Vollbild',
+    vollbildBeenden:'Vollbild beenden',
+    exportPng:      'PNG',
+    exportingPng:   '…',
+    fluss:          'Fluss',
   },
   en: {
     titel:          'Factory Planner',
@@ -98,11 +112,20 @@ const TX = {
     jsonHint:       'Save & share – includes positions, machine types, and connections.',
     jsonDownload:   'Download JSON',
     jsonCopy:       'Copy to Clipboard',
+    autoLayout:     'Auto-layout',
+    layoutRunning:  'Computing…',
+    vollbild:       'Fullscreen',
+    vollbildBeenden:'Exit fullscreen',
+    exportPng:      'PNG',
+    exportingPng:   '…',
+    fluss:          'Flow',
   },
 };
 
-function buildEdge(params, beltId, sprache) {
-  const belt = FOERDERBAENDER_MAP[beltId];
+// ── Edge builders ─────────────────────────────────────────────────────────────
+
+function buildManualEdge(params, beltId, sprache) {
+  const belt  = FOERDERBAENDER_MAP[beltId];
   const color = BELT_COLOR[beltId] ?? '#6b7280';
   const label = belt && belt.id !== 'keins'
     ? (sprache === 'de' ? belt.name : belt.nameEn)
@@ -120,53 +143,100 @@ function buildEdge(params, beltId, sprache) {
   };
 }
 
+function buildAutoEdge(sourceId, targetId, itemId, rateProMin) {
+  const strokeW = Math.max(1.5, Math.min(7, 1 + Math.log2(rateProMin + 1) * 0.85));
+  const color   = '#6b7280';
+  return {
+    id:         `auto-${sourceId}-${targetId}-${itemId}`,
+    source:     sourceId,
+    target:     targetId,
+    type:       'smoothstep',
+    animated:   true,
+    style:      { stroke: color, strokeWidth: strokeW },
+    label:      `${rateProMin.toFixed(1)}/min`,
+    labelStyle: { fill: '#9ca3af', fontSize: 9, fontWeight: 600 },
+    labelBgStyle: { fill: '#1a1a1a', fillOpacity: 0.85 },
+    data:       { isAuto: true, itemId, rateProMin },
+    markerEnd:  { type: MarkerType.ArrowClosed, color, width: 14, height: 14 },
+  };
+}
+
+// ── Toolbar button ────────────────────────────────────────────────────────────
+
+function TBtn({ onClick, disabled, title, children, className = '' }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`w-7 h-7 flex items-center justify-center rounded text-xs text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 // ── Inner component (needs ReactFlowProvider ancestor) ──────────────────────
 
 function FabrikPlanerInner({ sprache }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedBelt, setSelectedBelt] = useState('gelb');
-  const [selectedEdgeId, setSelectedEdgeId] = useState(null);
-  const [exportModal, setExportModal] = useState(null); // { type, content } | null
-  const [bpLoading, setBpLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const { screenToFlowPosition } = useReactFlow();
+  const [selectedBelt, setSelectedBelt]   = useState('gelb');
+  const [selectedEdge, setSelectedEdge]   = useState(null);
+  const [exportModal, setExportModal]     = useState(null);
+  const [bpLoading, setBpLoading]         = useState(false);
+  const [copied, setCopied]               = useState(false);
+  const [isLayouting, setIsLayouting]     = useState(false);
+  const [isExporting, setIsExporting]     = useState(false);
+  const [isFullscreen, setIsFullscreen]   = useState(false);
+
+  const { fitView, zoomIn, zoomOut, screenToFlowPosition } = useReactFlow();
   const { maschinenListe } = useBerechnung();
-  const nodeIdRef = useRef(1);
-  const tx = TX[sprache];
+  const nodeIdRef    = useRef(1);
+  const canvasRef    = useRef(null);
+  const containerRef = useRef(null);
+  const tx           = TX[sprache] ?? TX.de;
+
+  // Sync fullscreen state with browser events
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
 
   // ── Connect nodes ──────────────────────────────────────────────────────────
   const onConnect = useCallback(
     (params) => {
-      setEdges(prev => addEdge(buildEdge(params, selectedBelt, sprache), prev));
+      setEdges(prev => addEdge(buildManualEdge(params, selectedBelt, sprache), prev));
     },
     [selectedBelt, sprache, setEdges],
   );
 
-  // ── Click edge → show belt picker ─────────────────────────────────────────
+  // ── Click edge ────────────────────────────────────────────────────────────
   const onEdgeClick = useCallback((_, edge) => {
-    setSelectedEdgeId(id => id === edge.id ? null : edge.id);
+    setSelectedEdge(prev => prev?.id === edge.id ? null : edge);
   }, []);
 
-  // ── Click canvas background → deselect edge ───────────────────────────────
-  const onPaneClick = useCallback(() => setSelectedEdgeId(null), []);
+  const onPaneClick = useCallback(() => setSelectedEdge(null), []);
 
-  // ── Change belt on existing edge ──────────────────────────────────────────
+  // ── Change belt on selected manual edge ───────────────────────────────────
   const changeEdgeBelt = useCallback((beltId) => {
+    if (!selectedEdge) return;
     setEdges(prev => prev.map(e =>
-      e.id !== selectedEdgeId ? e : buildEdge(e, beltId, sprache),
+      e.id !== selectedEdge.id ? e : buildManualEdge(e, beltId, sprache),
     ));
-    setSelectedEdgeId(null);
-  }, [selectedEdgeId, sprache, setEdges]);
+    setSelectedEdge(null);
+  }, [selectedEdge, sprache, setEdges]);
 
   const deleteSelectedEdge = useCallback(() => {
-    setEdges(prev => prev.filter(e => e.id !== selectedEdgeId));
-    setSelectedEdgeId(null);
-  }, [selectedEdgeId, setEdges]);
+    if (!selectedEdge) return;
+    setEdges(prev => prev.filter(e => e.id !== selectedEdge.id));
+    setSelectedEdge(null);
+  }, [selectedEdge, setEdges]);
 
-  // ── Add a single machine node ──────────────────────────────────────────────
+  // ── Add a single machine node (drag-dropped from sidebar) ─────────────────
   const addMachineNode = useCallback((machineData, position) => {
-    const id = `m-${nodeIdRef.current++}`;
+    const id = `drop-${nodeIdRef.current++}`;
     setNodes(prev => [...prev, { id, type: 'maschine', position, data: machineData }]);
   }, [setNodes]);
 
@@ -187,35 +257,109 @@ function FabrikPlanerInner({ sprache }) {
     e.dataTransfer.dropEffect = 'copy';
   }, []);
 
-  // ── Import all from calculator ────────────────────────────────────────────
-  const importAll = useCallback(() => {
+  // ── Import all from calculator (ELK layout + auto-edges) ─────────────────
+  const importAll = useCallback(async () => {
     if (!maschinenListe.length) return;
-    const COLS = 3;
-    const COL_W = 220, ROW_H = 160;
-    setNodes(prev => {
-      const existingIds = new Set(prev.map(n => n.data.id));
-      const toAdd = maschinenListe.filter(m => !existingIds.has(m.id));
-      const startX = 60, startY = 60;
-      const newNodes = toAdd.map((m, i) => ({
-        id: `m-${nodeIdRef.current++}`,
-        type: 'maschine',
-        position: {
-          x: startX + (i % COLS) * COL_W,
-          y: startY + Math.floor(i / COLS) * ROW_H,
-        },
-        data: m,
+    setIsLayouting(true);
+    try {
+      // Build new calc nodes (position 0,0 — ELK will assign positions)
+      const calcNodes = maschinenListe.map(m => ({
+        id:       `calc-${m.id}`,
+        type:     'maschine',
+        position: { x: 0, y: 0 },
+        data:     m,
       }));
-      return [...prev, ...newNodes];
-    });
-  }, [maschinenListe, setNodes]);
+
+      // Keep manually dropped nodes
+      const manualNodes = nodes.filter(n => !n.id.startsWith('calc-'));
+
+      // Build map: itemId → nodeId that produces it (among calc nodes)
+      const produziert = {};
+      for (const m of maschinenListe) {
+        const itemId = REZEPT_ZU_ITEM_ID[m.id];
+        if (itemId) produziert[itemId] = `calc-${m.id}`;
+      }
+
+      // Build auto-edges between calc nodes
+      const autoEdges = [];
+      for (const m of maschinenListe) {
+        const rezept = REZEPTE_MAP[m.id];
+        if (!rezept?.zutaten) continue;
+        const ergibt       = rezept.ergibt ?? 1;
+        const cyclesPerMin = m.rateProMin / ergibt;
+        for (const zutat of rezept.zutaten) {
+          const sourceId = produziert[zutat.item];
+          const targetId = `calc-${m.id}`;
+          if (!sourceId || sourceId === targetId) continue;
+          const rate = cyclesPerMin * zutat.anzahl;
+          autoEdges.push(buildAutoEdge(sourceId, targetId, zutat.item, rate));
+        }
+      }
+
+      // Run ELK layout on calc nodes only
+      const laidOut = await berechneElkLayout(calcNodes, autoEdges, NODE_W, NODE_H);
+
+      // Preserve existing manual edges, replace all auto-edges
+      const manualEdges = edges.filter(e => !e.data?.isAuto);
+
+      setNodes([...laidOut, ...manualNodes]);
+      setEdges([...manualEdges, ...autoEdges]);
+      setTimeout(() => fitView({ padding: 0.15 }), 50);
+    } finally {
+      setIsLayouting(false);
+    }
+  }, [maschinenListe, nodes, edges, setNodes, setEdges, fitView]);
+
+  // ── Re-run auto-layout on current nodes ───────────────────────────────────
+  const runAutoLayout = useCallback(async () => {
+    if (!nodes.length) return;
+    setIsLayouting(true);
+    try {
+      const autoEdgesOnly = edges.filter(e => e.data?.isAuto);
+      const laidOut = await berechneElkLayout(nodes, autoEdgesOnly, NODE_W, NODE_H);
+      setNodes(laidOut);
+      setTimeout(() => fitView({ padding: 0.15 }), 50);
+    } finally {
+      setIsLayouting(false);
+    }
+  }, [nodes, edges, setNodes, fitView]);
 
   // ── Clear everything ──────────────────────────────────────────────────────
   const clearAll = useCallback(() => {
     setNodes([]);
     setEdges([]);
     nodeIdRef.current = 1;
-    setSelectedEdgeId(null);
+    setSelectedEdge(null);
   }, [setNodes, setEdges]);
+
+  // ── Export as PNG ─────────────────────────────────────────────────────────
+  const exportPng = useCallback(async () => {
+    if (!canvasRef.current || nodes.length === 0) return;
+    setIsExporting(true);
+    try {
+      const dataUrl = await toPng(canvasRef.current, {
+        backgroundColor: '#111111',
+        pixelRatio: 2,
+      });
+      const a    = document.createElement('a');
+      a.href     = dataUrl;
+      a.download = `factory-layout-${new Date().toISOString().slice(0, 10)}.png`;
+      a.click();
+    } catch (err) {
+      console.error('PNG export failed', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [nodes.length]);
+
+  // ── Fullscreen ────────────────────────────────────────────────────────────
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
 
   // ── Export as Factorio Blueprint ──────────────────────────────────────────
   const exportBlueprint = useCallback(async () => {
@@ -259,9 +403,12 @@ function FabrikPlanerInner({ sprache }) {
   }, [exportModal]);
 
   const beltsForSelector = FOERDERBAENDER.filter(b => b.id !== 'keins');
+  const isManualEdgeSelected = selectedEdge && !selectedEdge.data?.isAuto;
+  const isAutoEdgeSelected   = selectedEdge?.data?.isAuto;
 
   return (
-    <div className="flex h-full" style={{ height: '100%' }}>
+    <div className="flex h-full" ref={containerRef} style={{ height: '100%' }}>
+
       {/* ── Sidebar ── */}
       <aside className="w-56 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden">
 
@@ -279,9 +426,10 @@ function FabrikPlanerInner({ sprache }) {
               <div className="flex gap-2">
                 <button
                   onClick={importAll}
-                  className="flex-1 text-xs px-2 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-medium transition-colors"
+                  disabled={isLayouting}
+                  className="flex-1 text-xs px-2 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-medium transition-colors disabled:opacity-50"
                 >
-                  {tx.importAll}
+                  {isLayouting ? tx.layoutRunning : tx.importAll}
                 </button>
                 <button
                   onClick={clearAll}
@@ -332,7 +480,7 @@ function FabrikPlanerInner({ sprache }) {
           </div>
         )}
 
-        {/* Belt type selector (for new connections) */}
+        {/* Belt type selector (for new manual connections) */}
         <div className="border-t border-gray-800 p-3 flex-shrink-0">
           <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">{tx.newBelt}</p>
           <div className="flex flex-col gap-1">
@@ -358,7 +506,12 @@ function FabrikPlanerInner({ sprache }) {
       </aside>
 
       {/* ── ReactFlow canvas ── */}
-      <div className="flex-1 min-w-0 relative" onDrop={onDrop} onDragOver={onDragOver}>
+      <div
+        className="flex-1 min-w-0 relative"
+        ref={canvasRef}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+      >
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -387,7 +540,42 @@ function FabrikPlanerInner({ sprache }) {
             style={{ background: '#1a1a1a', border: '1px solid #4a4a4a' }}
           />
 
-          {/* Hint when canvas is empty */}
+          {/* ── Toolbar (top-right) ── */}
+          <Panel position="top-right">
+            <div className="flex items-center gap-0.5 bg-gray-900/95 backdrop-blur border border-gray-700 rounded-xl p-1 shadow-2xl mt-1 mr-1">
+              <TBtn
+                onClick={runAutoLayout}
+                disabled={isLayouting || nodes.length === 0}
+                title={tx.autoLayout}
+              >
+                {isLayouting ? '⏳' : '⚡'}
+              </TBtn>
+
+              <div className="w-px h-5 bg-gray-700 mx-0.5" />
+
+              <TBtn onClick={() => zoomIn()} title="Zoom in">＋</TBtn>
+              <TBtn onClick={() => zoomOut()} title="Zoom out">－</TBtn>
+              <TBtn onClick={() => fitView({ padding: 0.15 })} title="Fit view">⊡</TBtn>
+
+              <div className="w-px h-5 bg-gray-700 mx-0.5" />
+
+              <TBtn
+                onClick={exportPng}
+                disabled={isExporting || nodes.length === 0}
+                title={`📸 ${tx.exportPng}`}
+              >
+                {isExporting ? '…' : '📸'}
+              </TBtn>
+              <TBtn
+                onClick={toggleFullscreen}
+                title={isFullscreen ? tx.vollbildBeenden : tx.vollbild}
+              >
+                {isFullscreen ? '⛶' : '⛶'}
+              </TBtn>
+            </div>
+          </Panel>
+
+          {/* ── Hint when canvas is empty ── */}
           {nodes.length === 0 && (
             <Panel position="top-center">
               <div className="mt-16 flex flex-col items-center gap-4 text-center px-4 max-w-sm select-none pointer-events-none">
@@ -405,8 +593,31 @@ function FabrikPlanerInner({ sprache }) {
             </Panel>
           )}
 
-          {/* Edge belt-type picker */}
-          {selectedEdgeId && (
+          {/* ── Auto-edge info panel ── */}
+          {isAutoEdgeSelected && (
+            <Panel position="top-center">
+              <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-2xl mt-2">
+                <Icon id={selectedEdge.data.itemId} size={20} />
+                <div>
+                  <div className="text-white text-xs font-semibold leading-snug">
+                    {getItemName(selectedEdge.data.itemId, sprache)}
+                  </div>
+                  <div className="text-green-400 text-[10px]">
+                    {selectedEdge.data.rateProMin.toFixed(1)}/min
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedEdge(null)}
+                  className="text-gray-600 hover:text-gray-400 transition-colors ml-1 text-xs"
+                >
+                  {tx.close}
+                </button>
+              </div>
+            </Panel>
+          )}
+
+          {/* ── Manual edge belt picker ── */}
+          {isManualEdgeSelected && (
             <Panel position="top-center">
               <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 flex items-center gap-2 shadow-2xl mt-2">
                 <span className="text-xs text-gray-400 mr-1">{tx.changeBelt}</span>
@@ -427,7 +638,7 @@ function FabrikPlanerInner({ sprache }) {
                   ✕
                 </button>
                 <button
-                  onClick={() => setSelectedEdgeId(null)}
+                  onClick={() => setSelectedEdge(null)}
                   className="text-gray-600 hover:text-gray-400 transition-colors ml-0.5 text-xs"
                 >
                   {tx.close}
@@ -437,6 +648,7 @@ function FabrikPlanerInner({ sprache }) {
           )}
         </ReactFlow>
       </div>
+
       {/* ── Export Modal ── */}
       {exportModal && (
         <div
@@ -473,7 +685,6 @@ function FabrikPlanerInner({ sprache }) {
                 className="w-full bg-gray-950 text-green-400 text-[11px] font-mono rounded-xl p-3.5 resize-none border border-gray-800 focus:outline-none focus:border-gray-600 transition-colors leading-relaxed"
               />
 
-              {/* Action buttons */}
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={copyToClipboard}
@@ -515,7 +726,7 @@ function FabrikPlanerInner({ sprache }) {
 // ── Sidebar draggable machine item ─────────────────────────────────────────
 
 function SidebarItem({ maschine, sprache, onAdd }) {
-  const name = sprache === 'de' ? maschine.name : (maschine.nameEn ?? maschine.name);
+  const name  = sprache === 'de' ? maschine.name : (maschine.nameEn ?? maschine.name);
   const color = MACH_COLOR[maschine.maschine] ?? '#9ca3af';
 
   return (
