@@ -1,4 +1,4 @@
-import { useMemo, Fragment, useState } from 'react';
+import { useMemo, Fragment, useState, useEffect, useRef } from 'react';
 import { REZEPTE_MAP, MASCHINEN, KATEGORIEN } from '../data/recipes';
 import WithTooltip from './WithTooltip';
 import {
@@ -13,12 +13,23 @@ import { useQuality } from '../context/QualityContext';
 import { BELT_FARBE } from '../data/belts';
 import { formatQualityFaktor } from '../data/quality';
 import { MASCHINEN_DETAIL_NAME } from '../data/machines';
-import { ITEM_ICONS, getItemName } from '../data/gamedata-adapter';
+import { ITEM_ICONS, getItemName, istFluid } from '../data/gamedata-adapter';
 import Icon from './Icon';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_BEACON_CONFIG = { anzahlBeacons: 0, modulTyp: 'speed-module-3', moduleProBeacon: 2 };
+
+const LS_SPALTEN = 'factoryplanner_spalten_v1';
+const DEFAULT_SPALTEN = { zeigeSek: true, zeigeBaender: true, zeigeWagons: false };
+
+function ladeSpaltenConfig() {
+  try {
+    const raw = localStorage.getItem(LS_SPALTEN);
+    if (!raw) return DEFAULT_SPALTEN;
+    return { ...DEFAULT_SPALTEN, ...JSON.parse(raw) };
+  } catch { return DEFAULT_SPALTEN; }
+}
 
 const BEACON_MODUL_GRUPPEN = [
   { key: 'speed',        de: 'Geschwindigkeit', en: 'Speed',        ids: ['speed-module', 'speed-module-2', 'speed-module-3'] },
@@ -108,6 +119,10 @@ const T = {
     beaconEnergie:     'Energie',
     beaconMaschinen:   'Maschinen',
     beaconKonfig:      'Beacons konfigurieren',
+    spaltenBtn:        'Spalten',
+    spalteSek:         '/ Sek',
+    spalteBaender:     'Förderbänder',
+    spalteWagons:      'Wagons/Min',
     analyseTitle:      '🔍 Produktionsanalyse',
     effizienzHinweis:  v => `Produktion läuft auf ${v}% Effizienz`,
     engpass:           'Engpass',
@@ -149,6 +164,10 @@ const T = {
     beaconEnergie:     'energy',
     beaconMaschinen:   'Machines',
     beaconKonfig:      'Configure beacons',
+    spaltenBtn:        'Columns',
+    spalteSek:         '/ Sec',
+    spalteBaender:     'Belts',
+    spalteWagons:      'Wagons/Min',
     analyseTitle:      '🔍 Production Analysis',
     effizienzHinweis:  v => `Production runs at ${v}% efficiency`,
     engpass:           'Bottleneck',
@@ -398,9 +417,12 @@ function Abschnitt({
   beaconConfigs = {}, onBeaconConfigChange = null,
   bottleneckId = null, diffMap = null,
   onToggleItem = null, toggleTipOn = '', toggleTipOff = '',
+  spalten = DEFAULT_SPALTEN,
 }) {
   if (eintraege.length === 0) return null;
-  const zeigeBaender = eintraege.some(e => e.baender !== null);
+  const zeigeBaender = !!(spalten.zeigeBaender) && eintraege.some(e => e.baender !== null);
+  const zeigeSek     = !!(spalten.zeigeSek);
+  const zeigeWagons  = !!(spalten.zeigeWagons);
   const zeigeBeacon  = zeigeMaschine && !!onBeaconConfigChange;
   const zeigeToggle  = !!onToggleItem;
   const [openBeaconId, setOpenBeaconId] = useState(null);
@@ -414,9 +436,14 @@ function Abschnitt({
             <tr>
               <th className="px-4 py-3">{tx.produkt}</th>
               <th className="px-4 py-3 text-right">{tx.proMin}</th>
-              <th className="px-4 py-3 text-right">{tx.proSek}</th>
+              {zeigeSek && (
+                <th className="px-4 py-3 text-right">{tx.proSek}</th>
+              )}
               {zeigeBaender && (
                 <th className={`px-4 py-3 text-right ${beltFarbe}`}>{tx.baender}</th>
+              )}
+              {zeigeWagons && (
+                <th className="px-4 py-3 text-right text-amber-500/70">{tx.spalteWagons}</th>
               )}
               {zeigeMaschine && (
                 <th className="px-4 py-3 text-right hidden md:table-cell">{tx.maschine}</th>
@@ -457,10 +484,17 @@ function Abschnitt({
                       )}
                     </td>
                     <td className="px-4 py-2 text-right text-green-400">{e.rateProMin.toFixed(2)}</td>
-                    <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
+                    {zeigeSek && (
+                      <td className="px-4 py-2 text-right text-gray-400">{e.rateProSek.toFixed(3)}</td>
+                    )}
                     {zeigeBaender && (
                       <td className={`px-4 py-2 text-right font-bold ${e.baender !== null ? beltFarbe : 'text-gray-600'}`}>
                         {e.baender !== null ? e.baender : '—'}
+                      </td>
+                    )}
+                    {zeigeWagons && (
+                      <td className={`px-4 py-2 text-right font-bold tabular-nums ${e.wagons.istFluid ? 'text-cyan-300' : 'text-amber-300'}`}>
+                        {e.wagons.anzahl}
                       </td>
                     )}
                     {zeigeMaschine && (
@@ -597,6 +631,23 @@ export default function ErgebnisTabelle({
   const { zielQualitaet, maschinenQualitaet, gesamtQualityChance, qualityFaktorPerMaschine } = useQuality();
   const tx = T[sprache];
 
+  const [spalten, setSpalten]                     = useState(ladeSpaltenConfig);
+  const [spaltenDropdownOffen, setSpaltenDropdownOffen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_SPALTEN, JSON.stringify(spalten)); } catch {}
+  }, [spalten]);
+
+  useEffect(() => {
+    if (!spaltenDropdownOffen) return;
+    const close = (e) => {
+      if (!dropdownRef.current?.contains(e.target)) setSpaltenDropdownOffen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [spaltenDropdownOffen]);
+
   const stromDaten = useMemo(
     () => berechneStromverbrauch(produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti, maschinenOverrides, beaconConfigs),
     [produktion, boni, modulBoni, maschinenQualitaet.maschinenMulti, maschinenOverrides, beaconConfigs]
@@ -663,6 +714,13 @@ export default function ErgebnisTabelle({
 
     const baender = foerderband?.durchsatz ? Math.ceil(displayRate / foerderband.durchsatz) : null;
     const qualitaet = istZiel ? (zielInfo.qualitaet ?? zielQualitaet) : null;
+    const istFluidItem = istFluid(id);
+    const wagons = {
+      anzahl: istFluidItem
+        ? Math.ceil(displayRate * 60 / 25000)
+        : Math.ceil(displayRate * 60 / 2400),
+      istFluid: istFluidItem,
+    };
 
     const verfuegbareMaschinen = istRohstoff ? [] : getVerfuegbareMaschinen(id);
     const defaultMaschinenId   = rezept ? (ABSTRACT_TO_MACHINE_ID[rezept.maschine] ?? null) : null;
@@ -687,6 +745,7 @@ export default function ErgebnisTabelle({
       selectedMaschinenId: overrideId,
       defaultMaschinenId,
       baender,
+      wagons,
     };
   });
 
@@ -766,26 +825,68 @@ export default function ErgebnisTabelle({
         </div>
       )}
 
-      <Abschnitt
-        titel={tx.herstellung}
-        eintraege={herstellung}
-        zeigeMaschine
-        tx={tx}
-        maschinenLabels={maschinenLabels}
-        beitraegeMap={beitraegeMap}
-        zeigeBeitraege={zeigeBeitraege}
-        beltFarbe={beltFarbe}
-        istQualityAktiv={istQualityAktiv}
-        sprache={sprache}
-        onMaschinenOverrideChange={onMaschinenOverrideChange}
-        beaconConfigs={beaconConfigs}
-        onBeaconConfigChange={onBeaconConfigChange}
-        bottleneckId={bottleneckId}
-        diffMap={diffMap}
-        onToggleItem={onToggleIgnoriertesItem}
-        toggleTipOn={tx.alsRohstoff}
-        toggleTipOff={tx.alsMittelprodukt}
-      />
+      <div className="flex flex-col gap-2">
+        <div className="flex justify-end">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setSpaltenDropdownOffen(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                spaltenDropdownOffen
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              ☰ {tx.spaltenBtn} {spaltenDropdownOffen ? '▲' : '▼'}
+            </button>
+            {spaltenDropdownOffen && (
+              <div className="absolute right-0 mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-3 flex flex-col gap-2.5 min-w-[180px]">
+                {[
+                  { key: 'zeigeSek',     label: tx.spalteSek,     disabled: false },
+                  { key: 'zeigeBaender', label: tx.spalteBaender, disabled: !foerderband?.durchsatz },
+                  { key: 'zeigeWagons',  label: tx.spalteWagons,  disabled: false },
+                ].map(({ key, label, disabled }) => (
+                  <label
+                    key={key}
+                    className={`flex items-center gap-2 select-none ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:text-white'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={spalten[key]}
+                      disabled={disabled}
+                      onChange={() => { if (!disabled) setSpalten(prev => ({ ...prev, [key]: !prev[key] })); }}
+                      className="accent-amber-400 w-3.5 h-3.5 flex-shrink-0"
+                    />
+                    <span className="text-sm text-gray-300">{label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Abschnitt
+          titel={tx.herstellung}
+          eintraege={herstellung}
+          zeigeMaschine
+          tx={tx}
+          maschinenLabels={maschinenLabels}
+          beitraegeMap={beitraegeMap}
+          zeigeBeitraege={zeigeBeitraege}
+          beltFarbe={beltFarbe}
+          istQualityAktiv={istQualityAktiv}
+          sprache={sprache}
+          onMaschinenOverrideChange={onMaschinenOverrideChange}
+          beaconConfigs={beaconConfigs}
+          onBeaconConfigChange={onBeaconConfigChange}
+          bottleneckId={bottleneckId}
+          diffMap={diffMap}
+          onToggleItem={onToggleIgnoriertesItem}
+          toggleTipOn={tx.alsRohstoff}
+          toggleTipOff={tx.alsMittelprodukt}
+          spalten={spalten}
+        />
+      </div>
+
       <Abschnitt
         titel={tx.rohstoffe}
         eintraege={rohstoffe}
@@ -799,6 +900,7 @@ export default function ErgebnisTabelle({
         onToggleItem={onToggleIgnoriertesItem}
         toggleTipOn={tx.alsRohstoff}
         toggleTipOff={tx.alsMittelprodukt}
+        spalten={spalten}
       />
 
       {stromDaten.gesamtKW > 0 && (

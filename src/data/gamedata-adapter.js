@@ -281,3 +281,7 @@ export function getItemName(id, lang = 'de') {
   if (recipe?.name?.en)     return recipe.name.en;
   return id;
 }
+
+export function istFluid(id) {
+  return gamedata.items[id]?.subgroup === 'fluid';
+}
