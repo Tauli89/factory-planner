@@ -167,7 +167,7 @@ function RechnerTab({ sprache }) {
   const { boni }                                          = useForschung();
   const { modulBoni }                                     = useModul();
   const { zielQualitaet, maschinenQualitaet, getQualityFaktorFuerMaschine } = useQuality();
-  const { setMaschinenListe }                             = useBerechnung();
+  const { setMaschinenListe, ignorierteItems, toggleIgnoriertesItem } = useBerechnung();
 
   const onPlanLoad = (neueItems) => {
     setItems(neueItems.map((it, i) => ({ ...it, key: keyRef.current + i + 1 })));
@@ -214,7 +214,7 @@ function RechnerTab({ sprache }) {
       const maschinenType = rezept?.maschine;
       const qualityFaktor = getQualityFaktorFuerMaschine(maschinenType);
       const craftingRateSek = (item.mengeProMin / 60) * qualityFaktor;
-      const produktion = berechneProduktion(item.id, craftingRateSek, {}, modulBoni, rezeptOverrides);
+      const produktion = berechneProduktion(item.id, craftingRateSek, {}, modulBoni, rezeptOverrides, ignorierteItems);
       return {
         key:         item.key,
         id:          item.id,
@@ -232,7 +232,7 @@ function RechnerTab({ sprache }) {
       }
     }
     return { combined, perItem: perItemList };
-  }, [items, modulBoni, zielQualitaet, getQualityFaktorFuerMaschine, rezeptOverrides]);
+  }, [items, modulBoni, zielQualitaet, getQualityFaktorFuerMaschine, rezeptOverrides, ignorierteItems]);
 
   // Publish calculated machine list to BerechnungContext for FabrikPlaner
   const maschinenFuerPlaner = useMemo(() => {
@@ -471,6 +471,8 @@ function RechnerTab({ sprache }) {
               onMaschinenOverrideChange={updateMaschinenOverride}
               beaconConfigs={beaconConfigs}
               onBeaconConfigChange={updateBeaconConfig}
+              ignorierteItems={ignorierteItems}
+              onToggleIgnoriertesItem={toggleIgnoriertesItem}
             />
           ) : (
             <ProduktionsBaum

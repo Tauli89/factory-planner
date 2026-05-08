@@ -93,12 +93,13 @@ export function getVerfuegbareRezepte(id) {
  * modulBoni:      { [maschinenType]: { speedBonus, produktivitaet } }
  * rezeptOverrides: { [itemOderRezeptId]: rezeptId } – alternatives Rezept pro Produkt
  */
-export function berechneProduktion(rootId, rootRate, akkumulator = {}, modulBoni = {}, rezeptOverrides = {}) {
+export function berechneProduktion(rootId, rootRate, akkumulator = {}, modulBoni = {}, rezeptOverrides = {}, ignorierteItems = null) {
   let pending = { [rootId]: rootRate };
   while (Object.keys(pending).length > 0) {
     const nextPending = {};
     for (const [id, rate] of Object.entries(pending)) {
       akkumulator[id] = (akkumulator[id] ?? 0) + rate;
+      if (ignorierteItems?.has(id)) continue;
       const rezeptId = rezeptOverrides[id] ?? id;
       const rezept   = REZEPTE_MAP[rezeptId];
       if (!rezept || rezept.zeit === 0) continue;

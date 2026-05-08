@@ -78,6 +78,8 @@ const T = {
   de: {
     herstellung:       'Herstellung',
     rohstoffe:         'Rohstoffe / Fluide',
+    alsRohstoff:       'Als Rohstoff behandeln',
+    alsMittelprodukt:  'Als Zwischenprodukt behandeln',
     produkt:           'Produkt',
     proMin:            '/ Min',
     proSek:            '/ Sek',
@@ -117,6 +119,8 @@ const T = {
   en: {
     herstellung:       'Production',
     rohstoffe:         'Resources / Fluids',
+    alsRohstoff:       'Treat as raw material',
+    alsMittelprodukt:  'Treat as intermediate',
     produkt:           'Product',
     proMin:            '/ Min',
     proSek:            '/ Sec',
@@ -393,10 +397,12 @@ function Abschnitt({
   istQualityAktiv, sprache, onMaschinenOverrideChange = null,
   beaconConfigs = {}, onBeaconConfigChange = null,
   bottleneckId = null, diffMap = null,
+  onToggleItem = null, toggleTipOn = '', toggleTipOff = '',
 }) {
   if (eintraege.length === 0) return null;
   const zeigeBaender = eintraege.some(e => e.baender !== null);
   const zeigeBeacon  = zeigeMaschine && !!onBeaconConfigChange;
+  const zeigeToggle  = !!onToggleItem;
   const [openBeaconId, setOpenBeaconId] = useState(null);
 
   return (
@@ -421,6 +427,9 @@ function Abschnitt({
               {zeigeBeacon && (
                 <th className="px-2 py-3 text-center text-gray-600 text-base">◈</th>
               )}
+              {zeigeToggle && (
+                <th className="px-2 py-3 text-center text-gray-600 text-xs">⬦</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -429,13 +438,14 @@ function Abschnitt({
               const maschinenFarbe = e.beaconActive ? 'text-green-400' : (MASCHINEN_FARBE[e.maschine] ?? 'text-gray-400');
               const beitraege      = zeigeBeitraege ? (beitraegeMap[e.id] ?? []) : [];
               const hatMehrere     = beitraege.length > 1;
-              const rowBg          = i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950';
+              const rowBg          = e.istIgnoriert ? 'bg-orange-900/10' : (i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950');
+              const extraBorder    = istBottleneck ? ' border-l-4 border-red-500' : e.istIgnoriert ? ' border-l-4 border-orange-500/50' : '';
               const beaconOffen    = openBeaconId === e.id;
 
               return (
                 <Fragment key={e.id}>
-                  <tr className={`${rowBg}${istBottleneck ? ' border-l-4 border-red-500' : ''}`}>
-                    <td className={`py-2 text-white font-medium ${istBottleneck ? 'pl-3 pr-4' : 'px-4'}`}>
+                  <tr className={`${rowBg}${extraBorder}`}>
+                    <td className={`py-2 text-white font-medium ${istBottleneck || e.istIgnoriert ? 'pl-3 pr-4' : 'px-4'}`}>
                       <WithTooltip itemId={e.id}>
                         <span className="inline-flex items-center gap-1.5">
                           <Icon id={e.id} size={20} />
@@ -512,6 +522,23 @@ function Abschnitt({
                         </button>
                       </td>
                     )}
+                    {zeigeToggle && (
+                      <td className="px-1 py-2 text-center">
+                        {e.hatRezept && !e.istZiel && (
+                          <button
+                            onClick={() => onToggleItem(e.id)}
+                            title={e.istIgnoriert ? toggleTipOff : toggleTipOn}
+                            className={`text-sm px-1.5 py-0.5 rounded transition-colors ${
+                              e.istIgnoriert
+                                ? 'bg-orange-500/30 text-orange-300 border border-orange-500/40 hover:bg-orange-500/50'
+                                : 'text-gray-600 hover:text-orange-300 hover:bg-orange-900/20'
+                            }`}
+                          >
+                            ⬦
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
 
                   {hatMehrere && (
@@ -562,6 +589,7 @@ export default function ErgebnisTabelle({
   maschinenOverrides = {}, onMaschinenOverrideChange = null,
   beaconConfigs = {}, onBeaconConfigChange = null,
   diffMap = null,
+  ignorierteItems = new Set(), onToggleIgnoriertesItem = null,
 }) {
   const { boni }           = useForschung();
   const { sprache }        = useSprache();
@@ -613,11 +641,15 @@ export default function ErgebnisTabelle({
   const mQMulti = maschinenQualitaet.maschinenMulti;
 
   const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
-    const rezept      = REZEPTE_MAP[id];
-    const istRohstoff = !rezept || rezept.zeit === 0;
+    const rezept         = REZEPTE_MAP[id];
+    const istRohstoffNativ = !rezept || rezept.zeit === 0;
+    const hatRezept      = !istRohstoffNativ;
 
     const zielInfo    = zielProduktMap[id];
     const istZiel     = !!zielInfo;
+
+    const istIgnoriert = hatRezept && !istZiel && ignorierteItems.has(id);
+    const istRohstoff  = istRohstoffNativ || istIgnoriert;
     const displayRate = istZiel ? zielInfo.gewuenschteRateSek : rateProSek;
     const craftingRate = rateProSek;
 
@@ -642,6 +674,8 @@ export default function ErgebnisTabelle({
       rateProMin:          displayRate * 60,
       craftingRate,
       istRohstoff,
+      istIgnoriert,
+      hatRezept,
       istZiel,
       qualitaet,
       anzahl,
@@ -748,6 +782,9 @@ export default function ErgebnisTabelle({
         onBeaconConfigChange={onBeaconConfigChange}
         bottleneckId={bottleneckId}
         diffMap={diffMap}
+        onToggleItem={onToggleIgnoriertesItem}
+        toggleTipOn={tx.alsRohstoff}
+        toggleTipOff={tx.alsMittelprodukt}
       />
       <Abschnitt
         titel={tx.rohstoffe}
@@ -759,6 +796,9 @@ export default function ErgebnisTabelle({
         beltFarbe={beltFarbe}
         istQualityAktiv={istQualityAktiv}
         sprache={sprache}
+        onToggleItem={onToggleIgnoriertesItem}
+        toggleTipOn={tx.alsRohstoff}
+        toggleTipOff={tx.alsMittelprodukt}
       />
 
       {stromDaten.gesamtKW > 0 && (
