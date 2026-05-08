@@ -506,6 +506,7 @@ function RechnerTab({ sprache }) {
           items={items}
           onClose={() => setZeigeExport(false)}
           sprache={sprache}
+          foerderband={foerderband?.id !== 'keins' ? foerderband : null}
         />
       )}
     </div>
