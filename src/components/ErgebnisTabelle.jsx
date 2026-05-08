@@ -119,6 +119,8 @@ const T = {
     beaconEnergie:     'Energie',
     beaconMaschinen:   'Maschinen',
     beaconKonfig:      'Beacons konfigurieren',
+    beaconHeader:      'Beacon',
+    ignorierenHeader:  'Ignorieren',
     spaltenBtn:        'Spalten',
     spalteSek:         '/ Sek',
     spalteBaender:     'Förderbänder',
@@ -164,6 +166,8 @@ const T = {
     beaconEnergie:     'energy',
     beaconMaschinen:   'Machines',
     beaconKonfig:      'Configure beacons',
+    beaconHeader:      'Beacon',
+    ignorierenHeader:  'Ignore',
     spaltenBtn:        'Columns',
     spalteSek:         '/ Sec',
     spalteBaender:     'Belts',
@@ -452,10 +456,10 @@ function Abschnitt({
                 <th className="px-4 py-3 text-right">{tx.anzahl}</th>
               )}
               {zeigeBeacon && (
-                <th className="px-2 py-3 text-center text-gray-600 text-base">◈</th>
+                <th className="px-2 py-3 text-center">{tx.beaconHeader}</th>
               )}
               {zeigeToggle && (
-                <th className="px-2 py-3 text-center text-gray-600 text-xs">⬦</th>
+                <th className="px-2 py-3 text-center">{tx.ignorierenHeader}</th>
               )}
             </tr>
           </thead>
@@ -540,36 +544,51 @@ function Abschnitt({
                       </td>
                     )}
                     {zeigeBeacon && (
-                      <td className="px-1 py-2 text-center">
-                        <button
-                          onClick={() => setOpenBeaconId(beaconOffen ? null : e.id)}
-                          title={tx.beaconKonfig}
-                          className={`text-sm px-1.5 py-0.5 rounded transition-colors ${
-                            beaconOffen
-                              ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40'
-                              : e.beaconActive
-                                ? 'text-blue-400 hover:text-blue-200 hover:bg-blue-900/20'
-                                : 'text-gray-600 hover:text-gray-300 hover:bg-gray-700/50'
-                          }`}
-                        >
-                          ◈
-                        </button>
+                      <td className="px-2 py-1.5">
+                        <div className="flex items-center justify-center gap-0.5">
+                          <button
+                            onClick={() => setOpenBeaconId(beaconOffen ? null : e.id)}
+                            title={tx.beaconKonfig}
+                            className={`text-xs leading-none px-0.5 transition-colors ${
+                              beaconOffen
+                                ? 'text-amber-300'
+                                : e.beaconActive
+                                  ? 'text-blue-400 hover:text-blue-200'
+                                  : 'text-gray-600 hover:text-gray-300'
+                            }`}
+                          >
+                            ◈
+                          </button>
+                          <button
+                            onClick={() => {
+                              const cfg = beaconConfigs[e.id] ?? DEFAULT_BEACON_CONFIG;
+                              onBeaconConfigChange(e.id, { ...cfg, anzahlBeacons: Math.max(0, cfg.anzahlBeacons - 1) });
+                            }}
+                            className="w-4 text-center text-xs text-gray-500 hover:text-white transition-colors leading-none"
+                          >−</button>
+                          <span className={`tabular-nums text-xs w-5 text-center select-none ${e.beaconActive ? 'text-blue-300 font-bold' : 'text-gray-500'}`}>
+                            {(beaconConfigs[e.id] ?? DEFAULT_BEACON_CONFIG).anzahlBeacons}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const cfg = beaconConfigs[e.id] ?? DEFAULT_BEACON_CONFIG;
+                              onBeaconConfigChange(e.id, { ...cfg, anzahlBeacons: Math.min(20, cfg.anzahlBeacons + 1) });
+                            }}
+                            className="w-4 text-center text-xs text-gray-500 hover:text-white transition-colors leading-none"
+                          >+</button>
+                        </div>
                       </td>
                     )}
                     {zeigeToggle && (
-                      <td className="px-1 py-2 text-center">
+                      <td className="px-2 py-1.5 text-center">
                         {e.hatRezept && !e.istZiel && (
-                          <button
-                            onClick={() => onToggleItem(e.id)}
+                          <input
+                            type="checkbox"
+                            checked={e.istIgnoriert}
+                            onChange={() => onToggleItem(e.id)}
                             title={e.istIgnoriert ? toggleTipOff : toggleTipOn}
-                            className={`text-sm px-1.5 py-0.5 rounded transition-colors ${
-                              e.istIgnoriert
-                                ? 'bg-orange-500/30 text-orange-300 border border-orange-500/40 hover:bg-orange-500/50'
-                                : 'text-gray-600 hover:text-orange-300 hover:bg-orange-900/20'
-                            }`}
-                          >
-                            ⬦
-                          </button>
+                            className="w-3.5 h-3.5 accent-orange-400 cursor-pointer"
+                          />
                         )}
                       </td>
                     )}
