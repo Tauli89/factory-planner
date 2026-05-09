@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { REZEPTE_MAP } from '../data/recipes';
 import { DEFAULT_PLANETEN } from '../data/planets';
 
@@ -18,6 +18,11 @@ const PlanetenContext = createContext(null);
 export function PlanetenProvider({ children }) {
   const [aktivePlaneten, setAktivePlaneten] = useState(ladePlaneten);
 
+  // Persist to localStorage outside the state updater to avoid side effects in strict mode
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify([...aktivePlaneten])); } catch {}
+  }, [aktivePlaneten]);
+
   const togglePlanet = (id) => {
     setAktivePlaneten(prev => {
       const next = new Set(prev);
@@ -26,7 +31,6 @@ export function PlanetenProvider({ children }) {
       } else {
         next.add(id);
       }
-      try { localStorage.setItem(LS_KEY, JSON.stringify([...next])); } catch {}
       return next;
     });
   };

@@ -1,6 +1,7 @@
 import { usePlaneten } from '../context/PlanetenContext';
 import { PLANETEN } from '../data/planets';
 import { useSprache } from '../context/SprachContext';
+import Icon from './Icon';
 
 export default function PlanetenAuswahl() {
   const { aktivePlaneten, togglePlanet } = usePlaneten();
@@ -15,13 +16,13 @@ export default function PlanetenAuswahl() {
             key={planet.id}
             onClick={() => togglePlanet(planet.id)}
             title={sprache === 'de' ? planet.de : planet.en}
-            className={`w-7 h-7 rounded text-sm flex items-center justify-center transition-colors border leading-none select-none ${
+            className={`w-7 h-7 rounded flex items-center justify-center transition-all border ${
               aktiv
-                ? `${planet.bg} ${planet.border} ${planet.farbe}`
-                : 'bg-gray-800 border-gray-700 text-gray-500 hover:text-gray-300 hover:bg-gray-700'
+                ? `${planet.bg} ${planet.border}`
+                : 'bg-gray-800 border-gray-700 hover:bg-gray-700 opacity-40 hover:opacity-70'
             }`}
           >
-            {planet.emoji}
+            <Icon id={planet.iconId} type={planet.iconType} size={18} />
           </button>
         );
       })}

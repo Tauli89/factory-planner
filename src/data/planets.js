@@ -3,7 +3,8 @@
 export const PLANETEN = [
   {
     id: 'nauvis',
-    emoji: '🌍',
+    iconId: 'automation-science-pack',
+    iconType: 'technologies',
     de: 'Nauvis',
     en: 'Nauvis',
     farbe:  'text-green-400',
@@ -12,7 +13,8 @@ export const PLANETEN = [
   },
   {
     id: 'vulcanus',
-    emoji: '🌋',
+    iconId: 'planet-discovery-vulcanus',
+    iconType: 'technologies',
     de: 'Vulcanus',
     en: 'Vulcanus',
     farbe:  'text-orange-400',
@@ -21,7 +23,8 @@ export const PLANETEN = [
   },
   {
     id: 'fulgora',
-    emoji: '⚡',
+    iconId: 'planet-discovery-fulgora',
+    iconType: 'technologies',
     de: 'Fulgora',
     en: 'Fulgora',
     farbe:  'text-yellow-300',
@@ -30,7 +33,8 @@ export const PLANETEN = [
   },
   {
     id: 'gleba',
-    emoji: '🌿',
+    iconId: 'planet-discovery-gleba',
+    iconType: 'technologies',
     de: 'Gleba',
     en: 'Gleba',
     farbe:  'text-lime-400',
@@ -39,7 +43,8 @@ export const PLANETEN = [
   },
   {
     id: 'aquilo',
-    emoji: '❄️',
+    iconId: 'planet-discovery-aquilo',
+    iconType: 'technologies',
     de: 'Aquilo',
     en: 'Aquilo',
     farbe:  'text-sky-300',
@@ -48,9 +53,10 @@ export const PLANETEN = [
   },
   {
     id: 'space',
-    emoji: '🚀',
+    iconId: 'space-platform',
+    iconType: 'technologies',
     de: 'Raumstation',
-    en: 'Space',
+    en: 'Space Platform',
     farbe:  'text-indigo-300',
     border: 'border-indigo-500/40',
     bg:     'bg-indigo-500/20',

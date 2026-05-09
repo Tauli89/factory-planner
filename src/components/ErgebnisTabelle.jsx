@@ -125,13 +125,15 @@ const T = {
     beaconHeader:      'Beacon',
     ignorierenHeader:  'Ignorieren',
     spaltenBtn:        'Spalten',
-    spalteSek:         '/ Sek',
-    spalteBaender:     'Förderbänder',
-    spalteWagons:      'Wagons/Min',
-    proStd:            '/ Std',
-    spaltePollution:   'Pollution/Min',
-    pollutionTooltip:  'Verschmutzung zieht Beißer an — je höher, desto häufiger Angriffe',
-    gesamtPollution:   'Gesamt-Verschmutzung',
+    spalteSek:              '/ Sek',
+    spalteBaender:          'Förderbänder',
+    spalteWagons:           'Wagons/Min',
+    proStd:                 '/ Std',
+    spaltePollution:        'Verschmutzung/Min',
+    spaltePollutionSek:     'Verschmutzung/Sek',
+    spaltePollutionStd:     'Verschmutzung/Std',
+    pollutionTooltip:       'Verschmutzung zieht Beißer an — je höher, desto häufiger Angriffe',
+    gesamtPollution:        'Gesamt-Verschmutzung',
     analyseTitle:      '🔍 Produktionsanalyse',
     effizienzHinweis:  v => `Produktion läuft auf ${v}% Effizienz`,
     engpass:           'Engpass',
@@ -176,13 +178,15 @@ const T = {
     beaconHeader:      'Beacon',
     ignorierenHeader:  'Ignore',
     spaltenBtn:        'Columns',
-    spalteSek:         '/ Sec',
-    spalteBaender:     'Belts',
-    spalteWagons:      'Wagons/Min',
-    proStd:            '/ Hr',
-    spaltePollution:   'Pollution/Min',
-    pollutionTooltip:  'Pollution attracts biters — the higher it is, the more frequent the attacks',
-    gesamtPollution:   'Total Pollution',
+    spalteSek:              '/ Sec',
+    spalteBaender:          'Belts',
+    spalteWagons:           'Wagons/Min',
+    proStd:                 '/ Hr',
+    spaltePollution:        'Pollution/Min',
+    spaltePollutionSek:     'Pollution/Sec',
+    spaltePollutionStd:     'Pollution/Hr',
+    pollutionTooltip:       'Pollution attracts biters — the higher it is, the more frequent the attacks',
+    gesamtPollution:        'Total Pollution',
     analyseTitle:      '🔍 Production Analysis',
     effizienzHinweis:  v => `Production runs at ${v}% efficiency`,
     engpass:           'Bottleneck',
@@ -488,7 +492,7 @@ function Abschnitt({
   bottleneckId = null, diffMap = null,
   onToggleItem = null, toggleTipOn = '', toggleTipOff = '',
   spalten = DEFAULT_SPALTEN, einheitLabel = null, einheitDecimals = 2,
-  nichtverfuegbarLabel = '',
+  nichtverfuegbarLabel = '', pollutionLabel = null,
 }) {
   // Hooks must come before any early return
   const [openBeaconId, setOpenBeaconId] = useState(null);
@@ -564,7 +568,7 @@ function Abschnitt({
               )}
               {zeigePollution && (
                 <th className="px-4 py-3 text-right text-lime-600/80 cursor-pointer select-none hover:text-lime-400 transition-colors" title={tx.pollutionTooltip} onClick={() => onSort('pollution')}>
-                  <span className="inline-flex items-center justify-end">{tx.spaltePollution}{sortIcon('pollution')}</span>
+                  <span className="inline-flex items-center justify-end">{pollutionLabel ?? tx.spaltePollution}{sortIcon('pollution')}</span>
                 </th>
               )}
               {zeigeMaschine && (
@@ -814,6 +818,9 @@ export default function ErgebnisTabelle({
   const einheitMulti    = ({ sek: 1, min: 60, std: 3600 })[anzeigeEinheit] ?? 60;
   const einheitLabel    = anzeigeEinheit === 'sek' ? tx.proSek : anzeigeEinheit === 'std' ? tx.proStd : tx.proMin;
   const einheitDecimals = { sek: 4, min: 2, std: 1 }[anzeigeEinheit] ?? 2;
+  const pollutionLabel  = anzeigeEinheit === 'sek' ? tx.spaltePollutionSek
+                        : anzeigeEinheit === 'std' ? tx.spaltePollutionStd
+                        : tx.spaltePollution;
 
   const [spalten, setSpalten]                     = useState(ladeSpaltenConfig);
   const [spaltenDropdownOffen, setSpaltenDropdownOffen] = useState(false);
@@ -1073,7 +1080,7 @@ export default function ErgebnisTabelle({
                   { key: 'zeigeSek',      label: tx.spalteSek,      disabled: false },
                   { key: 'zeigeBaender',  label: tx.spalteBaender,  disabled: !foerderband?.durchsatz },
                   { key: 'zeigeWagons',   label: tx.spalteWagons,   disabled: false },
-                  { key: 'zeigePollution',label: tx.spaltePollution, disabled: false },
+                  { key: 'zeigePollution',label: pollutionLabel, disabled: false },
                 ].map(({ key, label, disabled }) => (
                   <label
                     key={key}
@@ -1117,6 +1124,7 @@ export default function ErgebnisTabelle({
           einheitLabel={einheitLabel}
           einheitDecimals={einheitDecimals}
           nichtverfuegbarLabel={nichtverfuegbarLabel}
+          pollutionLabel={pollutionLabel}
         />
       </div>
 

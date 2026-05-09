@@ -81,8 +81,8 @@ function ladeInitialState() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const TX = {
-  de: { loeschen: 'Plan löschen', neuenPlan: 'Neuen Plan erstellen' },
-  en: { loeschen: 'Delete plan',  neuenPlan: 'Create new plan' },
+  de: { loeschen: 'Plan löschen', neuenPlan: 'Neuen Plan erstellen', umbenennen: 'Plan umbenennen' },
+  en: { loeschen: 'Delete plan',  neuenPlan: 'Create new plan',      umbenennen: 'Rename plan' },
 };
 
 export default function PlanManager({ currentItems, onPlanLoad, sprache = 'de' }) {
@@ -243,13 +243,26 @@ export default function PlanManager({ currentItems, onPlanLoad, sprache = 'de' }
                 className="bg-gray-700 border border-amber-500/50 text-white text-sm rounded px-1.5 py-0 w-28 focus:outline-none focus:ring-1 focus:ring-amber-400"
               />
             ) : (
-              <span
-                className="max-w-[120px] truncate"
-                onDoubleClick={e => starteUmbenennen(plan.id, plan.name, e)}
-                title={plan.name}
-              >
-                {plan.name}
-              </span>
+              <>
+                <span
+                  className="max-w-[120px] truncate"
+                  onDoubleClick={e => starteUmbenennen(plan.id, plan.name, e)}
+                  title={plan.name}
+                >
+                  {plan.name}
+                </span>
+                <button
+                  onClick={e => starteUmbenennen(plan.id, plan.name, e)}
+                  title={tx.umbenennen}
+                  className={`text-[11px] leading-none flex-shrink-0 transition-opacity ${
+                    istAktiv
+                      ? 'opacity-50 hover:opacity-100 text-amber-300'
+                      : 'opacity-0 group-hover:opacity-40 hover:!opacity-80 text-gray-400'
+                  }`}
+                >
+                  ✏
+                </button>
+              </>
             )}
 
             {plaene.length > 1 && !istUmbenennen && (

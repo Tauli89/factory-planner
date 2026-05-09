@@ -60,108 +60,145 @@ export function getMaschinenInKette(produktId) {
   return maschinen;
 }
 
-/**
- * Compute performance metrics for N slots of a module on a machine.
- *
- * outputFactor          – output per machine relative to no modules (1 = baseline)
- * ingredientFactor      – raw-material cost per output unit (1 = baseline, 0.8 = 20% fewer ingredients)
- * energyPerOutputFactor – energy per output unit (1 = baseline, 0.5 = half the energy)
- */
 function berechneMetrik(modulId, anzahl) {
   const modul = MODULE_MAP[modulId];
   if (!modul || modul.id === 'keins' || anzahl <= 0) {
     return { outputFactor: 1, ingredientFactor: 1, energyPerOutputFactor: 1 };
   }
-
-  // Speed can't drop below 20 % of base
-  const speedFaktor    = Math.max(0.2, 1 + modul.speedBonus * anzahl);
-  const produktivitaet = modul.produktivitaet * anzahl;
-  const outputFaktor   = speedFaktor * (1 + produktivitaet);
-
-  // Factorio floors energy consumption at 20 % of base
+  const speedFaktor           = Math.max(0.2, 1 + modul.speedBonus * anzahl);
+  const produktivitaet        = modul.produktivitaet * anzahl;
+  const outputFaktor          = speedFaktor * (1 + produktivitaet);
   const energyFaktor          = Math.max(0.2, 1 + modul.energyBonus * anzahl);
   const energyPerOutputFaktor = energyFaktor / outputFaktor;
-
-  // Productivity reduces ingredients needed per output item
-  const ingredientFaktor = produktivitaet > 0 ? 1 / (1 + produktivitaet) : 1;
-
+  const ingredientFaktor      = produktivitaet > 0 ? 1 / (1 + produktivitaet) : 1;
   return { outputFactor: outputFaktor, ingredientFactor: ingredientFaktor, energyPerOutputFactor: energyPerOutputFaktor };
 }
 
-/**
- * Score a metric configuration for the given goal.
- * Higher score = better for every goal.
- */
+function berechneGemischteMetrik(modulMix) {
+  let gesamtSpeed = 0, gesamtProd = 0, gesamtEnergy = 0;
+  for (const { modulId, anzahl } of modulMix) {
+    const modul = MODULE_MAP[modulId];
+    if (!modul || modul.id === 'keins' || anzahl <= 0) continue;
+    gesamtSpeed  += modul.speedBonus * anzahl;
+    gesamtProd   += modul.produktivitaet * anzahl;
+    gesamtEnergy += modul.energyBonus * anzahl;
+  }
+  const speedFaktor  = Math.max(0.2, 1 + gesamtSpeed);
+  const outputFaktor = speedFaktor * (1 + gesamtProd);
+  const energyFaktor = Math.max(0.2, 1 + gesamtEnergy);
+  return {
+    outputFactor:         outputFaktor,
+    ingredientFactor:     gesamtProd > 0 ? 1 / (1 + gesamtProd) : 1,
+    energyPerOutputFactor: energyFaktor / outputFaktor,
+  };
+}
+
 function score(metrik, ziel) {
   const { outputFactor, ingredientFactor, energyPerOutputFactor } = metrik;
-  // Percentage deltas vs. baseline
-  const outputGain    = outputFactor - 1;
-  const resourceGain  = 1 - ingredientFactor;            // positive = saves resources
-  const energyGain    = 1 - energyPerOutputFactor;       // positive = saves energy
-
+  const outputGain   = outputFactor - 1;
+  const resourceGain = 1 - ingredientFactor;
+  const energyGain   = 1 - energyPerOutputFactor;
   switch (ziel) {
-    case OPTIMIERUNGSZIELE.MAX_OUTPUT:
-      return outputGain;
-    case OPTIMIERUNGSZIELE.MIN_RESSOURCEN:
-      return resourceGain;
-    case OPTIMIERUNGSZIELE.MIN_STROM:
-      return energyGain;
-    case OPTIMIERUNGSZIELE.BESTE_KOMBI:
-      // Balanced: output 50 %, resources 30 %, energy 20 %
-      return outputGain * 0.5 + resourceGain * 0.3 + energyGain * 0.2;
-    default:
-      return 0;
+    case OPTIMIERUNGSZIELE.MAX_OUTPUT:     return outputGain;
+    case OPTIMIERUNGSZIELE.MIN_RESSOURCEN: return resourceGain;
+    case OPTIMIERUNGSZIELE.MIN_STROM:      return energyGain;
+    case OPTIMIERUNGSZIELE.BESTE_KOMBI:    return outputGain * 0.5 + resourceGain * 0.3 + energyGain * 0.2;
+    default: return 0;
   }
 }
 
-/**
- * Find the optimal module type & slot count for a single machine type.
- */
 function optimiereMaschine(maschinenType, ziel) {
   const maxSlots = MODUL_SLOTS[maschinenType] ?? 0;
   const baseline = { modulId: 'keins', anzahl: 0, metrik: berechneMetrik('keins', 0) };
   if (maxSlots === 0) return baseline;
-
-  let bestScore  = score(baseline.metrik, ziel);
-  let best       = baseline;
-
+  let bestScore = score(baseline.metrik, ziel);
+  let best = baseline;
   for (const modul of MODULE_TYPEN) {
     if (modul.id === 'keins') continue;
     for (let n = 1; n <= maxSlots; n++) {
       const metrik = berechneMetrik(modul.id, n);
       const s      = score(metrik, ziel);
-      if (s > bestScore) {
-        bestScore = s;
-        best = { modulId: modul.id, anzahl: n, metrik };
-      }
+      if (s > bestScore) { bestScore = s; best = { modulId: modul.id, anzahl: n, metrik }; }
     }
   }
-
   return best;
 }
 
 /**
- * Main entry point: returns optimized module recommendations for all
- * machine types in the production chain of `produktId`.
+ * Find the optimal module mix (including 2-type combinations) for every
+ * optimization goal for a single machine type.
  *
- * Returns { empfehlungen: Map<maschinenType, { modulId, anzahl, metrik }> }
+ * Returns { maxSlots, ziele: { [ziel]: { modulMix: [{modulId, anzahl}], metrik } } }
  */
+function optimiereMaschineAllZiele(maschinenType) {
+  const maxSlots   = MODUL_SLOTS[maschinenType] ?? 0;
+  const kandidaten = MODULE_TYPEN.filter(m => m.id !== 'keins');
+  const baseMetrik = { outputFactor: 1, ingredientFactor: 1, energyPerOutputFactor: 1 };
+  const ergebnisseProZiel = {};
+
+  for (const ziel of Object.values(OPTIMIERUNGSZIELE)) {
+    let bestScore = score(baseMetrik, ziel);
+    let best = { modulMix: [], metrik: baseMetrik };
+
+    if (maxSlots > 0) {
+      // Single module type filling all slots
+      for (const modul of kandidaten) {
+        const metrik = berechneMetrik(modul.id, maxSlots);
+        const s      = score(metrik, ziel);
+        if (s > bestScore) {
+          bestScore = s;
+          best = { modulMix: [{ modulId: modul.id, anzahl: maxSlots }], metrik };
+        }
+      }
+
+      // Mixed 2-type combinations
+      if (maxSlots >= 2) {
+        for (let i = 0; i < kandidaten.length; i++) {
+          for (let j = i + 1; j < kandidaten.length; j++) {
+            for (let n = 1; n < maxSlots; n++) {
+              const mix = [
+                { modulId: kandidaten[i].id, anzahl: n },
+                { modulId: kandidaten[j].id, anzahl: maxSlots - n },
+              ];
+              const metrik = berechneGemischteMetrik(mix);
+              const s      = score(metrik, ziel);
+              if (s > bestScore) { bestScore = s; best = { modulMix: mix, metrik }; }
+            }
+          }
+        }
+      }
+    }
+
+    ergebnisseProZiel[ziel] = best;
+  }
+
+  return { maxSlots, ziele: ergebnisseProZiel };
+}
+
 export function optimiereModule(produktId, ziel) {
   if (!produktId || !REZEPTE_MAP[produktId]) return null;
-
   const maschinen    = getMaschinenInKette(produktId);
   const empfehlungen = new Map();
-
   for (const [maschinenType] of maschinen) {
     empfehlungen.set(maschinenType, optimiereMaschine(maschinenType, ziel));
   }
-
   return empfehlungen;
 }
 
 /**
- * Convert optimizer output to the modulBoni format expected by berechneProduktion / maschinenAnzahl.
+ * Main entry for the all-goals table view.
+ * Returns Map<maschinenType, { maxSlots, ziele: { [ziel]: { modulMix, metrik } } }>
  */
+export function optimiereModuleAllZiele(produktId) {
+  if (!produktId || !REZEPTE_MAP[produktId]) return null;
+  const maschinen  = getMaschinenInKette(produktId);
+  const ergebnisse = new Map();
+  for (const [maschinenType] of maschinen) {
+    ergebnisse.set(maschinenType, optimiereMaschineAllZiele(maschinenType));
+  }
+  return ergebnisse;
+}
+
 export function empfehlungenZuModulBoni(empfehlungen) {
   if (!empfehlungen) return {};
   const boni = {};
@@ -170,6 +207,29 @@ export function empfehlungenZuModulBoni(empfehlungen) {
     if (!modul || modul.id === 'keins' || anzahl <= 0) continue;
     const speedBonus     = modul.speedBonus * anzahl;
     const produktivitaet = modul.produktivitaet * anzahl;
+    if (speedBonus !== 0 || produktivitaet !== 0) {
+      boni[maschinenType] = { speedBonus, produktivitaet };
+    }
+  }
+  return boni;
+}
+
+/**
+ * Convert all-goals optimizer output to modulBoni for a specific goal.
+ */
+export function empfehlungenZuModulBoniAllZiele(ergebnisse, ziel) {
+  if (!ergebnisse) return {};
+  const boni = {};
+  for (const [maschinenType, { ziele }] of ergebnisse) {
+    const rec = ziele[ziel];
+    if (!rec || !rec.modulMix || rec.modulMix.length === 0) continue;
+    let speedBonus = 0, produktivitaet = 0;
+    for (const { modulId, anzahl } of rec.modulMix) {
+      const modul = MODULE_MAP[modulId];
+      if (!modul || modul.id === 'keins' || anzahl <= 0) continue;
+      speedBonus     += modul.speedBonus * anzahl;
+      produktivitaet += modul.produktivitaet * anzahl;
+    }
     if (speedBonus !== 0 || produktivitaet !== 0) {
       boni[maschinenType] = { speedBonus, produktivitaet };
     }

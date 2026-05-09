@@ -28,6 +28,22 @@ export const MODULE_TYPEN = [
 
 export const MODULE_MAP = Object.fromEntries(MODULE_TYPEN.map(m => [m.id, m]));
 
+// Icon paths for compact module display (bypasses Icon.jsx since modules aren't in gamedata items)
+export const MODUL_ICON_PATH = {
+  'geschwindigkeit-1':  '/images/icons/modules/speed-module.png',
+  'geschwindigkeit-2':  '/images/icons/modules/speed-module-2.png',
+  'geschwindigkeit-3':  '/images/icons/modules/speed-module-3.png',
+  'produktivitaet-1':   '/images/icons/modules/productivity-module.png',
+  'produktivitaet-2':   '/images/icons/modules/productivity-module-2.png',
+  'produktivitaet-3':   '/images/icons/modules/productivity-module-3.png',
+  'effizienz-1':        '/images/icons/modules/efficiency-module.png',
+  'effizienz-2':        '/images/icons/modules/efficiency-module-2.png',
+  'effizienz-3':        '/images/icons/modules/efficiency-module-3.png',
+  'qualitaet-1':        '/images/icons/modules/quality-module.png',
+  'qualitaet-2':        '/images/icons/modules/quality-module-2.png',
+  'qualitaet-3':        '/images/icons/modules/quality-module-3.png',
+};
+
 // Max module slots per machine type
 export const MODUL_SLOTS = {
   [MASCHINEN.ASSEMBLER]:    2,
