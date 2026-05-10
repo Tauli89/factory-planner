@@ -2,9 +2,11 @@ import { useState, useMemo } from 'react';
 import { useSprache } from '../context/SprachContext';
 import { useForschung } from '../context/ForschungContext';
 import { useTechtree } from '../context/TechtreeContext';
-import { REZEPTE, REZEPTE_MAP, KATEGORIEN, KATEGORIEN_EN_LABEL } from '../data/recipes';
+import { REZEPTE_MAP } from '../data/recipes';
 import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/gamedata-adapter';
-import { MODULE_MAP, MODUL_ICON_PATH, MODUL_RECIPE_ID } from '../data/modules';
+import { MODULE_MAP, MODUL_RECIPE_ID } from '../data/modules';
+import Icon from './Icon';
+import ProduktAuswahl from './ProduktAuswahl';
 import { MASCHINEN_LABEL, MASCHINEN_LABEL_EN, berechneProduktion } from '../utils/berechnung';
 import {
   OPTIMIERUNGSZIELE,
@@ -12,20 +14,6 @@ import {
   optimiereModuleAllZiele,
   empfehlungenZuModulBoniAllZiele,
 } from '../utils/modulOptimierung';
-
-const KATEGORIE_REIHENFOLGE = [
-  KATEGORIEN.SCIENCE,
-  KATEGORIEN.ZWISCHENPRODUKTE,
-  KATEGORIEN.LOGISTIK,
-  KATEGORIEN.MASCHINEN_BAU,
-  KATEGORIEN.ENERGIE,
-  KATEGORIEN.NUKLEAR,
-  KATEGORIEN.MILITAER,
-  KATEGORIEN.MODULE,
-  KATEGORIEN.OELVERARBEITUNG,
-  KATEGORIEN.RAKETE,
-  KATEGORIEN.SPACE_AGE,
-];
 
 const ZIEL_ORDER = [
   OPTIMIERUNGSZIELE.MAX_OUTPUT,
@@ -104,18 +92,13 @@ function ModulMixIcons({ modulMix, keinModulText }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {modulMix.map(({ modulId, anzahl }, i) => {
-        const src  = MODUL_ICON_PATH[modulId];
         const modul = MODULE_MAP[modulId];
         const tip  = modul ? `${anzahl}× ${modul.name}` : modulId;
         return (
           <div key={i} className="flex items-center gap-0.5" title={tip}>
             {i > 0 && <span className="text-gray-700 text-xs px-0.5">+</span>}
             <span className="text-amber-400 text-[11px] font-mono leading-none">{anzahl}×</span>
-            {src ? (
-              <img src={src} alt={modulId} className="w-5 h-5 flex-shrink-0" style={{ imageRendering: 'pixelated' }} />
-            ) : (
-              <span className="text-gray-400 text-xs">{modulId}</span>
-            )}
+            <Icon id={MODUL_RECIPE_ID[modulId] ?? modulId} size={20} />
           </div>
         );
       })}
@@ -167,13 +150,6 @@ export default function ModulOptimierung() {
   const [produktId, setProduktId] = useState('');
   const [ergebnisse, setErgebnisse] = useState(null);
 
-  const herstellbar = useMemo(() => REZEPTE.filter(r => {
-    if (r.zeit === 0) return false;
-    if (!techtreeModus) return true;
-    if (!DURCH_TECH_GESPERRTE_REZEPTE.has(r.id)) return true;
-    return freigeschalteteRezepte.has(r.id);
-  }), [freigeschalteteRezepte, techtreeModus]);
-
   // In Techtree-Modus: only modules whose recipes are unlocked
   const verfuegbareModuleIds = useMemo(() => {
     if (!techtreeModus) return null;
@@ -185,13 +161,6 @@ export default function ModulOptimierung() {
     }
     return ids;
   }, [techtreeModus, freigeschalteteRezepte]);
-
-  const nachKategorie = useMemo(() =>
-    KATEGORIE_REIHENFOLGE
-      .map(kat => ({ kat, rezepte: herstellbar.filter(r => r.kategorie === kat) }))
-      .filter(g => g.rezepte.length > 0),
-    [herstellbar]
-  );
 
   function berechnen() {
     if (!produktId) return;
@@ -243,28 +212,10 @@ export default function ModulOptimierung() {
         <p className="text-gray-400 text-sm mb-5">{tx.untertitel}</p>
 
         <div className="flex flex-wrap items-end gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-amber-300">{tx.produkt}</label>
-            <select
-              value={produktId}
-              onChange={e => { setProduktId(e.target.value); setErgebnisse(null); }}
-              className="bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 max-w-xs"
-            >
-              <option value="">{tx.produktPH}</option>
-              {nachKategorie.map(({ kat, rezepte }) => {
-                const katLabel = sprache === 'de' ? kat : (KATEGORIEN_EN_LABEL[kat] ?? kat);
-                return (
-                  <optgroup key={kat} label={katLabel}>
-                    {rezepte.map(r => (
-                      <option key={r.id} value={r.id}>
-                        {sprache === 'de' ? r.name : r.nameEn}
-                      </option>
-                    ))}
-                  </optgroup>
-                );
-              })}
-            </select>
-          </div>
+          <ProduktAuswahl
+            ausgewaehltId={produktId}
+            onAuswahl={id => { setProduktId(id); setErgebnisse(null); }}
+          />
 
           <button
             onClick={berechnen}

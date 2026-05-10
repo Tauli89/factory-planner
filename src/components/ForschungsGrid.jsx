@@ -77,7 +77,7 @@ const TechGridKachel = memo(({ tech, erforscht, onToggle, sprache }) => {
       onClick={() => onToggle(tech.id)}
       title={tech.name[sprache] ?? tech.name.de}
       style={{
-        width: 160, height: 80,
+        width: 176, height: 88,
         background: '#1e1e1e',
         border: `2px solid ${borderColor}`,
         borderRadius: 5,
@@ -155,7 +155,7 @@ const LevelGridKachel = memo(({ gruppe, techId, tech, erforscht, infiniteLevels,
     <div
       title={name}
       style={{
-        width: 160, height: 80,
+        width: 176, height: 88,
         background: '#1e1e1e',
         border: `2px solid ${borderColor}`,
         borderRadius: 5,
