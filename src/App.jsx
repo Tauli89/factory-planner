@@ -18,6 +18,7 @@ import { SprachProvider, useSprache } from './context/SprachContext';
 import { ModulProvider, useModul } from './context/ModulContext';
 import { QualityProvider, useQuality } from './context/QualityContext';
 import { BerechnungProvider, useBerechnung } from './context/BerechnungContext';
+import { TechtreeProvider, useTechtree } from './context/TechtreeContext';
 import { TooltipProvider } from './context/TooltipContext';
 import ItemTooltip from './components/ItemTooltip';
 import EinstellungenModal from './components/EinstellungenModal';
@@ -27,7 +28,8 @@ import { EinstellungenProvider, useEinstellungen } from './context/Einstellungen
 import { PlanetenProvider } from './context/PlanetenContext';
 import { berechneProduktion, maschinenAnzahl, getVerfuegbareRezepte } from './utils/berechnung';
 import { encodePlan, decodePlan } from './utils/planShare';
-import { REZEPTE_MAP } from './data/recipes';
+import { REZEPTE_MAP, MASCHINEN } from './data/recipes';
+import { MASCHINEN_PER_TYPE } from './data/gamedata-adapter';
 import { FOERDERBAENDER, FOERDERBAENDER_MAP } from './data/belts';
 
 const TABS = {
@@ -88,6 +90,77 @@ const LS_ANSICHT = 'factoryplanner_ansicht_v1';
 const FULLSCREEN_TABS = new Set(['forschung', 'fabrikplaner']);
 
 const LS_KEY = 'factoryplanner_rechner_v1';
+
+const MASCHINEN_TYP_LABEL = {
+  de: {
+    [MASCHINEN.ASSEMBLER]:    'Montage',
+    [MASCHINEN.SCHMELZOFEN]:  'Schmelze',
+    [MASCHINEN.CHEMIEANLAGE]: 'Chemie',
+    [MASCHINEN.OELRAFFINERIE]:'Ölverarb.',
+    [MASCHINEN.ZENTRIFUGE]:   'Zentrifuge',
+    [MASCHINEN.HOCHOFEN]:     'Hochofen',
+    [MASCHINEN.EM_ANLAGE]:    'Elektromagn.',
+    [MASCHINEN.BIOKAMMER]:    'Biokammer',
+    [MASCHINEN.KRYOGENANLAGE]:'Kryogen',
+    [MASCHINEN.BERGBAU]:      'Bergbau',
+    [MASCHINEN.RECYCLER]:     'Recycler',
+    [MASCHINEN.CRUSHER]:      'Zerkleinerer',
+    [MASCHINEN.RAUMPLATTFORM]:'Raumplattf.',
+  },
+  en: {
+    [MASCHINEN.ASSEMBLER]:    'Assembly',
+    [MASCHINEN.SCHMELZOFEN]:  'Smelting',
+    [MASCHINEN.CHEMIEANLAGE]: 'Chemistry',
+    [MASCHINEN.OELRAFFINERIE]:'Oil Proc.',
+    [MASCHINEN.ZENTRIFUGE]:   'Centrifuge',
+    [MASCHINEN.HOCHOFEN]:     'Foundry',
+    [MASCHINEN.EM_ANLAGE]:    'EM Plant',
+    [MASCHINEN.BIOKAMMER]:    'Biochamber',
+    [MASCHINEN.KRYOGENANLAGE]:'Cryogenics',
+    [MASCHINEN.BERGBAU]:      'Mining',
+    [MASCHINEN.RECYCLER]:     'Recycler',
+    [MASCHINEN.CRUSHER]:      'Crusher',
+    [MASCHINEN.RAUMPLATTFORM]:'Space Platf.',
+  },
+};
+
+function GlobaleMaschinenAuswahl({ globaleMaschinen, setGlobaleMaschine, sprache }) {
+  const typen = Object.entries(MASCHINEN_PER_TYPE)
+    .filter(([, maschinen]) => maschinen.length > 1)
+    .map(([typ, maschinen]) => ({ typ, maschinen }));
+
+  if (typen.length === 0) return null;
+
+  const header = sprache === 'de' ? 'Maschinen (global)' : 'Machines (global)';
+  const labels = MASCHINEN_TYP_LABEL[sprache] ?? MASCHINEN_TYP_LABEL.de;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-700/50">
+      <div className="text-xs text-gray-400 font-semibold mb-2 uppercase tracking-wide">{header}</div>
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
+        {typen.map(({ typ, maschinen }) => {
+          const selectedId = globaleMaschinen[typ] ?? maschinen[0].id;
+          return (
+            <div key={typ} className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-500 shrink-0">{labels[typ] ?? typ}:</span>
+              <select
+                value={selectedId}
+                onChange={e => setGlobaleMaschine(typ, e.target.value)}
+                className="bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400"
+              >
+                {maschinen.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {sprache === 'de' ? m.nameDe : m.nameEn}
+                  </option>
+                ))}
+              </select>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function parseItemsArr(arr) {
   return arr.map((p, i) => ({
@@ -175,10 +248,12 @@ function RechnerTab({ sprache, onReset }) {
     try { localStorage.setItem(LS_ANSICHT, ansicht); } catch {}
   }, [ansicht]);
 
-  const { boni }                                          = useForschung();
+  const { boni: boniForscht }                             = useForschung();
   const { modulBoni }                                     = useModul();
   const { zielQualitaet, maschinenQualitaet, getQualityFaktorFuerMaschine } = useQuality();
   const { setMaschinenListe, ignorierteItems, toggleIgnoriertesItem } = useBerechnung();
+  const { techtreeModus, globaleMaschinen, setGlobaleMaschine } = useTechtree();
+  const boni = techtreeModus ? boniForscht : { miningBonus: 0, assemblerBonus: 0 };
 
   const onPlanLoad = (neueItems) => {
     setItems(neueItems.map((it, i) => ({ ...it, key: keyRef.current + i + 1 })));
@@ -245,6 +320,20 @@ function RechnerTab({ sprache, onReset }) {
     return { combined, perItem: perItemList };
   }, [items, modulBoni, zielQualitaet, getQualityFaktorFuerMaschine, rezeptOverrides, ignorierteItems]);
 
+  // In Frei-Modus: overlay global machine per category for all recipes without a per-recipe override
+  const effectiveMaschinenOverrides = useMemo(() => {
+    if (techtreeModus) return maschinenOverrides;
+    const result = {};
+    for (const id of Object.keys(combined)) {
+      if (maschinenOverrides[id]) { result[id] = maschinenOverrides[id]; continue; }
+      const rezept = REZEPTE_MAP[id];
+      if (!rezept?.maschine) continue;
+      const global = globaleMaschinen[rezept.maschine];
+      if (global) result[id] = global;
+    }
+    return result;
+  }, [techtreeModus, maschinenOverrides, globaleMaschinen, combined]);
+
   // Publish calculated machine list to BerechnungContext for FabrikPlaner
   const maschinenFuerPlaner = useMemo(() => {
     if (!Object.keys(combined).length) return [];
@@ -261,12 +350,12 @@ function RechnerTab({ sprache, onReset }) {
           name:       r.name,
           nameEn:     r.nameEn,
           maschine:   r.maschine,
-          anzahl:     maschinenAnzahl(id, rateProSek, boni, modulBoni, mQMulti, maschinenOverrides[id] ?? null, beaconConfigs[id] ?? null),
+          anzahl:     maschinenAnzahl(id, rateProSek, boni, modulBoni, mQMulti, effectiveMaschinenOverrides[id] ?? null, beaconConfigs[id] ?? null),
           rateProMin: rateProSek * 60,
           rateProSek,
         };
       });
-  }, [combined, boni, modulBoni, maschinenQualitaet, maschinenOverrides]);
+  }, [combined, boni, modulBoni, maschinenQualitaet, effectiveMaschinenOverrides, beaconConfigs]);
 
   useEffect(() => {
     setMaschinenListe(maschinenFuerPlaner);
@@ -455,6 +544,14 @@ function RechnerTab({ sprache, onReset }) {
             <ModulAuswahl aktiveMaschinen={aktiveMaschinen} />
           </div>
         )}
+
+        {!techtreeModus && (
+          <GlobaleMaschinenAuswahl
+            globaleMaschinen={globaleMaschinen}
+            setGlobaleMaschine={setGlobaleMaschine}
+            sprache={sprache}
+          />
+        )}
       </section>
 
       {hasResult ? (
@@ -484,8 +581,8 @@ function RechnerTab({ sprache, onReset }) {
               produktion={combined}
               perItem={perItem}
               foerderband={foerderband?.id !== 'keins' ? foerderband : null}
-              maschinenOverrides={maschinenOverrides}
-              onMaschinenOverrideChange={updateMaschinenOverride}
+              maschinenOverrides={effectiveMaschinenOverrides}
+              onMaschinenOverrideChange={techtreeModus ? updateMaschinenOverride : null}
               beaconConfigs={beaconConfigs}
               onBeaconConfigChange={updateBeaconConfig}
               ignorierteItems={ignorierteItems}
@@ -564,6 +661,7 @@ function AppInner({ onReset }) {
 
   const { erforscht } = useForschung();
   const { sprache, setSprache } = useSprache();
+  const { techtreeModus, setTechtreeModus } = useTechtree();
   const anzahlErforscht = [...erforscht].filter(id => !IMMER_ERFORSCHT_IDS.has(id)).length;
 
   const tabs = TABS[sprache];
@@ -607,6 +705,26 @@ function AppInner({ onReset }) {
 
         <div className="ml-auto flex items-center gap-3">
           <PlanetenAuswahl />
+
+          <div
+            className="flex rounded-lg border border-gray-700 overflow-hidden text-xs font-bold"
+            title={techtreeModus
+              ? (sprache === 'de' ? 'Forschungsboni aktiv – beste erforschte Maschinen' : 'Research bonuses active – best researched machines')
+              : (sprache === 'de' ? 'Alle Maschinen frei wählbar – keine Forschungsboni' : 'All machines freely selectable – no research bonuses')}
+          >
+            <button
+              onClick={() => setTechtreeModus(true)}
+              className={`px-2.5 py-1 transition-colors ${techtreeModus ? 'bg-amber-500/30 text-amber-300' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}
+            >
+              {sprache === 'de' ? '🔬 Techtree' : '🔬 Tech Tree'}
+            </button>
+            <button
+              onClick={() => setTechtreeModus(false)}
+              className={`px-2.5 py-1 transition-colors ${!techtreeModus ? 'bg-gray-600/40 text-gray-200' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}
+            >
+              {sprache === 'de' ? '🏭 Frei' : '🏭 Free'}
+            </button>
+          </div>
 
           <div className="flex rounded-lg border border-gray-700 overflow-hidden text-xs font-bold">
             <button
@@ -695,6 +813,7 @@ export default function App() {
 
   return (
     <SprachProvider>
+      <TechtreeProvider>
       <Fragment key={resetKey}>
         <EinstellungenProvider>
           <ForschungProvider>
@@ -712,6 +831,7 @@ export default function App() {
           </ForschungProvider>
         </EinstellungenProvider>
       </Fragment>
+      </TechtreeProvider>
     </SprachProvider>
   );
 }

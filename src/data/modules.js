@@ -60,3 +60,19 @@ export const MODUL_SLOTS = {
   [MASCHINEN.RAUMPLATTFORM]:0,
   [MASCHINEN.CRUSHER]:      2,
 };
+
+// Maps internal module IDs to Factorio recipe IDs (for tech-unlock checking)
+export const MODUL_RECIPE_ID = {
+  'geschwindigkeit-1':  'speed-module',
+  'geschwindigkeit-2':  'speed-module-2',
+  'geschwindigkeit-3':  'speed-module-3',
+  'produktivitaet-1':   'productivity-module',
+  'produktivitaet-2':   'productivity-module-2',
+  'produktivitaet-3':   'productivity-module-3',
+  'effizienz-1':        'efficiency-module',
+  'effizienz-2':        'efficiency-module-2',
+  'effizienz-3':        'efficiency-module-3',
+  'qualitaet-1':        'quality-module',
+  'qualitaet-2':        'quality-module-2',
+  'qualitaet-3':        'quality-module-3',
+};

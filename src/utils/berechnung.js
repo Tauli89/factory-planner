@@ -1,5 +1,6 @@
 import { REZEPTE_MAP, MASCHINEN, ITEM_TO_REZEPTE_IDS, REZEPT_ZU_ITEM_ID } from '../data/recipes';
 import { MASCHINEN_STROMVERBRAUCH, ENERGIEQUELLEN } from '../data/machines';
+import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/gamedata-adapter';
 import gamedata from '../data/gamedata.json';
 
 export const BEACON_MODUL_EFFEKTE = {
@@ -76,6 +77,22 @@ export function getVerfuegbareMaschinen(rezeptId) {
     })
     .filter(Boolean)
     .sort((a, b) => a.speed - b.speed);
+}
+
+/**
+ * Returns the fastest machine ID that is already unlocked (either always available
+ * or its recipe has been researched). Falls back to slowest machine if none unlocked.
+ */
+export function getBesteMaschineId(rezeptId, freigeschalteteRezepte) {
+  const maschinen = getVerfuegbareMaschinen(rezeptId); // sorted asc by speed
+  if (!maschinen.length) return null;
+  for (let i = maschinen.length - 1; i >= 0; i--) {
+    const m = maschinen[i];
+    if (!DURCH_TECH_GESPERRTE_REZEPTE.has(m.id) || freigeschalteteRezepte.has(m.id)) {
+      return m.id;
+    }
+  }
+  return maschinen[0].id;
 }
 
 /**

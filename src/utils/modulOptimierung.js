@@ -130,9 +130,12 @@ function optimiereMaschine(maschinenType, ziel) {
  *
  * Returns { maxSlots, ziele: { [ziel]: { modulMix: [{modulId, anzahl}], metrik } } }
  */
-function optimiereMaschineAllZiele(maschinenType) {
+function optimiereMaschineAllZiele(maschinenType, verfuegbareModuleIds = null) {
   const maxSlots   = MODUL_SLOTS[maschinenType] ?? 0;
-  const kandidaten = MODULE_TYPEN.filter(m => m.id !== 'keins');
+  const kandidaten = MODULE_TYPEN.filter(m => {
+    if (m.id === 'keins') return false;
+    return !verfuegbareModuleIds || verfuegbareModuleIds.has(m.id);
+  });
   const baseMetrik = { outputFactor: 1, ingredientFactor: 1, energyPerOutputFactor: 1 };
   const ergebnisseProZiel = {};
 
@@ -189,12 +192,12 @@ export function optimiereModule(produktId, ziel) {
  * Main entry for the all-goals table view.
  * Returns Map<maschinenType, { maxSlots, ziele: { [ziel]: { modulMix, metrik } } }>
  */
-export function optimiereModuleAllZiele(produktId) {
+export function optimiereModuleAllZiele(produktId, verfuegbareModuleIds = null) {
   if (!produktId || !REZEPTE_MAP[produktId]) return null;
   const maschinen  = getMaschinenInKette(produktId);
   const ergebnisse = new Map();
   for (const [maschinenType] of maschinen) {
-    ergebnisse.set(maschinenType, optimiereMaschineAllZiele(maschinenType));
+    ergebnisse.set(maschinenType, optimiereMaschineAllZiele(maschinenType, verfuegbareModuleIds));
   }
   return ergebnisse;
 }

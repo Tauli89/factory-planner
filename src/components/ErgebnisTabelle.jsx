@@ -4,9 +4,11 @@ import WithTooltip from './WithTooltip';
 import {
   maschinenAnzahl, berechneStromverbrauch, analysiereProduktion,
   MASCHINEN_LABEL, MASCHINEN_LABEL_EN, getVerfuegbareMaschinen, BEACON_MODUL_EFFEKTE,
+  getBesteMaschineId,
 } from '../utils/berechnung';
 import { ABSTRACT_TO_MACHINE_ID } from '../data/gamedata-adapter';
 import { useForschung } from '../context/ForschungContext';
+import { useTechtree } from '../context/TechtreeContext';
 import { useSprache } from '../context/SprachContext';
 import { useModul } from '../context/ModulContext';
 import { useEinstellungen } from '../context/EinstellungenContext';
@@ -807,7 +809,9 @@ export default function ErgebnisTabelle({
   diffMap = null,
   ignorierteItems = new Set(), onToggleIgnoriertesItem = null,
 }) {
-  const { boni }           = useForschung();
+  const { boni: boniForscht, freigeschalteteRezepte } = useForschung();
+  const { techtreeModus }  = useTechtree();
+  const boni = techtreeModus ? boniForscht : { miningBonus: 0, assemblerBonus: 0 };
   const { sprache }        = useSprache();
   const { modulBoni }      = useModul();
   const { einstellungen, setEinstellungen } = useEinstellungen();
@@ -896,7 +900,14 @@ export default function ErgebnisTabelle({
     const displayRate = istZiel ? zielInfo.gewuenschteRateSek : rateProSek;
     const craftingRate = rateProSek;
 
-    const overrideId   = istRohstoff ? null : (maschinenOverrides[id] ?? einstellungen.defaultMaschinenPerType?.[rezept?.maschine] ?? null);
+    const besteMaschine = (techtreeModus && !istRohstoff)
+      ? getBesteMaschineId(id, freigeschalteteRezepte)
+      : null;
+    const overrideId   = istRohstoff ? null : (
+      maschinenOverrides[id]
+      ?? einstellungen.defaultMaschinenPerType?.[rezept?.maschine]
+      ?? besteMaschine
+    );
     const beaconCfg    = istRohstoff ? null : (beaconConfigs[id] ?? null);
     const beaconActive = beaconCfg?.anzahlBeacons > 0;
     const baseAnzahl   = istRohstoff ? null : maschinenAnzahl(id, craftingRate, boni, modulBoni, mQMulti, overrideId, null);
@@ -914,7 +925,8 @@ export default function ErgebnisTabelle({
       istFluid: istFluidItem,
     };
 
-    const verfuegbareMaschinen = istRohstoff ? [] : getVerfuegbareMaschinen(id);
+    // In Frei-Modus: global selectors replace per-row dropdowns → no dropdown needed
+    const verfuegbareMaschinen = (istRohstoff || !techtreeModus) ? [] : getVerfuegbareMaschinen(id);
     const defaultMaschinenId   = rezept ? (ABSTRACT_TO_MACHINE_ID[rezept.maschine] ?? null) : null;
 
     return {

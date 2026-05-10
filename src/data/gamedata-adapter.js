@@ -291,3 +291,25 @@ export function getItemName(id, lang = 'de') {
 export function istFluid(id) {
   return gamedata.items[id]?.subgroup === 'fluid';
 }
+
+// Maps abstract machine type → sorted list of concrete machines (asc by speed)
+export const MASCHINEN_PER_TYPE = (() => {
+  const result = {};
+  for (const [machineId, machine] of Object.entries(gamedata.machines)) {
+    for (const category of machine.crafting_categories ?? []) {
+      const abstractType = RECIPE_CAT_TO_MACHINE[category];
+      if (!abstractType) continue;
+      if (!result[abstractType]) result[abstractType] = [];
+      if (!result[abstractType].some(m => m.id === machineId)) {
+        result[abstractType].push({
+          id:     machineId,
+          nameDe: machine.name.de,
+          nameEn: machine.name.en,
+          speed:  machine.crafting_speed,
+        });
+      }
+    }
+  }
+  for (const list of Object.values(result)) list.sort((a, b) => a.speed - b.speed);
+  return result;
+})();

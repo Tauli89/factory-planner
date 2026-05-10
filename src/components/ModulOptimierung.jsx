@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useSprache } from '../context/SprachContext';
 import { useForschung } from '../context/ForschungContext';
+import { useTechtree } from '../context/TechtreeContext';
 import { REZEPTE, REZEPTE_MAP, KATEGORIEN, KATEGORIEN_EN_LABEL } from '../data/recipes';
 import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/gamedata-adapter';
-import { MODULE_MAP, MODUL_ICON_PATH } from '../data/modules';
+import { MODULE_MAP, MODUL_ICON_PATH, MODUL_RECIPE_ID } from '../data/modules';
 import { MASCHINEN_LABEL, MASCHINEN_LABEL_EN, berechneProduktion } from '../utils/berechnung';
 import {
   OPTIMIERUNGSZIELE,
@@ -158,8 +159,9 @@ function ZielCell({ rec, ziel, tx, invertFor }) {
 }
 
 export default function ModulOptimierung() {
-  const { sprache }              = useSprache();
+  const { sprache }                = useSprache();
   const { freigeschalteteRezepte } = useForschung();
+  const { techtreeModus }          = useTechtree();
   const tx = T[sprache];
 
   const [produktId, setProduktId] = useState('');
@@ -167,9 +169,22 @@ export default function ModulOptimierung() {
 
   const herstellbar = useMemo(() => REZEPTE.filter(r => {
     if (r.zeit === 0) return false;
+    if (!techtreeModus) return true;
     if (!DURCH_TECH_GESPERRTE_REZEPTE.has(r.id)) return true;
     return freigeschalteteRezepte.has(r.id);
-  }), [freigeschalteteRezepte]);
+  }), [freigeschalteteRezepte, techtreeModus]);
+
+  // In Techtree-Modus: only modules whose recipes are unlocked
+  const verfuegbareModuleIds = useMemo(() => {
+    if (!techtreeModus) return null;
+    const ids = new Set();
+    for (const [ourId, factorioId] of Object.entries(MODUL_RECIPE_ID)) {
+      if (!DURCH_TECH_GESPERRTE_REZEPTE.has(factorioId) || freigeschalteteRezepte.has(factorioId)) {
+        ids.add(ourId);
+      }
+    }
+    return ids;
+  }, [techtreeModus, freigeschalteteRezepte]);
 
   const nachKategorie = useMemo(() =>
     KATEGORIE_REIHENFOLGE
@@ -180,7 +195,7 @@ export default function ModulOptimierung() {
 
   function berechnen() {
     if (!produktId) return;
-    setErgebnisse(optimiereModuleAllZiele(produktId));
+    setErgebnisse(optimiereModuleAllZiele(produktId, verfuegbareModuleIds));
   }
 
   const maschinenLabels = sprache === 'de' ? MASCHINEN_LABEL : MASCHINEN_LABEL_EN;
