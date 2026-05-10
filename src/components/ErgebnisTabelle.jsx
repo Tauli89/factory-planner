@@ -4,7 +4,7 @@ import WithTooltip from './WithTooltip';
 import {
   maschinenAnzahl, berechneStromverbrauch, analysiereProduktion,
   MASCHINEN_LABEL, MASCHINEN_LABEL_EN, getVerfuegbareMaschinen, BEACON_MODUL_EFFEKTE,
-  getBesteMaschineId,
+  getBesteMaschineId, getVulcanusExtraMaschinen,
 } from '../utils/berechnung';
 import { ABSTRACT_TO_MACHINE_ID } from '../data/gamedata-adapter';
 import { useForschung } from '../context/ForschungContext';
@@ -50,9 +50,9 @@ const BEACON_MODUL_NAMEN = {
     'efficiency-module':     'Effizienzmodul 1 (-30% Energie)',
     'efficiency-module-2':   'Effizienzmodul 2 (-40% Energie)',
     'efficiency-module-3':   'Effizienzmodul 3 (-50% Energie)',
-    'productivity-module':   'Produktivitätsmodul 1 (+4% Geschw.)',
-    'productivity-module-2': 'Produktivitätsmodul 2 (+6% Geschw.)',
-    'productivity-module-3': 'Produktivitätsmodul 3 (+10% Geschw.)',
+    'productivity-module':   'Produktivitätsmodul 1 (+4% Prod.)',
+    'productivity-module-2': 'Produktivitätsmodul 2 (+6% Prod.)',
+    'productivity-module-3': 'Produktivitätsmodul 3 (+10% Prod.)',
   },
   en: {
     'speed-module':          'Speed Module 1 (+20%)',
@@ -61,9 +61,9 @@ const BEACON_MODUL_NAMEN = {
     'efficiency-module':     'Efficiency Module 1 (-30% energy)',
     'efficiency-module-2':   'Efficiency Module 2 (-40% energy)',
     'efficiency-module-3':   'Efficiency Module 3 (-50% energy)',
-    'productivity-module':   'Productivity Module 1 (+4% speed)',
-    'productivity-module-2': 'Productivity Module 2 (+6% speed)',
-    'productivity-module-3': 'Productivity Module 3 (+10% speed)',
+    'productivity-module':   'Productivity Module 1 (+4% prod.)',
+    'productivity-module-2': 'Productivity Module 2 (+6% prod.)',
+    'productivity-module-3': 'Productivity Module 3 (+10% prod.)',
   },
 };
 
@@ -122,6 +122,7 @@ const T = {
     beaconProBeacon:   'Module/Beacon',
     beaconGeschw:      'Geschw.',
     beaconEnergie:     'Energie',
+    beaconProd:        'Prod.',
     beaconMaschinen:   'Maschinen',
     beaconKonfig:      'Beacons konfigurieren',
     beaconHeader:      'Beacon',
@@ -175,6 +176,7 @@ const T = {
     beaconProBeacon:   'Modules/Beacon',
     beaconGeschw:      'speed',
     beaconEnergie:     'energy',
+    beaconProd:        'prod.',
     beaconMaschinen:   'Machines',
     beaconKonfig:      'Configure beacons',
     beaconHeader:      'Beacon',
@@ -217,12 +219,18 @@ function formatPower(kw, sprache) {
 // ── BeaconKonfigurator ────────────────────────────────────────────────────────
 
 function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprache, tx }) {
-  const modulEffekt     = BEACON_MODUL_EFFEKTE[config.modulTyp] ?? {};
-  const speedBonus      = config.anzahlBeacons * config.moduleProBeacon * (modulEffekt.speed  ?? 0) * 0.5 * 100;
-  const energyRed       = config.anzahlBeacons * config.moduleProBeacon * Math.abs(modulEffekt.energy ?? 0) * 0.5 * 100;
-  const hasSpeedEffect  = speedBonus > 0;
-  const hasEnergyEffect = energyRed > 0;
-  const machineSaving   = baseAnzahl !== null && currentAnzahl !== null && baseAnzahl !== currentAnzahl;
+  const modulEffekt        = BEACON_MODUL_EFFEKTE[config.modulTyp] ?? {};
+  const factor             = config.anzahlBeacons * config.moduleProBeacon * 0.5 * 100;
+  const speedBonus         = factor * (modulEffekt.speed ?? 0);
+  const productivityBonus  = factor * (modulEffekt.productivity ?? 0);
+  const energyVal          = modulEffekt.energy ?? 0;
+  const energyRed          = energyVal < 0 ? factor * Math.abs(energyVal) : 0;
+  const energyInc          = energyVal > 0 ? factor * energyVal : 0;
+  const hasSpeedEffect     = speedBonus > 0;
+  const hasProductivity    = productivityBonus > 0;
+  const hasEnergyEffect    = energyRed > 0;
+  const hasEnergyPenalty   = energyInc > 0;
+  const machineSaving      = baseAnzahl !== null && currentAnzahl !== null && baseAnzahl !== currentAnzahl;
 
   const set = (field, val) => onChange({ ...config, [field]: val });
 
@@ -272,8 +280,14 @@ function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprac
           {hasSpeedEffect && (
             <span className="text-amber-300">⚡ +{speedBonus.toFixed(0)}% {tx.beaconGeschw}</span>
           )}
+          {hasProductivity && (
+            <span className="text-green-300">📦 +{productivityBonus.toFixed(1)}% {tx.beaconProd}</span>
+          )}
           {hasEnergyEffect && (
             <span className="text-green-300">🔋 -{energyRed.toFixed(0)}% {tx.beaconEnergie}</span>
+          )}
+          {hasEnergyPenalty && (
+            <span className="text-red-300">⚡ +{energyInc.toFixed(0)}% {tx.beaconEnergie}</span>
           )}
           {machineSaving && (
             <span className="text-gray-300">
@@ -629,9 +643,9 @@ function Abschnitt({
                       {fmtNum(e.rateProEinheit ?? e.rateProMin, einheitDecimals, sprache)}
                       {e.prodPfeil && (
                         <span
-                          className="ml-0.5 text-green-500/60 text-xs"
-                          title={sprache === 'de' ? 'Durch Produktivitätsmodule reduziert' : 'Reduced by productivity modules'}
-                        >↓</span>
+                          className="ml-1 text-xs text-green-500/70 whitespace-nowrap"
+                          title={sprache === 'de' ? 'Bereits durch Produktivitätsmodule reduziert' : 'Already reduced by productivity modules'}
+                        >{e.prodPfeil}</span>
                       )}
                     </td>
                     {zeigeSek && (
@@ -885,7 +899,12 @@ export default function ErgebnisTabelle({
   if (!produktion || Object.keys(produktion).length === 0) return null;
 
   const mQMulti = maschinenQualitaet.maschinenMulti;
-  const hatAktiveProduktivitaet = Object.values(modulBoni).some(b => b.produktivitaet > 0);
+  const maxProdBonus = Object.values(modulBoni).reduce((max, b) => Math.max(max, b.produktivitaet ?? 0), 0);
+  const hatAktiveProduktivitaet = maxProdBonus > 0;
+  const prodEinsparungText = hatAktiveProduktivitaet
+    ? `↓ −${(Math.round((1 - 1 / (1 + maxProdBonus)) * 1000) / 10).toFixed(1)}% ${sprache === 'de' ? 'durch Module' : 'via modules'}`
+    : null;
+  const istVulcanus = aktivePlaneten.has('vulcanus');
 
   const eintraege = Object.entries(produktion).map(([id, rateProSek]) => {
     const rezept         = REZEPTE_MAP[id];
@@ -903,9 +922,13 @@ export default function ErgebnisTabelle({
     const besteMaschine = (techtreeModus && !istRohstoff)
       ? getBesteMaschineId(id, freigeschalteteRezepte)
       : null;
+    const vulcanusErsatzId = (!istRohstoff && istVulcanus && rezept?.maschine === MASCHINEN.SCHMELZOFEN)
+      ? 'foundry'
+      : null;
     const overrideId   = istRohstoff ? null : (
       maschinenOverrides[id]
       ?? einstellungen.defaultMaschinenPerType?.[rezept?.maschine]
+      ?? vulcanusErsatzId
       ?? besteMaschine
     );
     const beaconCfg    = istRohstoff ? null : (beaconConfigs[id] ?? null);
@@ -926,7 +949,11 @@ export default function ErgebnisTabelle({
     };
 
     // In Frei-Modus: global selectors replace per-row dropdowns → no dropdown needed
-    const verfuegbareMaschinen = (istRohstoff || !techtreeModus) ? [] : getVerfuegbareMaschinen(id);
+    const baseMaschinen = (istRohstoff || !techtreeModus) ? [] : getVerfuegbareMaschinen(id);
+    const vulcanusExtra = vulcanusErsatzId ? getVulcanusExtraMaschinen(rezept.maschine) : null;
+    const verfuegbareMaschinen = (vulcanusExtra && !baseMaschinen.some(m => m.id === vulcanusExtra.id))
+      ? [...baseMaschinen, vulcanusExtra]
+      : baseMaschinen;
     const defaultMaschinenId   = rezept ? (ABSTRACT_TO_MACHINE_ID[rezept.maschine] ?? null) : null;
 
     return {
@@ -958,7 +985,7 @@ export default function ErgebnisTabelle({
         return anzahl * ppm;
       })(),
       prodBonus:      istRohstoff ? 0 : (modulBoni[rezept?.maschine]?.produktivitaet ?? 0),
-      prodPfeil:      istRohstoff && hatAktiveProduktivitaet,
+      prodPfeil:      istRohstoff && prodEinsparungText ? prodEinsparungText : null,
       rateProEinheit: displayRate * einheitMulti,
       istVerfuegbar:  istRohstoff ? true : istRezeptVerfuegbar(id),
     };

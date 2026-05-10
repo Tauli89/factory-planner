@@ -10,9 +10,9 @@ export const BEACON_MODUL_EFFEKTE = {
   'efficiency-module':     { energy: -0.30 },
   'efficiency-module-2':   { energy: -0.40 },
   'efficiency-module-3':   { energy: -0.50 },
-  'productivity-module':   { speed: 0.04 },
-  'productivity-module-2': { speed: 0.06 },
-  'productivity-module-3': { speed: 0.10 },
+  'productivity-module':   { productivity: 0.04, energy: 0.40 },
+  'productivity-module-2': { productivity: 0.06, energy: 0.60 },
+  'productivity-module-3': { productivity: 0.10, energy: 0.80 },
 };
 
 const MASCHINENGESCHWINDIGKEIT = {
@@ -106,6 +106,17 @@ export function getVerfuegbareRezepte(id) {
 }
 
 /**
+ * Gibt die Foundry als zusätzliche Maschinen-Option zurück wenn der Maschinentyp
+ * Schmelzofen ist (Vulcanus-Ersatz: Foundry speed 4 statt Elektrischer Ofen speed 2).
+ */
+export function getVulcanusExtraMaschinen(maschinenType) {
+  if (maschinenType !== MASCHINEN.SCHMELZOFEN) return null;
+  const m = gamedata.machines['foundry'];
+  if (!m) return null;
+  return { id: 'foundry', nameDe: m.name.de, nameEn: m.name.en, speed: m.crafting_speed, energyUsage: m.energy_usage_kw };
+}
+
+/**
  * Berechnet alle benötigten Produktionsraten (BFS, kein exponentielles Rekursion-Problem).
  * modulBoni:      { [maschinenType]: { speedBonus, produktivitaet } }
  * rezeptOverrides: { [itemOderRezeptId]: rezeptId } – alternatives Rezept pro Produkt
@@ -176,9 +187,13 @@ export function maschinenAnzahl(id, mengeProSekunde, boni = {}, modulBoni = {}, 
     }
   }
 
-  // Produktivitätsmodule erhöhen den effektiven Output pro Zyklus
+  // Produktivitätsmodule erhöhen den effektiven Output pro Zyklus (direkt + Beacon)
   const produktivitaet = modulBonus?.produktivitaet ?? 0;
-  const effektiverOutput = rezept.ergibt * (1 + produktivitaet);
+  const beaconProd = beaconConfig?.anzahlBeacons > 0
+    ? (BEACON_MODUL_EFFEKTE[beaconConfig.modulTyp]?.productivity ?? 0)
+      * beaconConfig.anzahlBeacons * beaconConfig.moduleProBeacon * 0.5
+    : 0;
+  const effektiverOutput = rezept.ergibt * (1 + produktivitaet + beaconProd);
 
   const basisRate = (effektiverOutput / rezept.zeit) * geschwindigkeit;
 
@@ -210,7 +225,11 @@ function getMachineRatePerSec(id, boni, modulBoni, maschinenQualitaetMulti, masc
     if (bkE?.speed) speed *= (1 + beaconConfig.anzahlBeacons * beaconConfig.moduleProBeacon * bkE.speed * 0.5);
   }
   const prod = mb?.produktivitaet ?? 0;
-  let rate = (rezept.ergibt * (1 + prod) / rezept.zeit) * speed;
+  const bProd = beaconConfig?.anzahlBeacons > 0
+    ? (BEACON_MODUL_EFFEKTE[beaconConfig.modulTyp]?.productivity ?? 0)
+      * beaconConfig.anzahlBeacons * beaconConfig.moduleProBeacon * 0.5
+    : 0;
+  let rate = (rezept.ergibt * (1 + prod + bProd) / rezept.zeit) * speed;
   if (rezept.maschine === MASCHINEN.BERGBAU && (boni.miningBonus ?? 0) > 0) rate *= (1 + boni.miningBonus);
   return rate;
 }
@@ -249,9 +268,13 @@ export function berechneStromverbrauch(produktion, boni = {}, modulBoni = {}, ma
     let effectiveKwPro = kwProMaschine;
     if (beaconCfg?.anzahlBeacons > 0) {
       const bkEffekt = BEACON_MODUL_EFFEKTE[beaconCfg.modulTyp];
-      if (bkEffekt?.energy < 0) {
-        const reduction = beaconCfg.anzahlBeacons * beaconCfg.moduleProBeacon * Math.abs(bkEffekt.energy) * 0.5;
-        effectiveKwPro = kwProMaschine * Math.max(0.2, 1 - reduction);
+      if (bkEffekt?.energy != null) {
+        const factor = beaconCfg.anzahlBeacons * beaconCfg.moduleProBeacon * bkEffekt.energy * 0.5;
+        if (factor < 0) {
+          effectiveKwPro = kwProMaschine * Math.max(0.2, 1 + factor);
+        } else if (factor > 0) {
+          effectiveKwPro = kwProMaschine * (1 + factor);
+        }
       }
     }
 
