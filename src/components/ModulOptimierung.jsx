@@ -4,8 +4,7 @@ import { useForschung } from '../context/ForschungContext';
 import { useTechtree } from '../context/TechtreeContext';
 import { REZEPTE_MAP } from '../data/recipes';
 import { DURCH_TECH_GESPERRTE_REZEPTE } from '../data/gamedata-adapter';
-import { MODULE_MAP, MODUL_RECIPE_ID } from '../data/modules';
-import Icon from './Icon';
+import { MODULE_MAP, MODUL_ICON_PATH, MODUL_RECIPE_ID } from '../data/modules';
 import ProduktAuswahl from './ProduktAuswahl';
 import { MASCHINEN_LABEL, MASCHINEN_LABEL_EN, berechneProduktion } from '../utils/berechnung';
 import {
@@ -85,6 +84,31 @@ function formatDelta(value, tx, invertColors = false) {
   );
 }
 
+function ModulIcon({ modulId, size = 20 }) {
+  const src = MODUL_ICON_PATH[modulId];
+  if (!src) return (
+    <span
+      className="inline-flex items-center justify-center bg-slate-700 text-slate-300 rounded flex-shrink-0"
+      style={{ width: size, height: size, minWidth: size, fontSize: Math.max(8, Math.floor(size * 0.5)) }}
+    >
+      {(modulId[0] ?? '?').toUpperCase()}
+    </span>
+  );
+  return (
+    <div
+      style={{
+        width: size, height: size,
+        backgroundImage: `url(${src})`,
+        backgroundPosition: '0 0',
+        backgroundSize: `${size * (120 / 64)}px ${size}px`,
+        backgroundRepeat: 'no-repeat',
+        imageRendering: 'pixelated',
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
 function ModulMixIcons({ modulMix, keinModulText }) {
   if (!modulMix || modulMix.length === 0) {
     return <span className="text-gray-600 italic text-xs">{keinModulText}</span>;
@@ -98,7 +122,7 @@ function ModulMixIcons({ modulMix, keinModulText }) {
           <div key={i} className="flex items-center gap-0.5" title={tip}>
             {i > 0 && <span className="text-gray-700 text-xs px-0.5">+</span>}
             <span className="text-amber-400 text-[11px] font-mono leading-none">{anzahl}×</span>
-            <Icon id={MODUL_RECIPE_ID[modulId] ?? modulId} size={20} />
+            <ModulIcon modulId={modulId} size={20} />
           </div>
         );
       })}
