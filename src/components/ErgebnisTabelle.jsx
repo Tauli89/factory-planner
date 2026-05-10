@@ -248,21 +248,29 @@ function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprac
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-xs text-gray-400">{tx.beaconModul}</label>
-        <select
-          value={config.modulTyp}
-          onChange={e => set('modulTyp', e.target.value)}
-          className="bg-gray-700 border border-gray-600 text-gray-200 text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400"
-        >
-          {BEACON_MODUL_GRUPPEN.map(g => (
-            <optgroup key={g.key} label={sprache === 'de' ? g.de : g.en}>
-              {g.ids.map(id => (
-                <option key={id} value={id}>
-                  {(BEACON_MODUL_NAMEN[sprache] ?? BEACON_MODUL_NAMEN.en)[id]}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <img
+            src={`/images/icons/modules/${config.modulTyp}.png`}
+            alt={config.modulTyp}
+            className="w-7 h-7 flex-shrink-0"
+            style={{ imageRendering: 'pixelated' }}
+          />
+          <select
+            value={config.modulTyp}
+            onChange={e => set('modulTyp', e.target.value)}
+            className="bg-gray-700 border border-gray-600 text-gray-200 text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400"
+          >
+            {BEACON_MODUL_GRUPPEN.map(g => (
+              <optgroup key={g.key} label={sprache === 'de' ? g.de : g.en}>
+                {g.ids.map(id => (
+                  <option key={id} value={id}>
+                    {(BEACON_MODUL_NAMEN[sprache] ?? BEACON_MODUL_NAMEN.en)[id]}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-xs text-gray-400">{tx.beaconProBeacon}</label>
@@ -276,26 +284,35 @@ function BeaconKonfigurator({ config, onChange, baseAnzahl, currentAnzahl, sprac
         </select>
       </div>
       {config.anzahlBeacons > 0 && (
-        <div className="flex flex-wrap items-center gap-3 text-xs bg-gray-800/50 rounded px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 text-xs bg-gray-800/50 rounded px-3 py-2">
+          <img
+            src={`/images/icons/modules/${config.modulTyp}.png`}
+            alt={config.modulTyp}
+            className="w-5 h-5 flex-shrink-0"
+            style={{ imageRendering: 'pixelated' }}
+          />
           {hasSpeedEffect && (
-            <span className="text-amber-300">⚡ +{speedBonus.toFixed(0)}% {tx.beaconGeschw}</span>
+            <span className="text-amber-300">+{speedBonus.toFixed(0)}% {tx.beaconGeschw}</span>
           )}
           {hasProductivity && (
-            <span className="text-green-300">📦 +{productivityBonus.toFixed(1)}% {tx.beaconProd}</span>
+            <span className="text-green-300">+{productivityBonus.toFixed(1)}% {tx.beaconProd}</span>
           )}
           {hasEnergyEffect && (
-            <span className="text-green-300">🔋 -{energyRed.toFixed(0)}% {tx.beaconEnergie}</span>
+            <span className="text-green-300">−{energyRed.toFixed(0)}% {tx.beaconEnergie}</span>
           )}
           {hasEnergyPenalty && (
-            <span className="text-red-300">⚡ +{energyInc.toFixed(0)}% {tx.beaconEnergie}</span>
+            <span className="text-red-300">+{energyInc.toFixed(0)}% {tx.beaconEnergie}</span>
           )}
           {machineSaving && (
-            <span className="text-gray-300">
-              {tx.beaconMaschinen}:{' '}
-              <span className="text-gray-400 line-through">{baseAnzahl}</span>
-              {' → '}
-              <span className="text-green-400 font-bold">{currentAnzahl}</span>
-            </span>
+            <>
+              <span className="text-gray-600">|</span>
+              <span className="text-gray-300">
+                {tx.beaconMaschinen}:{' '}
+                <span className="text-gray-400 line-through">{baseAnzahl}</span>
+                {' → '}
+                <span className="text-green-400 font-bold">{currentAnzahl}</span>
+              </span>
+            </>
           )}
         </div>
       )}
