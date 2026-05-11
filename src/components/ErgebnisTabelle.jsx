@@ -701,7 +701,7 @@ function Abschnitt({
                             ))}
                           </select>
                         ) : (
-                          maschinenLabels[e.maschine] ?? '—'
+                          e.selectedMaschinenLabel ?? maschinenLabels[e.maschine] ?? '—'
                         )}
                       </td>
                     )}
@@ -966,12 +966,19 @@ export default function ErgebnisTabelle({
     };
 
     // In Frei-Modus: global selectors replace per-row dropdowns → no dropdown needed
-    const baseMaschinen = (istRohstoff || !techtreeModus) ? [] : getVerfuegbareMaschinen(id);
-    const vulcanusExtra = vulcanusErsatzId ? getVulcanusExtraMaschinen(rezept.maschine) : null;
+    const alleMaschinen        = !istRohstoff ? getVerfuegbareMaschinen(id) : [];
+    const baseMaschinen        = techtreeModus ? alleMaschinen : [];
+    const vulcanusExtra        = vulcanusErsatzId ? getVulcanusExtraMaschinen(rezept.maschine) : null;
     const verfuegbareMaschinen = (vulcanusExtra && !baseMaschinen.some(m => m.id === vulcanusExtra.id))
       ? [...baseMaschinen, vulcanusExtra]
       : baseMaschinen;
     const defaultMaschinenId   = rezept ? (ABSTRACT_TO_MACHINE_ID[rezept.maschine] ?? null) : null;
+    const selectedMaschineObj  = overrideId
+      ? ([...alleMaschinen, ...(vulcanusExtra ? [vulcanusExtra] : [])].find(m => m.id === overrideId) ?? null)
+      : null;
+    const selectedMaschinenLabel = selectedMaschineObj
+      ? (sprache === 'de' ? selectedMaschineObj.nameDe : selectedMaschineObj.nameEn)
+      : null;
 
     return {
       id,
@@ -991,6 +998,7 @@ export default function ErgebnisTabelle({
       maschine:            rezept?.maschine ?? null,
       verfuegbareMaschinen,
       selectedMaschinenId: overrideId,
+      selectedMaschinenLabel,
       defaultMaschinenId,
       baender,
       wagons,
