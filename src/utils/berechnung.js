@@ -265,18 +265,16 @@ export function berechneStromverbrauch(produktion, boni = {}, modulBoni = {}, ma
 
     if (kwProMaschine === 0) continue;
 
-    let effectiveKwPro = kwProMaschine;
+    let energieFaktor = modulBoni[rezept.maschine]?.energyBonus ?? 0;
     if (beaconCfg?.anzahlBeacons > 0) {
       const bkEffekt = BEACON_MODUL_EFFEKTE[beaconCfg.modulTyp];
       if (bkEffekt?.energy != null) {
-        const factor = beaconCfg.anzahlBeacons * beaconCfg.moduleProBeacon * bkEffekt.energy * 0.5;
-        if (factor < 0) {
-          effectiveKwPro = kwProMaschine * Math.max(0.2, 1 + factor);
-        } else if (factor > 0) {
-          effectiveKwPro = kwProMaschine * (1 + factor);
-        }
+        energieFaktor += beaconCfg.anzahlBeacons * beaconCfg.moduleProBeacon * bkEffekt.energy * 0.5;
       }
     }
+    const effectiveKwPro = energieFaktor === 0
+      ? kwProMaschine
+      : kwProMaschine * (energieFaktor < 0 ? Math.max(0.2, 1 + energieFaktor) : 1 + energieFaktor);
 
     if (!perTyp[maschinenKey]) {
       perTyp[maschinenKey] = { anzahl: 0, kwProMaschine, totalKW: 0, name };

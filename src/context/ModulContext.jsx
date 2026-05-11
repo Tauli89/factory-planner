@@ -35,8 +35,9 @@ export function ModulProvider({ children }) {
       if (!modul || modul.id === 'keins' || config.anzahl <= 0) continue;
       const speedBonus     = modul.speedBonus * config.anzahl;
       const produktivitaet = modul.produktivitaet * config.anzahl;
-      if (speedBonus !== 0 || produktivitaet !== 0) {
-        result[maschinenType] = { speedBonus, produktivitaet };
+      const energyBonus    = modul.energyBonus * config.anzahl;
+      if (speedBonus !== 0 || produktivitaet !== 0 || energyBonus !== 0) {
+        result[maschinenType] = { speedBonus, produktivitaet, energyBonus };
       }
     }
     return result;
